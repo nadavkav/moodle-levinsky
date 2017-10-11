@@ -74,6 +74,8 @@ $string['enableembed'] = 'Bouton d\'intégration';
 $string['enablecopyright'] = 'Bouton de copyright';
 $string['enableabout'] = 'Bouton à propos de H5P';
 
+$string['sendusagestatistics'] = 'Contribute usage statistics';
+$string['sendusagestatistics_help'] = 'Usage statistics numbers will automatically be reported to help the developers better understand how H5P is used and to determine potential areas of improvement. Read more about which <a {$a}>data is collected on h5p.org</a>.';
 $string['enablesavecontentstate'] = 'Sauvegarder l\'état du contenu actuel';
 $string['enablesavecontentstate_help'] = 'Sauvegarder automatiquement l\'état actuel du contenu interactif pour chaque utilisateur. Ceci signifie que l\'utilisateur pourra reprendre là où il en est resté la fois précédente.';
 $string['contentstatefrequency'] = 'Fréquence des sauvegardes d\'état de vos contenus';
@@ -95,6 +97,12 @@ $string['upload'] = 'Uploader';
 $string['installedlibraries'] = 'Bibliothèques installées';
 $string['invalidtoken'] = 'Token de sécurité invalide.';
 $string['missingparameters'] = 'Paramètres manquants';
+$string['nocontenttype'] = 'No content type was specified.';
+$string['invalidcontenttype'] = 'The chosen content type is invalid.';
+$string['installdenied'] = 'You do not have permission to install content types. Contact the administrator of your site.';
+$string['downloadfailed'] = 'Downloading the requested library failed.';
+$string['validationfailed'] = 'The requested H5P was not valid';
+$string['validatingh5pfailed'] = 'Validating h5p package failed.';
 
 // H5P library list headers on admin page.
 $string['librarylisttitle'] = 'Titre';

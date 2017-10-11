@@ -82,6 +82,8 @@ $string['enableembed'] = 'Inkluder-knapp';
 $string['enablecopyright'] = 'Opphavsretts-knapp';
 $string['enableabout'] = 'Om H5P-knapp';
 
+$string['sendusagestatistics'] = 'Bidra med statistikk';
+$string['sendusagestatistics_help'] = 'Bruks-statistikk blir sendt til h5p.org for å bedre forstå hvordan H5P brukes og hvor det ka forbedres. Les mer om hvilke <a {$a}>data som blir samlet på h5p.org</a>.';
 $string['enablesavecontentstate'] = 'Lagre tilstanden til innholdet';
 $string['enablesavecontentstate_help'] = 'Automatisk lagring av hva brukeren har svart og hvor langt brukeren har kommet. Dette betyr brukeren kan fortsette der han avsluttet.';
 $string['contentstatefrequency'] = 'Frekvens for tilstandslagring';
@@ -105,6 +107,12 @@ $string['upload'] = 'Last opp';
 $string['installedlibraries'] = 'Installerte bibliotek';
 $string['invalidtoken'] = 'Ufyldig sikkerhetsnøkkel.';
 $string['missingparameters'] = 'Mangler parametre';
+$string['nocontenttype'] = 'Ingen bibliotek var angitt.';
+$string['invalidcontenttype'] = 'Det valgte biblioteket er ikke gyldig.';
+$string['installdenied'] = 'Du har ikke nok rettigheter til å installere biblioteket. Kontakt nettside-administrator.';
+$string['downloadfailed'] = 'Nedlastingen av det angitte biblioteket klarte ikke å fullføre.';
+$string['validationfailed'] = 'Valgt H5P er ikke gyldig.';
+$string['validatingh5pfailed'] = 'Validering av H5P pakken har feilet.';
 
 // H5P library list headers on admin page.
 $string['librarylisttitle'] = 'Tittel';

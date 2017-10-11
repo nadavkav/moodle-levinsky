@@ -97,6 +97,27 @@ class framework implements \H5PFrameworkInterface {
     }
 
     /**
+     * Check if the current user has access to the given cap.
+     * If not use the given error.
+     *
+     * @param string $cap
+     * @param string $error
+     * @return boolean
+     */
+    public static function has_access($cap, $error) {
+        $contextid = required_param('contextId', PARAM_RAW);
+        $context   = \context::instance_by_id($contextid);
+
+        if (!has_capability("mod/hvp:$cap", $context)) {
+            \H5PCore::ajaxError(get_string($error, 'hvp'));
+            http_response_code(403);
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
      * Get current H5P language code.
      *
      * @return string Language Code
@@ -328,6 +349,7 @@ class framework implements \H5PFrameworkInterface {
                 'Invalid security token.' => 'invalidtoken',
                 'No content type was specified.' => 'nocontenttype',
                 'The chosen content type is invalid.' => 'invalidcontenttype',
+                'You do not have permission to install content types. Contact the administrator of your site.' => 'installdenied',
                 'You do not have permission to install content types.' => 'installdenied',
                 'Validating h5p package failed.' => 'validatingh5pfailed',
                 'Failed to download the requested H5P.' => 'failedtodownloadh5p',

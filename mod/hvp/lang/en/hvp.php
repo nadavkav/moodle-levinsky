@@ -84,7 +84,7 @@ $string['sitekey'] = 'Site Key';
 $string['sitekeydescription'] = 'The site key is a secret that uniquely identifies this site with the Hub.';
 
 $string['sendusagestatistics'] = 'Contribute usage statistics';
-$string['sendusagestatistics_help'] = 'Usage statistics numbers will automatically be reported to help the developers better understand how H5P is used and to determine potential areas of improvement.';
+$string['sendusagestatistics_help'] = 'Usage statistics numbers will automatically be reported to help the developers better understand how H5P is used and to determine potential areas of improvement. Read more about which <a {$a}>data is collected on h5p.org</a>.';
 $string['enablesavecontentstate'] = 'Save content state';
 $string['enablesavecontentstate_help'] = 'Automatically save the current state of interactive content for each user. This means that the user may pick up where he left off.';
 $string['contentstatefrequency'] = 'Save content state frequency';
@@ -217,6 +217,9 @@ $string['nopermissiontorestrict'] = 'You do not have permission to restrict libr
 $string['nopermissiontosavecontentuserdata'] = 'You do not have permission to save content user data.';
 $string['nopermissiontosaveresult'] = 'You do not have permission to save result for this content.';
 $string['nopermissiontoviewresult'] = 'You do not have permission to view results for this content.';
+$string['nopermissiontouploadfiles'] = 'You do not have permission to upload files here.';
+$string['nopermissiontouploadcontent'] = 'You do not have permission to upload content here.';
+$string['nopermissiontoviewcontenttypes'] = 'You do not have permission to view the content types.';
 
 // Editor translations.
 $string['noziparchive'] = 'Your PHP version does not support ZipArchive.';

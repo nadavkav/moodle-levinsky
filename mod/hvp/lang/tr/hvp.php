@@ -74,6 +74,8 @@ $string['enableembed'] = 'Katma tuşu';
 $string['enablecopyright'] = 'Telif hakkı tuşu';
 $string['enableabout'] = 'H5P bilgisi tuşu';
 
+$string['sendusagestatistics'] = 'Contribute usage statistics';
+$string['sendusagestatistics_help'] = 'Usage statistics numbers will automatically be reported to help the developers better understand how H5P is used and to determine potential areas of improvement. Read more about which <a {$a}>data is collected on h5p.org</a>.';
 $string['enablesavecontentstate'] = 'İçerik durumunu kaydet';
 $string['enablesavecontentstate_help'] = 'Her bir kullanıcı için mevcut etkileşimsel çerik durumunu kendiliğinden kaydet. Böylece kullanıcı bıraktığı yerden devam edebilir.';
 $string['contentstatefrequency'] = 'İçerik durumunu kaydetme sıklığı';
@@ -95,6 +97,12 @@ $string['upload'] = 'Yükle';
 $string['installedlibraries'] = 'Kurulu Kitaplıklar';
 $string['invalidtoken'] = 'Güvenlik bilgisi geçersiz.';
 $string['missingparameters'] = 'Parametreler eksik';
+$string['nocontenttype'] = 'No content type was specified.';
+$string['invalidcontenttype'] = 'The chosen content type is invalid.';
+$string['installdenied'] = 'You do not have permission to install content types. Contact the administrator of your site.';
+$string['downloadfailed'] = 'Downloading the requested library failed.';
+$string['validationfailed'] = 'The requested H5P was not valid';
+$string['validatingh5pfailed'] = 'Validating h5p package failed.';
 
 // H5P library list headers on admin page.
 $string['librarylisttitle'] = 'Başlık';

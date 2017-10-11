@@ -282,6 +282,11 @@ function hvp_pluginfile($course, $cm, $context, $filearea, $args, $forcedownload
                 return false; // Invalid context.
             }
 
+            // Check permission.
+            if (!has_capability('mod/hvp:getcontent', $context)) {
+                return false;
+            }
+
             // Get core.
             $h5pinterface = \mod_hvp\framework::instance('interface');
             $h5pcore = \mod_hvp\framework::instance('core');
@@ -355,7 +360,7 @@ function hvp_grade_item_update($hvp, $grades=null) {
     }
 
     // Recalculate rawgrade relative to grademax.
-    if (isset($hvp->rawgrade) && isset($hvp->rawgrademax)) {
+    if (isset($hvp->rawgrade) && isset($hvp->rawgrademax) && $hvp->rawgrademax != 0) {
         // Get max grade Obs: do not try to use grade_get_grades because it
         // requires context which we don't have inside an ajax.
         $gradeitem = grade_item::fetch(array(
