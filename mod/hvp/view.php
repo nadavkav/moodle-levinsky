@@ -25,6 +25,7 @@ require_once("../../config.php");
 require_once("locallib.php");
 
 $id = required_param('id', PARAM_INT);
+$isembeded = optional_param('isembedded', false, PARAM_BOOL);  //  Support for lib/editor/atto/plugins/hvp
 
 $url = new \moodle_url('/mod/hvp/view.php', array('id' => $id));
 $PAGE->set_url($url);
@@ -47,7 +48,10 @@ if ($content === null) {
     print_error('invalidhvp');
 }
 
-// Log view.
+// If this H5P activity was embedded by using the atto plugin, use embedded layout.
+if ($isembeded) {
+    $PAGE->set_pagelayout('embedded');
+}
 new \mod_hvp\event(
         'content', null,
         $content['id'], $content['title'],
