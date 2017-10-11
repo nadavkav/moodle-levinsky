@@ -580,7 +580,7 @@ function enrol_get_my_courses($fields = null, $sort = null, $limit = 0, $coursei
     $basefields = array('id', 'category', 'sortorder',
                         'shortname', 'fullname', 'idnumber',
                         'startdate', 'visible',
-                        'groupmode', 'groupmodeforce', 'cacherev');
+                        'groupmode', 'groupmodeforce', 'cacherev', 'summary');
 
     if (empty($fields)) {
         $fields = $basefields;
