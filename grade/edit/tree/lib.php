@@ -74,6 +74,11 @@ class grade_edit_tree {
             $this->columns[] = grade_edit_tree_column::factory('weight', array('adv' => 'weight'));
         }
 
+        // todo: uses_multfactor (nadavkav)
+        if (has_capability('moodle/site:config', context_system::instance())) { // Only admin can see multfactor.
+            $this->columns[] = grade_edit_tree_column::factory('multfactor', array('adv' => 'multfactor'));
+        }
+
         $this->columns[] = grade_edit_tree_column::factory('range'); // This is not a setting... How do we deal with it?
         $this->columns[] = grade_edit_tree_column::factory('actions');
 
@@ -120,6 +125,22 @@ class grade_edit_tree {
         $is_category_item = false;
         if ($element['type'] == 'categoryitem' || $element['type'] == 'courseitem') {
             $is_category_item = true;
+        }
+
+        // Admin only - Add aggregation type select form field to main course category. (hack nadavkav)
+        $isadmin = has_capability('moodle/site:config', context_system::instance());
+        if ($isadmin && $element['type'] == 'category' && $object->parent == null ) {
+            $aggregation_options = grade_helper::get_aggregation_strings();
+            $form = '<select name="aggregationtype">';
+            foreach($aggregation_options as $id => $option) {
+                if ($object->aggregation == $id) {
+                    $form .= '<option selected=selected value="'.$id.'">'.$option.'</option>';
+                } else {
+                    $form .= '<option value="'.$id.'">'.$option.'</option>';
+                }
+            }
+            $form .= '</select><input type="hidden" name="category" value="'.$object->id.'">';
+            //$object->name .= $form;
         }
 
         $rowclasses = array();
@@ -404,7 +425,8 @@ class grade_edit_tree {
             return $OUTPUT->render_from_template('core_grades/weight_field', [
                 'id' => $item->id,
                 'itemname' => $itemname,
-                'value' => self::format_number($item->aggregationcoef)
+                // No real numbers in weights. (nadavkav)
+                'value' => round(self::format_number($item->aggregationcoef))
             ]);
 
         } else if ($aggcoef == 'aggregationcoefextraweightsum') {
@@ -412,12 +434,86 @@ class grade_edit_tree {
             $tpldata = [
                 'id' => $item->id,
                 'itemname' => $itemname,
-                'value' => self::format_number($item->aggregationcoef2 * 100.0),
+                // No real numbers in weights. (nadavkav)
+                'value' => round(self::format_number($item->aggregationcoef2 * 100.0)),
                 'checked' => $item->weightoverride,
                 'disabled' => !$item->weightoverride
             ];
             $str .= $OUTPUT->render_from_template('core_grades/weight_override_field', $tpldata);
 
+        }
+
+        return $str;
+    }
+
+    /**
+     * Given a grade_item object, returns a labelled multfactor input if an aggregation coefficient (weight or extra credit) applies to it.
+     * @param grade_item $item
+     * @return string HTML
+     */
+    static function get_multfactor_input($item) {
+        global $OUTPUT;
+
+        if (!is_object($item) || get_class($item) !== 'grade_item') {
+            throw new Exception('grade_edit_tree::get_multfactor_input($item) was given a variable that is not of the required type (grade_item object)');
+        }
+
+        if ($item->is_course_item()) {
+            return '';
+        }
+
+        $parent_category = $item->get_parent_category();
+        $parent_category->apply_forced_settings();
+        $aggcoef = $item->get_coefstring();
+
+        $itemname = $item->itemname;
+        if ($item->is_category_item()) {
+            // Remember, the parent category of a category item is the category itself.
+            $itemname = $parent_category->get_name();
+        }
+        $str = '';
+
+// TODO: make it use M33 mustache template like above get_weight_input() (nadavkav)
+
+        if ($aggcoef == 'aggregationcoefweight' || $aggcoef == 'aggregationcoef' || $aggcoef == 'aggregationcoefextraweight') {
+            return '<label class="accesshide" for="multfactor_'.$item->id.'">'.
+            get_string('extracreditvalue', 'grades', $itemname).'</label>'.
+            '<input type="text" size="6" id="multfactor_'.$item->id.'" name="multfactor_'.$item->id.'"
+                value="'.grade_edit_tree::format_number($item->multfactor).'" />';
+        } else if ($aggcoef == 'aggregationcoefextraweightsum') {
+
+            $checkboxname = 'multfactoroverride_' . $item->id;
+            $checkboxlbl = html_writer::tag('label', get_string('overridemultfactortofa', 'core_levinsky', $itemname),
+                array('for' => $checkboxname, 'class' => 'accesshide'));
+            $checkbox = html_writer::empty_tag('input', array('name' => $checkboxname,
+                'type' => 'hidden', 'value' => 0));
+            $checkbox .= html_writer::empty_tag('input', array('name' => $checkboxname,
+                'type' => 'checkbox', 'value' => 1, 'id' => $checkboxname, 'class' => 'multfactoroverride',
+                'checked' => ($item->multfactor ? 'checked' : null)));
+            $name = 'multfactor_' . $item->id;
+            $hiddenlabel = html_writer::tag(
+                'label',
+                get_string('multfactorofa', 'core_levinsky', $itemname),
+                array(
+                    'class' => 'accesshide',
+                    'for' => $name
+                )
+            );
+
+            $input = html_writer::empty_tag(
+                'input',
+                array(
+                    'type' =>   'text',
+                    'size' =>   6,
+                    'id' =>     $name,
+                    'name' =>   $name,
+                    'value' =>  grade_edit_tree::format_number($item->multfactor),
+                    'disabled' => ($item->multfactor ? null : 'disabled')
+                )
+            );
+
+            //$str .= $checkboxlbl . $checkbox . $hiddenlabel . $input;
+            $str .= $checkboxlbl . $hiddenlabel . $input;
         }
 
         return $str;
@@ -712,6 +808,49 @@ class grade_edit_tree_column_weight extends grade_edit_tree_column {
                 && (!$object->is_outcome_item() || $object->load_parent_category()->aggregateoutcomes)
                 && ($object->gradetype != GRADE_TYPE_SCALE || !empty($CFG->grade_includescalesinaggregation))) {
             $itemcell->text = grade_edit_tree::get_weight_input($item);
+        }
+
+        return $itemcell;
+    }
+}
+
+/**
+ * Class grade_edit_tree_column_multfactor
+ *
+ * @package   core_grades
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+class grade_edit_tree_column_multfactor extends grade_edit_tree_column {
+
+    public function get_header_cell() {
+        global $OUTPUT;
+        $headercell = clone($this->headercell);
+        $headercell->text = get_string('multfactor', 'grades').$OUTPUT->help_icon('multfactor', 'grades');
+        return $headercell;
+    }
+
+    public function get_category_cell($category, $levelclass, $params) {
+
+        $item = $category->get_grade_item();
+        $categorycell = parent::get_category_cell($category, $levelclass, $params);
+        $categorycell->text = grade_edit_tree::get_multfactor_input($item);
+        return $categorycell;
+    }
+
+    public function get_item_cell($item, $params) {
+        global $CFG;
+        if (empty($params['element'])) {
+            throw new Exception('Array key (element) missing from 2nd param of grade_edit_tree_column_multfactororextracredit::get_item_cell($item, $params)');
+        }
+        $itemcell = parent::get_item_cell($item, $params);
+        $itemcell->text = '&nbsp;';
+        $object = $params['element']['object'];
+
+        if (!in_array($object->itemtype, array('courseitem', 'categoryitem', 'category'))
+            && !in_array($object->gradetype, array(GRADE_TYPE_NONE, GRADE_TYPE_TEXT))
+            && (!$object->is_outcome_item() || $object->load_parent_category()->aggregateoutcomes)
+            && ($object->gradetype != GRADE_TYPE_SCALE || !empty($CFG->grade_includescalesinaggregation))) {
+            $itemcell->text = grade_edit_tree::get_multfactor_input($item);
         }
 
         return $itemcell;

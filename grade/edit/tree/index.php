@@ -166,12 +166,42 @@ if ($data = data_submitted() and confirm_sesskey()) {
     }
 
     // Update weights (extra credits) on categories and items.
+    $weight_item_update = true;
     foreach ($data as $key => $value) {
+        // Update multfactor items. (nadavkav)
+        if (preg_match('/^(multfactor)_([0-9]+)$/', $key, $matches)) {
+            $param   = $matches[1];
+            $aid     = $matches[2];
+            $value = unformat_float($value);
+            $value = clean_param($value, PARAM_FLOAT);
+
+            if (round($value) != $value) {
+                // todo: translation string.
+                \core\notification::error(get_string('multfactor', 'grades') . ' ' . get_string('error') . ' value == ' . $value . ' not valid');
+                $weight_item_update = false;
+                continue;
+            }
+
+            $grade_item = grade_item::fetch(array('id' => $aid, 'courseid' => $courseid));
+            $grade_item->$param = $value;
+
+            $grade_item->update();
+
+            $recreatetree = true;
+        }
+
         if (preg_match('/^weight_([0-9]+)$/', $key, $matches)) {
             $aid   = $matches[1];
 
             $value = unformat_float($value);
             $value = clean_param($value, PARAM_FLOAT);
+
+            if (round($value) != $value) {
+                // todo: translation string.
+                \core\notification::error(get_string('weight', 'grades').' '.get_string('error'). ' value == '.$value. ' not valid');
+                $weight_item_update = false;
+                continue;
+            }
 
             $grade_item = grade_item::fetch(array('id' => $aid, 'courseid' => $courseid));
 
@@ -186,8 +216,7 @@ if ($data = data_submitted() and confirm_sesskey()) {
                 $grade_item->aggregationcoef = $value;
             }
 
-            $grade_item->update();
-
+            $weight_item_update &= $grade_item->update();
             $recreatetree = true;
 
         // Grade item checkbox inputs.
@@ -199,10 +228,13 @@ if ($data = data_submitted() and confirm_sesskey()) {
             $grade_item = grade_item::fetch(array('id' => $aid, 'courseid' => $courseid));
             $grade_item->$param = $value;
 
-            $grade_item->update();
+            $weight_item_update &= $grade_item->update();
 
             $recreatetree = true;
         }
+    }
+    if ($weight_item_update) {
+        \core\notification::success(get_string('update'));
     }
 }
 
