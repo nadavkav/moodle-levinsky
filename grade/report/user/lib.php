@@ -526,6 +526,8 @@ class grade_report_user extends grade_report {
                     $classfeedback = $class;
                 }
                 $class .= " itemcenter ";
+
+                // Weight
                 if ($this->showweight) {
                     $data['weight']['class'] = $class;
                     $data['weight']['content'] = '-';
@@ -534,16 +536,20 @@ class grade_report_user extends grade_report {
 
                     // This obliterates the weight because it provides a more informative description.
                     if (is_numeric($hint['weight'])) {
-                        $data['weight']['content'] = format_float($hint['weight'] * 100.0, 2) . ' %';
-                        $gradeitemdata['weightraw'] = $hint['weight'];
-                        $gradeitemdata['weightformatted'] = $data['weight']['content'];
+                        $data['weight']['content'] = format_float($hint['weight'] * 100.0,
+                            $grade_grade->grade_item->get_decimals()); //. ' %'; // Remove weight ("percentage") sign (nadavkav)
                     }
-                    if ($hint['status'] != 'used' && $hint['status'] != 'unknown') {
-                        $data['weight']['content'] .= '<br>' . get_string('aggregationhint' . $hint['status'], 'grades');
-                        $gradeitemdata['status'] = $hint['status'];
+                    if (($hint['status'] !== 'used' && $hint['status'] !== 'unknown') ||
+                        ($data['weight']['content'] == 0 && $type !== 'courseitem ')) {
+                        //$data['weight']['content'] .= '<br>' . get_string('aggregationhint' . $hint['status'], 'grades');
+                        $data['weight']['content'] = get_string('notcalculated', 'core_levinsky'); // nadavkav
+                    }
+                    if ($type === 'courseitem') {
+                        $data['weight']['content'] = '&nbsp'; // Display nothing on course total line. (nadavkav)
                     }
                 }
 
+                // Grades from activity.
                 if ($this->showgrade) {
                     $gradeitemdata['graderaw'] = null;
                     $gradeitemdata['gradehiddenbydate'] = false;
@@ -568,19 +574,46 @@ class grade_report_user extends grade_report {
 
                         if ($this->canviewhidden) {
                             $gradeitemdata['graderaw'] = $gradeval;
+                            // Round real grade items. (nadavkav)
                             $data['grade']['content'] = grade_format_gradevalue($gradeval,
                                                                                 $grade_grade->grade_item,
-                                                                                true);
+                                                                                true,
+                                                                                GRADE_DISPLAY_TYPE_REAL);
                         }
                     } else {
                         $data['grade']['class'] = $class;
+                        // Round real grade items. (nadavkav)
                         $data['grade']['content'] = grade_format_gradevalue($gradeval,
                                                                             $grade_grade->grade_item,
-                                                                            true);
+                                                                            true,
+                                                                            GRADE_DISPLAY_TYPE_REAL);
+                        // IDEA: points from the activity, before gradebook modifications.
+                        //$grade_grade->rawgrade);
+
+                        // IDEA: Mark grades that were changed in gradebook (manually, factor, add, ...)
+                        //if (round($grade_grade->rawgrade) != round(grade_format_gradevalue($gradeval, $grade_grade->grade_item, true, GRADE_DISPLAY_TYPE_REAL)) ) {
+                        //    $data['grade']['content'] .= "*";
+                        //}
                         $gradeitemdata['graderaw'] = $gradeval;
                     }
                     $data['grade']['headers'] = "$header_cat $header_row grade";
                     $gradeitemdata['gradeformatted'] = $data['grade']['content'];
+
+                    if ($type === 'courseitem') {
+                        $data['grade']['content'] = '&nbsp'; // Display nothing on course total line. (nadavkav)
+                    }
+
+                    // IDEA: Add new rawgrade column (nadavkav)
+                    /*
+                    $data['rawgrade']['headers'] = $data['grade']['headers'];
+                    $data['rawgrade']['class'] = $data['grade']['class'];
+                    if ($grade_grade->rawgrade == 0) {
+                        $tmprawgrade = floor($grade_grade->finalgrade);
+                    } else {
+                        $tmprawgrade = floor($grade_grade->rawgrade);
+                    }
+                    $data['rawgrade']['content'] = $tmprawgrade;
+                    */
                 }
 
                 // Range
@@ -592,6 +625,10 @@ class grade_report_user extends grade_report {
                     $gradeitemdata['rangeformatted'] = $data['range']['content'];
                     $gradeitemdata['grademin'] = $grade_grade->grade_item->grademin;
                     $gradeitemdata['grademax'] = $grade_grade->grade_item->grademax;
+
+                    if ($type === 'courseitem') {
+                        $data['range']['content'] = '&nbsp'; // Display nothing on course total line. (nadavkav)
+                    }
                 }
 
                 // Percentage
@@ -685,7 +722,7 @@ class grade_report_user extends grade_report {
                     $gradeitemdata['feedback'] = '';
                     $gradeitemdata['feedbackformat'] = $grade_grade->feedbackformat;
 
-                    if ($grade_grade->overridden > 0 AND ($type == 'categoryitem' OR $type == 'courseitem')) {
+                    if ($grade_grade->overridden > 0 AND ($type === 'categoryitem' OR $type === 'courseitem')) {
                     $data['feedback']['class'] = $classfeedback.' feedbacktext';
                         $data['feedback']['content'] = get_string('overridden', 'grades').': ' . format_text($grade_grade->feedback, $grade_grade->feedbackformat);
                         $gradeitemdata['feedback'] = $grade_grade->feedback;
@@ -702,8 +739,20 @@ class grade_report_user extends grade_report {
                 // Contribution to the course total column.
                 if ($this->showcontributiontocoursetotal) {
                     $data['contributiontocoursetotal']['class'] = $class;
-                    $data['contributiontocoursetotal']['content'] = '-';
+                    // Display course final grade (nadavkav)
+                    if ($type === 'courseitem') {
+                        $data['contributiontocoursetotal']['content'] = get_string('finalgrade', 'grades').': ';
+                    } else {
+                        $data['contributiontocoursetotal']['content'] = '';
+                    }
+                    $data['contributiontocoursetotal']['content'] .= round(grade_format_gradevalue($gradeval,
+                        $grade_grade->grade_item, true, GRADE_DISPLAY_TYPE_REAL));
                     $data['contributiontocoursetotal']['headers'] = "$header_cat $header_row contributiontocoursetotal";
+
+                    // Mark Zero grade as not calculated. (nadavkav)
+                    if ($data['contributiontocoursetotal']['content'] === '0.00') {
+                        $data['contributiontocoursetotal']['content'] = get_string('notcalculated', 'core_levinsky');
+                    }
 
                 }
                 $this->gradeitemsdata[] = $gradeitemdata;
@@ -837,11 +886,17 @@ class grade_report_user extends grade_report {
                         $content = '-';
                         if (!is_null($gradeval)) {
                             $decimals = $grade_object->get_decimals();
-                            $content = format_float($gradeval, $decimals, true) . ' %';
+                            // Remove percentage sign from each calculated grade
+                            // and its contribution to course total grade (nadavkav)
+                            $content = format_float($gradeval, $decimals, true) ;//. ' %';
                         }
                         $this->tabledata[$key]['contributiontocoursetotal']['content'] = $content;
                         break;
                     }
+                    // IDEA todo: finish grade with wieght == 0 should not be printed?
+                    //if (round($element['object']->aggregationcoef2 * 100) == 0) {
+                    //    $this->tabledata[$key]['contributiontocoursetotal']['content'] = get_string('notcalculated', 'core_levinsky'); // nadavkav
+                    //}
                 }
             }
         }
