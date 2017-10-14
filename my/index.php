@@ -52,7 +52,7 @@ if ($hassiteconfig && moodle_needs_upgrading()) {
 
 $strmymoodle = get_string('myhome');
 
-if (isguestuser()) {  // Force them to see system default, no editing allowed
+if (isguestuser() || !$hassiteconfig) {  // Force them to see system default, no editing allowed
     // If guests are not allowed my moodle, send them to front page.
     if (empty($CFG->allowguestmymoodle)) {
         redirect(new moodle_url('/', array('redirect' => 0)));
@@ -62,7 +62,7 @@ if (isguestuser()) {  // Force them to see system default, no editing allowed
     $USER->editing = $edit = 0;  // Just in case
     $context = context_system::instance();
     $PAGE->set_blocks_editing_capability('moodle/my:configsyspages');  // unlikely :)
-    $header = "$SITE->shortname: $strmymoodle (GUEST)";
+    $header = "$SITE->shortname: $strmymoodle";// (GUEST)";
     $pagetitle = $header;
 
 } else {        // We are trying to view or edit our own My Moodle page
