@@ -5566,6 +5566,12 @@ function get_mailer($action='get') {
 
         $counter = 1;
 
+        if (!empty($CFG->debugsmtp)) {
+            echo "Setting SMTP debug level to: $CFG->debugsmtp\n";
+            $mailer->SMTPDebug = $CFG->debugsmtp;  // 0 - no debug ... 4 - low level full debug
+            $mailer->Debugoutput = (empty($CFG->debugsmtpoutput)) ? 'echo' : $CFG->debugsmtpoutput;
+        }
+
         if ($CFG->smtphosts == 'qmail') {
             // Use Qmail system.
             $mailer->isQmail();
@@ -5754,9 +5760,26 @@ function email_to_user($user, $from, $subject, $messagetext, $messagehtml = '', 
         return true;
     }
 
+    // Send email to second (private) email, if one is available from the Michlol. (nadavkav@gmail.com)
+    //echo strpos(';', $user->email);die;
+    if (strpos($user->email, ';')>0) {
+        list($user->email, $user->email2) = explode(';', $user->email);
+        echo "Split emails to: $user->email, $user->email2\n";
+    } else {
+        $user->email2 = $user->email;
+    }
+    //echo " First email: $user->email, And second email: $user->email2\n";
+
     if (!validate_email($user->email)) {
         // We can not send emails to invalid addresses - it might create security issue or confuse the mailer.
         debugging("email_to_user: User $user->id (".fullname($user).") email ($user->email) is invalid! Not sending.");
+        return false;
+    }
+
+    // Fix SendTo email to second (private) email, if one is available from the Michlol. (nadavkav@gmail.com)
+    if (!empty($user->email2) && !validate_email($user->email2)) {
+        // We can not send emails to invalid addresses - it might create security issue or confuse the mailer.
+        debugging("email_to_user: User $user->id (".fullname($user).") email2 ($user->email2) is invalid! Not sending.");
         return false;
     }
 
@@ -5790,6 +5813,8 @@ function email_to_user($user, $from, $subject, $messagetext, $messagehtml = '', 
     }
     $mail = get_mailer();
 
+    //$mail->SMTPDebug = 4;
+
     if (!empty($mail->SMTPDebug)) {
         echo '<pre>' . "\n";
     }
@@ -5813,6 +5838,15 @@ function email_to_user($user, $from, $subject, $messagetext, $messagehtml = '', 
     } else {
         $mail->Sender = $noreplyaddress;
     }
+
+    // Fix sender (from) email to second (private) email, if one is available from the Michlol. (nadavkav@gmail.com)
+    if (strpos($from->email, ';')>0) {
+        list($from->email, $from->email2) = explode(';', $from->email);
+        echo "Split 'from' emails to: $from->email, $from->email2\n";
+    } else {
+        $from->email2 = $from->email;
+    }
+    //echo " First from-email: $user->email, And second from-email: $user->email2\n";
 
     // Make sure that the explicit replyto is valid, fall back to the implicit one.
     if (!empty($replyto) && !validate_email($replyto)) {
@@ -5866,6 +5900,14 @@ function email_to_user($user, $from, $subject, $messagetext, $messagehtml = '', 
     }
 
     $temprecipients[] = array($user->email, fullname($user));
+    // Send email to second (private) email, if one is available from the Michlol. (nadavkav@gmail.com)
+    if (!empty($user->email2)) {
+        $temprecipients[] = array($user->email2, fullname($user));
+    }
+
+    //echo "Sending email to: \n";
+    //var_dump($temprecipients);
+    //echo "---\n";
 
     // Set word wrap.
     $mail->WordWrap = $wordwrapwidth;
