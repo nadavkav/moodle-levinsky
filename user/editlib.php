@@ -267,14 +267,19 @@ function useredit_shared_definition(&$mform, $editoroptions, $filemanageroptions
 
     // Add the necessary names.
     foreach (useredit_get_required_name_fields() as $fullname) {
-        $mform->addElement('text', $fullname,  get_string($fullname),  'maxlength="100" size="30"');
-        if ($stringman->string_exists('missing'.$fullname, 'core')) {
-            $strmissingfield = get_string('missing'.$fullname, 'core');
+        // Only admin can change user first and last names (nadavkav)
+        if (has_capability('moodle/site:config', context_system::instance())) {
+            $mform->addElement('text', $fullname,  get_string($fullname),  'maxlength="100" size="30"');
+            if ($stringman->string_exists('missing'.$fullname, 'core')) {
+                $strmissingfield = get_string('missing'.$fullname, 'core');
+            } else {
+                $strmissingfield = $strrequired;
+            }
+            $mform->addRule($fullname, $strmissingfield, 'required', null, 'client');
+            $mform->setType($fullname, PARAM_NOTAGS);
         } else {
-            $strmissingfield = $strrequired;
+            $mform->addElement('static', $fullname,  get_string($fullname),  'maxlength="100" size="30"');
         }
-        $mform->addRule($fullname, $strmissingfield, 'required', null, 'client');
-        $mform->setType($fullname, PARAM_NOTAGS);
     }
 
     $enabledusernamefields = useredit_get_enabled_name_fields();
@@ -291,9 +296,14 @@ function useredit_shared_definition(&$mform, $editoroptions, $filemanageroptions
                 . get_string('emailchangecancel', 'auth') . '</a>';
         $mform->addElement('static', 'emailpending', get_string('email'), $notice);
     } else {
-        $mform->addElement('text', 'email', get_string('email'), 'maxlength="100" size="30"');
-        $mform->addRule('email', $strrequired, 'required', null, 'client');
-        $mform->setType('email', PARAM_RAW_TRIMMED);
+        // Only admin can change email (nadavkav)
+        if (has_capability('moodle/site:config', context_system::instance())) {
+            $mform->addElement('text', 'email', get_string('email'), 'maxlength="100" size="30"');
+            $mform->addRule('email', $strrequired, 'required', null, 'client');
+            $mform->setType('email', PARAM_RAW_TRIMMED);//PARAM_EMAIL);
+        } else {
+            $mform->addElement('static', 'email', get_string('email'), 'maxlength="100" size="30"');
+        }
     }
 
     $choices = array();
