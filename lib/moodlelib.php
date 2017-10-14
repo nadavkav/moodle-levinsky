@@ -9863,10 +9863,20 @@ function get_home_page() {
  */
 function get_course_display_name_for_list($course) {
     global $CFG;
+
+    // Galit shortname - remove Teacher's name from course name.
+    $noteachershortname = explode(') - ', $course->fullname);
+    if (isset($noteachershortname[1]))
+        $fullcourseshortname = $noteachershortname[1];
+    //  if (!empty($noteachershortname[0])) $fullcourseshortname = $noteachershortname[0]." - $fullcourseshortname";
+    if (!empty($noteachershortname[0])) $fullcourseshortname = $noteachershortname[0];
+    // Galit shortname end
+
     if (!empty($CFG->courselistshortnames)) {
         if (!($course instanceof stdClass)) {
             $course = (object)convert_to_array($course);
         }
+        $course->shortname = $fullcourseshortname.')' ; // Galit - update course's shortname.
         return get_string('courseextendednamedisplay', '', $course);
     } else {
         return $course->fullname;
