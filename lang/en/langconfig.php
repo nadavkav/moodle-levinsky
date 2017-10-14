@@ -55,3 +55,4 @@ $string['thisdirectionvertical'] = 'btt';
 $string['thislanguage'] = 'English';
 $string['thislanguageint'] = 'English';
 $string['thousandssep'] = ',';
+$string['localisedlistlables'] = 'A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z';
