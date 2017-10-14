@@ -23,6 +23,8 @@
  */
 
 defined('MOODLE_INTERNAL') || die();
+require_once($CFG->dirroot. '/mod/assign/feedback/editpdf/settingslib.php');
+require_once($CFG->libdir. '/pdflib.php');
 
 // Enabled by default.
 $settings->add(new admin_setting_configcheckbox('assignfeedback_editpdf/default',
@@ -47,3 +49,9 @@ $settings->add(new admin_setting_heading('pathtogs', get_string('pathtogs', 'adm
 $url = new moodle_url('/mod/assign/feedback/editpdf/testgs.php');
 $link = html_writer::link($url, get_string('testgs', 'assignfeedback_editpdf'));
 $settings->add(new admin_setting_heading('testgs', '', $link));
+
+$settings->add(new assignfeedback_editpdf_admin_setting_configselect('assignfeedback_editpdf/editfont',
+    get_string('fontname', 'assignfeedback_editpdf'),
+    get_string('fontname_help', 'assignfeedback_editpdf', K_PATH_FONTS),
+    PDF_DEFAULT_FONT,
+    null));
