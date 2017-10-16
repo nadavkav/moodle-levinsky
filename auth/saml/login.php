@@ -21,7 +21,7 @@ if(isset($saml_config->autologin)  && $saml_config->autologin)
        exit;
 }
 
-$context = CONTEXT_SYSTEM::instance();
+$context = context_system::instance();
 $PAGE->set_url("$CFG->httpswwwroot/auth/saml/login.php");
 $PAGE->set_context($context);
 $PAGE->set_pagelayout('login');
@@ -43,7 +43,16 @@ $PAGE->set_title("$site->fullname: $loginsite");
 $PAGE->set_heading("$site->fullname");
 
 echo $OUTPUT->header();
+?>
+<!--    <div id="sitename">--><?php //echo format_string($SITE->shortname, true, array('context' => context_course::instance(SITEID))) ?><!--</div>-->
 
+    <!--div class="headerlogo">
+        <img src="<?php echo $PAGE->theme->setting_file_url('headerlogo', 'headerlogo');?>" class="img-fluid" alt="Responsive image">
+    </div-->
+
+<div id="logo"></div>
+
+<?php
 if ($show_instructions) {
     $columns = 'twocolumns';
 } else {
@@ -182,7 +191,7 @@ echo '</center>';
     </div>
 <?php } ?>
 </div>
-
+    <div id="moodlelogo"></div>
 <?php
 
 if (!empty($CFG->loginpageautofocus)) {
