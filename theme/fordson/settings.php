@@ -41,6 +41,7 @@ if ($ADMIN->fulltree) {
     $settings = new theme_boost_admin_settingspage_tabs('themesettingfordson', get_string('configtitle', 'theme_fordson'));
 
     require('settings/presets_settings.php');
+    require('settings/my_course_filter_settings.php');
     require('settings/colours_settings.php');
     require('settings/menu_settings.php');
     require('settings/content_settings.php');
