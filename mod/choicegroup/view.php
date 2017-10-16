@@ -68,7 +68,7 @@ $eventparams = array(
 );
 
 $current = choicegroup_get_user_answer($choicegroup, $USER);
-if ($action == 'delchoicegroup' and confirm_sesskey() and is_enrolled($context, NULL, 'mod/choicegroup:choose') and $choicegroup->allowupdate and !($choicegroup->timeclose and (time() > $choicegroup->timeclose))) {
+if ($action == 'delchoicegroup' and confirm_sesskey() and is_enrolled($context, NULL, 'mod/choicegroup:choose') and $choicegroup->allowupdate) {
     // user wants to delete his own choice:
     if ($current !== false) {
         if (groups_is_member($current->id, $USER->id)) {
@@ -87,6 +87,11 @@ if ($action == 'delchoicegroup' and confirm_sesskey() and is_enrolled($context, 
             $completion->update_state($cm, COMPLETION_INCOMPLETE);
         }
     }
+}
+
+if ($action == 'newgroup') {
+    choicegroup_insert_group($course->id,$choicegroup->id,$choicegroup->name);
+    redirect("view.php?id=$cm->id");
 }
 
 $PAGE->set_title(format_string($choicegroup->name));
@@ -213,10 +218,12 @@ $renderer = $PAGE->get_renderer('mod_choicegroup');
 if ( (!$current or $choicegroup->allowupdate) and $choicegroupopen and is_enrolled($context, NULL, 'mod/choicegroup:choose')) {
 // They haven't made their choicegroup yet or updates allowed and choicegroup is open
 
-    echo $renderer->display_options($options, $cm->id, $choicegroup->display, $choicegroup->publish, $choicegroup->limitanswers, $choicegroup->showresults, $current, $choicegroupopen, false, $choicegroup->multipleenrollmentspossible);
+    echo $renderer->display_options($options, $cm->id, $choicegroup->display, $choicegroup->publish, $choicegroup->limitanswers,
+        $choicegroup->showresults, $current, $choicegroupopen, false, $choicegroup->multipleenrollmentspossible, $choicegroup->allowcreategroup);
 } else {
     // form can not be updated
-    echo $renderer->display_options($options, $cm->id, $choicegroup->display, $choicegroup->publish, $choicegroup->limitanswers, $choicegroup->showresults, $current, $choicegroupopen, true, $choicegroup->multipleenrollmentspossible);
+    echo $renderer->display_options($options, $cm->id, $choicegroup->display, $choicegroup->publish, $choicegroup->limitanswers,
+        $choicegroup->showresults, $current, $choicegroupopen, true, $choicegroup->multipleenrollmentspossible);
 }
 $choicegroupformshown = true;
 
@@ -249,7 +256,7 @@ if ( $choicegroup->showresults == CHOICEGROUP_SHOWRESULTS_ALWAYS or
     ($choicegroup->showresults == CHOICEGROUP_SHOWRESULTS_AFTER_CLOSE and !$choicegroupopen)) {
 }
 else if ($choicegroup->showresults == CHOICEGROUP_SHOWRESULTS_NOT) {
-    echo $OUTPUT->box(get_string('neverresultsviewable', 'choicegroup'));
+  //  echo $OUTPUT->box(get_string('neverresultsviewable', 'choicegroup'));  // hanna 4/5/16
 }
 else if ($choicegroup->showresults == CHOICEGROUP_SHOWRESULTS_AFTER_ANSWER && !$current) {
     echo $OUTPUT->box(get_string('afterresultsviewable', 'choicegroup'));
