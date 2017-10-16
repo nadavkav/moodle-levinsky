@@ -36,7 +36,9 @@ $login   = optional_param('loginpage', 0, PARAM_BOOL);
 if ($login) {
     $redirect = get_login_url();
 } else {
-    $redirect = $CFG->wwwroot.'/';
+    //$redirect = $CFG->wwwroot.'/';
+    // Special logout using SAML and IdP (nadavkav)
+    $redirect = 'https://portal.levinsky.ac.il/';
 }
 
 if (!isloggedin()) {
