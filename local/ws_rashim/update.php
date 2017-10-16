@@ -91,5 +91,3 @@ if ($dbman->table_exists ( 'assignment' ) && count ( $rows ) > 0) {
 }
 
 echo $OUTPUT->footer ();
-
-?>
