@@ -31,6 +31,7 @@ require_once($CFG->dirroot . '/backup/util/interfaces/checksumable.class.php');
 require_once($CFG->dirroot . '/backup/backup.class.php');
 
 $courseid = optional_param('courseid', 0, PARAM_INT);
+$courseyear = optional_param('courseyear', '', PARAM_RAW);
 $page = optional_param('page', 0, PARAM_INT); // This represents which backup we are viewing.
 
 // Required for constants in backup_cron_automated_helper
@@ -126,11 +127,11 @@ $table->data = array();
 
 $select = ', ' . context_helper::get_preload_record_columns_sql('ctx');
 $join = "LEFT JOIN {context} ctx ON (ctx.instanceid = c.id AND ctx.contextlevel = :contextlevel)";
-$sql = "SELECT bc.*, c.id as courseid, c.fullname $select
+$sql = "SELECT bc.*, c.id as courseid, c.fullname, c.shortname $select
           FROM {backup_courses} bc
           JOIN {course} c ON c.id = bc.courseid
-               $join";
-$rs = $DB->get_recordset_sql($sql, array('contextlevel' => CONTEXT_COURSE));
+               $join WHERE c.shortname LIKE :courseyear ";
+$rs = $DB->get_recordset_sql($sql, array('contextlevel' => CONTEXT_COURSE, 'courseyear' => "%$courseyear%"));
 foreach ($rs as $backuprow) {
 
     // Cache the course context
@@ -160,7 +161,7 @@ foreach ($rs as $backuprow) {
     $status->attributes = array('class' => $statusclass);
 
     // Create the row and add it to the table
-    $backuprowname = format_string($backuprow->fullname, true, array('context' => context_course::instance($backuprow->courseid)));
+    $backuprowname = format_string($backuprow->shortname, true, array('context' => context_course::instance($backuprow->courseid)));
     $backuplogsurl = new moodle_url('/report/backups/index.php', array('courseid' => $backuprow->courseid));
     $backuplogsicon = new pix_icon('t/viewdetails', get_string('viewlogs', 'report_backups'));
     $cells = array(
