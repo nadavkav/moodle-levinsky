@@ -52,4 +52,5 @@ if ($ADMIN->fulltree) {
     require('settings/markettiles_settings.php');
     require('settings/footer_settings.php');
     require('settings/customlogin_settings.php');
+    require('settings/my_course_filter_settings.php');
 }
