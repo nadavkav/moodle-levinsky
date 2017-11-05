@@ -155,8 +155,19 @@ class MoodleQuickForm_modgrade extends MoodleQuickForm_group {
 
         // Maximum grade textbox.
         $langmaxgrade = get_string('modgrademaxgrade', 'grades');
-        $this->maxgradeformelement = $this->createFormElement('text', 'modgrade_point', $langmaxgrade, array());
-        $this->maxgradeformelement->setHiddenLabel(true);
+
+        // Disable max grade for teachers, Only admin can change activity's max grade. (nadavkav)
+        if (has_capability('moodle/site:config', context_system::instance())) {
+            $this->maxgradeformelement = $this->createFormElement('text', 'modgrade_point', $langmaxgrade, array());
+            $this->maxgradeformelement->setHiddenLabel(true);
+        } else {
+            $this->maxgradeformelement = $this->createFormElement('static', 'modgrade_point', $langmaxgrade, array());
+
+            $this->maxgradeformelement_hidden = $this->createFormElement('hidden', 'modgrade_point', $CFG->gradepointdefault, array());
+            //$this->maxgradeformelement_hidden->setHiddenLabel(true);
+            $maxgradeformelementid_hidden = $this->generate_modgrade_subelement_id('modgrade_point');
+            $this->maxgradeformelement->updateAttributes(array('id' => $maxgradeformelementid_hidden));
+        }
         $maxgradeformelementid = $this->generate_modgrade_subelement_id('modgrade_point');
         $this->maxgradeformelement->updateAttributes(array('id' => $maxgradeformelementid));
 
@@ -241,6 +252,10 @@ class MoodleQuickForm_modgrade extends MoodleQuickForm_group {
                 array('for' => $this->maxgradeformelement->getAttribute('id')));
             $this->_elements[] = $this->createFormElement('static', 'pointlabel', '', $label);
             $this->_elements[] = $this->maxgradeformelement;
+            // Disable max grade for teachers, Only admin can change activity's max grade. (nadavkav)
+            if (!has_capability('moodle/site:config', context_system::instance())) {
+                $this->_elements[] = $this->maxgradeformelement_hidden;
+            }
             $this->_elements[] = $this->createFormElement('static', 'pointspacer', '', '<br />');
         }
     }
