@@ -1,0 +1,11 @@
+Overview
+========
+
+On each user profile update or creating of a new user, we call MICHLOL WS to get the user's role in the organization:
+96 = management
+3 = teacher
+no number = student (as we use MICHLOL WS #9 for management and academic stuff only)
+
+Above values are updated in the "department" user profile field.
+
+Note: Error in user id number will result in "no-status" value set into the user "department" field.
