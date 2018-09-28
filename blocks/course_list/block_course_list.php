@@ -57,7 +57,21 @@ class block_course_list extends block_list {
 
         if (empty($CFG->disablemycourses) and isloggedin() and !isguestuser() and
           !(has_capability('moodle/course:update', context_system::instance()) and $adminseesall)) {    // Just print My Courses
-            if ($courses = enrol_get_my_courses()) {
+            // As this is producing navigation sort order should default to $CFG->navsortmycoursessort instead
+            // of using the default.
+            if (!empty($CFG->navsortmycoursessort)) {
+                $sortorder = 'visible DESC, ' . $CFG->navsortmycoursessort . ' ASC';
+                // Special sorting of idnumber desc
+                if ($CFG->navsortmycoursessort === 'idnumberdesc') {
+                    $sortorder = 'visible DESC, idnumber DESC';
+                }
+                if ($CFG->navsortmycoursessort === 'lastaccess') {
+                    $sortorder = 'visible DESC, lastaccess DESC';
+                }
+            } else {
+                $sortorder = 'visible DESC, sortorder ASC';
+            }
+            if ($courses = enrol_get_my_courses(NULL, $sortorder)) {
                 foreach ($courses as $course) {
                     $coursecontext = context_course::instance($course->id);
                     $linkcss = $course->visible ? "" : " class=\"dimmed\" ";
