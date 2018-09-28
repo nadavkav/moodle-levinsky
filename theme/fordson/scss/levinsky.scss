@@ -1,0 +1,228 @@
+/* Fix for left side scrollbars in RTL mode */
+.headerbkg {
+    width: 99%;
+}
+
+/* SAML loging page */
+#page-auth-saml-login .loginpanel {
+    width: 40%;
+    margin: 0 auto;
+    padding: 3em 0em;
+}
+
+@media screen and (max-width: 480px) {
+    #page-auth-saml-login .loginpanel {
+        width: 100%;
+    }
+}
+
+#page-auth-saml-login .subcontent.loginsub {
+    margin: 2em;
+}
+
+#page-auth-saml-login .loginpanel > h2,
+#page-auth-saml-login .subcontent.loginsub > .desc {
+    font-weight: 700;
+    font-size: 1.7em;
+    text-align: center;
+}
+
+#page-auth-saml-login .form-label {
+    width: 30%;
+    display: inline-block;
+}
+
+#page-auth-saml-login .form-input {
+    width: 65%;
+    display: inline-block;
+}
+
+#page-auth-saml-login #username,
+#page-auth-saml-login #password {
+    width: 8em;
+}
+
+#page-auth-saml-login .subcontent.guestsub {
+    text-align: center;
+}
+
+#page-auth-saml-login #page-content {
+    max-width: 80%;
+    margin: 0 auto;
+    opacity: 0.9;
+}
+
+#page-auth-saml-login {
+    background-image: url("https://moodle.levinsky.ac.il/theme/fordson/pix/levinsky/levinsky-front-loginpage.jpg");
+}
+
+#page-auth-saml-login #logo {
+    background-image: url("https://moodle.levinsky.ac.il/theme/fordson/pix/levinsky/logo.png");
+    width: 400px;
+    height: 80px;
+    margin: 0 auto;
+}
+
+#page-auth-saml-login #moodlelogo {
+    background-image: url("https://moodle.levinsky.ac.il/theme/fordson/pix/levinsky/moodle60.png");
+    width: 60px;
+    height: 60px;
+    margin: 0 auto;
+}
+
+/* Course drag and drop upload styles */
+#dndupload-status {
+    position: fixed;
+    left: 0;
+    width: 40%;
+    margin: 0 30%;
+    padding: 6px;
+    border: 1px solid #bce8f1;
+    text-align: center;
+    background: #d9edf7;
+    color: #3a87ad;
+    z-index: 1;
+    box-shadow: 2px 2px 5px 1px #ccc;
+    border-radius: 8px;
+}
+
+.dndupload-preview {
+    color: #909090;
+    border: 1px dashed #909090;
+    list-style: none;
+    margin-top: .2em;
+    padding: .3em;
+}
+
+.dndupload-preview img.icon {
+    vertical-align: text-bottom;
+    padding: 0;
+}
+
+.dndupload-progress-outer {
+    overflow: hidden;
+    height: 20px;
+    margin-bottom: 20px;
+    background-color: #f7f7f7;
+    background-image: linear-gradient(to bottom, #f5f5f5, #f9f9f9);
+    background-repeat: repeat-x;
+    filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#fff5f5f5', endColorstr='#fff9f9f9', GradientType=0);
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+}
+
+.dndupload-progress-inner {
+    width: 0%;
+    height: 100%;
+    color: #fff;
+    float: left;
+    font-size: 12px;
+    text-align: center;
+    text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.25);
+    background-color: #0e90d2;
+    background-image: linear-gradient(to bottom, #149bdf, #0480be);
+    background-repeat: repeat-x;
+    filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#ff149bdf', endColorstr='#ff0480be', GradientType=0);
+    box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.15);
+    box-sizing: border-box;
+    transition: width 0.6s ease;
+}
+
+.dndupload-hidden {
+    display: none;
+}
+
+/* Fix - Assign PDF online editor display position */
+.assignfeedback_editpdf_widget {
+    top: 5em !important;
+}
+
+.assignfeedback_editpdf_widget .drawingregion {
+    right: 0;
+    left: 0;
+}
+
+/* Gray out hidden course section */
+li.section.hidden,
+.block.hidden,
+.block.invisible {
+    background-color: #eee;
+}
+
+// https://www.cssscript.com/pure-css-circular-percentage-bar/
+//@import "circle_css.scss";
+
+// My dashboard course completion progress circle.
+/*
+.coursebox .progress {
+    width: 3rem;
+    height: 3rem;
+    padding: 0;
+    margin: 0;
+}
+.progress .tiny {
+    font-size: 40px;
+}
+*/
+/* Temporary hack, until we get the circle progress up */
+.coursebox .progress {
+    display: block;
+    width: 100%;
+    height: 1.5rem;
+    margin: 0;
+    background: none;
+    box-shadow: none;
+}
+
+/* Fix course activity completion report */
+#page-report-progress-index .rotated-text {
+    display: -webkit-box;
+    //display: inline-block;
+}
+
+#page-auth-saml-login #sitename {
+    display: none;
+}
+
+@media screen and (max-width: 480px) {
+    #page-auth-saml-login #logo {
+        display: none;
+    }
+    #page-auth-saml-login #page-content {
+        max-width: 100%;
+    }
+    #page-auth-saml-login #sitename {
+        display: block;
+    }
+
+}
+
+/* My page */
+.block_course_overview .activity_info {
+    float: left;
+    width: 50%;
+    clear: none;
+}
+
+/* Quiz question multi choice - items */
+.multichoice .answer p {
+    display: inline;
+}
+
+/* Beautify mod-iContent */
+.path-mod-icontent .full-paging-buttonbar {
+    text-align: center;
+    background: #E7ECF3;
+    padding: 15px;
+}
+
+/* Beautify mod-iContent */
+.path-mod-icontent button.load-page {
+    line-height: inherit;
+    border-radius: 13px;
+    border: 2px solid #a3c3ed;
+    background: #fff;
+    min-width: 29px;
+    margin: 0 2px;
+    font-weight: bold;
+}
