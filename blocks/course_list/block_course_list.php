@@ -64,6 +64,11 @@ class block_course_list extends block_list {
             } else {
                 $sortorder = 'visible DESC, sortorder ASC';
             }
+            // Special sorting of idnumber desc
+            if (!empty($CFG->navsortmycoursessort) &&
+                ($CFG->navsortmycoursessort === 'idnumberdesc' || $CFG->navsortmycoursessort === 'lastaccess')) {
+                $sortorder = 'visible DESC, idnumber DESC';
+            }
             if ($courses = enrol_get_my_courses(NULL, $sortorder)) {
                 foreach ($courses as $course) {
                     $coursecontext = context_course::instance($course->id);
