@@ -983,6 +983,9 @@ class course_enrolment_manager {
         $users = array();
         foreach ($userroles as $userrole) {
             $contextid = $userrole->contextid;
+            // Hide users with system roles from list hack, but admin can see (nadavkav)
+            if (!has_capability('moodle/site:config', $context) &&
+                !has_capability('moodle/course:reviewotherusers', $context, $userrole->id)) continue;
             unset($userrole->contextid); // This would collide with user avatar.
             if (!array_key_exists($userrole->id, $users)) {
                 $users[$userrole->id] = $this->prepare_user_for_display($userrole, $extrafields, $now);
