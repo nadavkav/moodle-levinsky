@@ -177,6 +177,8 @@ preferences,moodle|/user/preferences.php|preferences',
         'fullname' => new lang_string('sort_fullname', 'admin'),
         'shortname' => new lang_string('sort_shortname', 'admin'),
         'idnumber' => new lang_string('sort_idnumber', 'admin'),
+        'idnumberdesc' => new lang_string('sort_idnumber', 'admin') .' '. new lang_string('descending', 'data'),
+        'lastaccess' => new lang_string('lastaccess') ,
     );
     $temp->add(new admin_setting_configselect('navsortmycoursessort', new lang_string('navsortmycoursessort', 'admin'), new lang_string('navsortmycoursessort_help', 'admin'), 'sortorder', $sortoptions));
     $temp->add(new admin_setting_configtext('navcourselimit', new lang_string('navcourselimit', 'admin'),
