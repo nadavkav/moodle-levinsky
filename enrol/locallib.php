@@ -384,6 +384,8 @@ class course_enrolment_manager {
                 $conditions[] = 'u.'.$field;
             }
             $conditions[] = $DB->sql_fullname('u.firstname', 'u.lastname');
+            // Enable user enrollment search by email (nadavkav)
+            $conditions[] = 'u.email';
             if ($searchanywhere) {
                 $searchparam = '%' . $search . '%';
             } else {
