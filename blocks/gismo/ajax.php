@@ -115,11 +115,11 @@ switch ($query) {
         $result->name = get_string($lang_index, "block_gismo");
         // links
         $result->links = null;
-        
+
         $student_resource_access = false;
         $ctu_filters .= " GROUP BY course, timedate, userid"; //BUG FIX WHEN GISMO EXPORTER RUN MORE THEN ONCE A DAY, we need to group by course,timedate & USERID
         $sort = "timedate ASC";
-        $fields = " course, userid, timedate, sum(numval) as numval"; //BUG FIX WHEN GISMO EXPORTER RUN MORE THEN ONCE A DAY
+        $fields = " course, userid, FROM_UNIXTIME(timedate) as timedate, sum(numval) as numval"; //BUG FIX WHEN GISMO EXPORTER RUN MORE THEN ONCE A DAY
         //postgreSQL solve problem on GROUP BY
         if ($CFG->dbtype === "pgsql") {
             $student_resource_access = $DB->get_records_sql("SELECT ROW_NUMBER() over(), a.* FROM (SELECT $fields"
@@ -344,10 +344,10 @@ switch ($query) {
             $result->data = $resource_accesses;
         }
         break;
-    case "teacher@assignments":
-    case "student@assignments":
+    case "teacher@assignmentgrades":
+    case "student@assignmentgrades":
         // chart title
-        $result->name = get_string("assignments_chart_title", "block_gismo");
+        $result->name = get_string("assignmentgrades_chart_title", "block_gismo");
         // links
         $result->links = null;
         // chart data
@@ -357,7 +357,7 @@ switch ($query) {
                 WHERE a.course = " . intval($course_id) . " AND g.timemodified BETWEEN " . $from . " AND " . $to . "
             ";
         // need to filter on user id ?
-        if ($query === "student@assignments") {
+        if ($query === "student@assignmentgrades") {
             $qry .= " AND g.userid = " . $current_user_id;
         }
         $entries = $DB->get_records_sql($qry);
@@ -450,10 +450,10 @@ switch ($query) {
             }
         }
         break;
-    case "teacher@quizzes":
-    case "student@quizzes":
+    case "teacher@quizgrades":
+    case "student@quizgrades":
         // chart title
-        $result->name = get_string("quizzes_chart_title", "block_gismo");
+        $result->name = get_string("quizgrades_chart_title", "block_gismo");
         // links
         $result->links = null;
         // chart data
@@ -463,7 +463,7 @@ switch ($query) {
                 WHERE q.course = " . intval($course_id) . " AND g.timemodified BETWEEN " . $from . " AND " . $to . "
             ";
         // need to filter on user id ?
-        if ($query === "student@quizzes") {
+        if ($query === "student@quizgrades") {
             $qry .= " AND g.userid = " . $current_user_id;
         }
         $entries = $DB->get_records_sql($qry);
@@ -485,13 +485,17 @@ switch ($query) {
             }
         }
         break;
+    case "teacher@assignments":
     case "teacher@chats":
     case "teacher@forums":
+    case "teacher@quizzes":
     case "teacher@wikis":
         // specific info
         $spec_info = array(
+            "teacher@assignments" => array("title" => "assignments_chart_title", "subtitle" => "assignments_ud_chart_title", "activity" => "assignment", "back" => "assignments"),
             "teacher@chats" => array("title" => "chats_chart_title", "subtitle" => "chats_ud_chart_title", "activity" => "chat", "back" => "chats"),
             "teacher@forums" => array("title" => "forums_chart_title", "subtitle" => "forums_ud_chart_title", "activity" => "forum", "back" => "forums"),
+            "teacher@quizzes" => array("title" => "quizzes_chart_title", "subtitle" => "quizzes_ud_chart_title", "activity" => "quiz", "back" => "quizzes"),
             "teacher@wikis" => array("title" => "wikis_chart_title", "subtitle" => "wikis_ud_chart_title", "activity" => "wiki", "back" => "wikis")
         );
         switch ($subtype) {
@@ -515,12 +519,12 @@ switch ($query) {
         $ctu_filters .= "AND activity = ?";
         array_push($ctu_params, $spec_info[$query]["activity"]);
         // chart data
-        
+
         $activity_data = $DB->get_records_select("block_gismo_activity", $ctu_filters, $ctu_params, "time ASC");
         // result
         $result->error = $ctu_filters;
         $result->arr = $ctu_params;
-        
+
         if (is_array($activity_data) AND count($activity_data) > 0) {
             $result->data = $activity_data;
         }
@@ -572,13 +576,17 @@ switch ($query) {
             $result->data = $activity_data;
         }
         break;
+    case "student@assignments":
     case "student@chats":
     case "student@forums":
+    case "student@quizzes":
     case "student@wikis":
         // specific info
         $spec_info = array(
+            "student@assignments" => array("title" => "assignments_chart_title", "activity" => "assignment"),
             "student@chats" => array("title" => "chats_chart_title", "activity" => "chat"),
             "student@forums" => array("title" => "forums_chart_title", "activity" => "forum"),
+            "student@quizzes" => array("title" => "quizzes_chart_title", "activity" => "quiz"),
             "student@wikis" => array("title" => "wikis_chart_title", "activity" => "wiki")
         );
         // chart title
@@ -644,7 +652,7 @@ switch ($query) {
             // chart title
             $result->name = get_string("completion_quiz_chart_title", "block_gismo");
         }
-        
+
         // links
         $result->links = null;
         // chart data
@@ -652,7 +660,7 @@ switch ($query) {
         //COMPLETION_COMPLETE = 1
         //COMPLETION_COMPLETE_PASS = 2
         //COMPLETION_COMPLETE_FAIL = 3
-        
+
         $qry = "
                 SELECT cmc.id as cmc_id, cm.instance as item_id, cmc.completionstate as completionstate, cmc.timemodified as timemodified, cmc.userid as userid, m.name as type
             FROM {course_modules_completion} cmc
@@ -661,13 +669,13 @@ switch ($query) {
             WHERE (cmc.completionstate = 1 OR cmc.completionstate = 2)
             AND (m.name = '" . $itemtype . "')
             AND cm.course = " . intval($course_id) . " AND cmc.timemodified BETWEEN " . $from . " AND " . $to;
-        
+
         // need to filter on user id ?
         if ($query === "student@completion-assignments" || $query === "student@completion-assignments22" || $query === "student@completion-chats" || $query === "student@completion-forums" || $query === "student@completion-wikis" || $query === "student@completion-quizzes" || $query === "student@completion-resources") {
             $qry .= " AND cmc.userid = " . $current_user_id;
         }
         $entries = $DB->get_records_sql($qry);
-        
+
         // build result
         if (is_array($entries) AND count($entries) > 0 AND
                 is_array($users) AND count($users) > 0) {

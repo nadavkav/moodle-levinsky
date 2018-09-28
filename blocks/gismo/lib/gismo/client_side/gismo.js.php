@@ -613,8 +613,8 @@ function gismo(config, srv_data, static_data, course_start_time, current_time, a
                     }       
                 }
                 break;
-            case 'teacher@assignments':
-            case 'student@assignments':
+            case 'teacher@assignmentgrades':
+            case 'student@assignmentgrades':
                 if (this.static_data["users"].length > 0 && this.static_data["assignments"].length > 0 && this.util.get_assoc_array_length(this.current_analysis.data) > 0) {
                     // xticks / yticks
                     for (item in this.static_data["users"]) {
@@ -767,8 +767,8 @@ function gismo(config, srv_data, static_data, course_start_time, current_time, a
                     }       
                 }
                 break;
-            case 'teacher@quizzes':
-            case 'student@quizzes':
+            case 'teacher@quizgrades':
+            case 'student@quizgrades':
                 if (this.static_data["users"].length > 0 && this.static_data["quizzes"].length > 0 && this.util.get_assoc_array_length(this.current_analysis.data) > 0) {
                     // xticks / yticks
                     for (item in this.static_data["users"]) {
@@ -838,8 +838,10 @@ function gismo(config, srv_data, static_data, course_start_time, current_time, a
                     }       
                 }
                 break;
+            case 'teacher@assignments':
             case 'teacher@chats':
             case 'teacher@forums':
+            case 'teacher@quizzes':
             case 'teacher@wikis':
                 if (this.static_data["users"].length > 0 && this.static_data[this.current_analysis.type].length > 0 && this.util.get_assoc_array_length(this.current_analysis.data) > 0) {
                     // series
@@ -862,7 +864,7 @@ function gismo(config, srv_data, static_data, course_start_time, current_time, a
                         if ($.inArray(uid2, selected_items[this.current_analysis.type]) != -1) {
                             index = $.inArray(uid, yticks);
                             if (index != -1) {
-                                if (this.current_analysis.data[item].context == "sent" || this.current_analysis.data[item].context == "created"  || this.current_analysis.data[item].context == "updated") {
+                                if (this.current_analysis.data[item].context == "sent" || this.current_analysis.data[item].context == "created"  || this.current_analysis.data[item].context == "updated" || this.current_analysis.data[item].context == "submitted" || this.current_analysis.data[item].context == "started") {
                                     lines[0][index] += parseInt(this.current_analysis.data[item].numval);
                                 } else if (this.current_analysis.data[item].context == "viewed") {//Check if Read SUM
                                     lines[1][index] += parseInt(this.current_analysis.data[item].numval);
@@ -943,8 +945,10 @@ function gismo(config, srv_data, static_data, course_start_time, current_time, a
             case 'teacher@chats:users-details':
             case 'teacher@forums:users-details':
             case 'teacher@wikis:users-details':
+            case 'student@assignments':
             case 'student@chats':
             case 'student@forums':
+            case 'student@quizzes':
             case 'student@wikis':
                 if (this.static_data["users"].length > 0 && this.static_data[this.current_analysis.type].length > 0 && this.util.get_assoc_array_length(this.current_analysis.data) > 0) {
                     // series
@@ -966,7 +970,7 @@ function gismo(config, srv_data, static_data, course_start_time, current_time, a
                         if ($.inArray(uid, selected_items[this.current_analysis.type]) != -1) {
                             index = $.inArray(uid, yticks);
                             if (index != -1) {
-                                if (this.current_analysis.data[item].context == "created" || this.current_analysis.data[item].context == "sent"  || this.current_analysis.data[item].context == "updated") {
+                                if (this.current_analysis.data[item].context == "created" || this.current_analysis.data[item].context == "sent"  || this.current_analysis.data[item].context == "updated" || this.current_analysis.data[item].context == "submitted") {
                                     lines[0][index] += parseInt(this.current_analysis.data[item].numval);
                                 }  else if (this.current_analysis.data[item].context == "viewed") {//Check if Read SUM
                                     lines[1][index] += parseInt(this.current_analysis.data[item].numval);
@@ -1442,11 +1446,11 @@ function gismo(config, srv_data, static_data, course_start_time, current_time, a
                 case 'student@resources-students-overview':
                 case 'teacher@resources-students-overview':
                 case 'teacher@assignments22':
-                case 'teacher@assignments':
-                case 'teacher@quizzes':                
+                case 'teacher@assignmentgrades':
+                case 'teacher@quizgrades':
                 case 'student@assignments22':                
-                case 'student@assignments':
-                case 'student@quizzes':              
+                case 'student@assignmentgrades':
+                case 'student@quizgrades':
                 case 'teacher@completion-quizzes':
                 case 'student@completion-quizzes':             
                 case 'teacher@completion-assignments':
@@ -1521,14 +1525,18 @@ function gismo(config, srv_data, static_data, course_start_time, current_time, a
                         }
                     });
                     break;  
+                case 'teacher@assignments':
                 case 'teacher@chats':
                 case 'teacher@forums':
+                case 'teacher@quizzes':
                 case 'teacher@wikis':
                 case 'teacher@chats:users-details':
                 case 'teacher@forums:users-details':
                 case 'teacher@wikis:users-details':
+                case 'student@assignments':
                 case 'student@chats':
                 case 'student@forums':
+                case 'student@quizzes':
                 case 'student@wikis':
                     this.current_analysis.plot = $.jqplot(this.plot_id, data.lines, {
                       title: {

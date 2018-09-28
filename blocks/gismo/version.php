@@ -7,8 +7,8 @@
  * @copyright  eLab Christian Milani
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-$plugin->version = 2014121500;  //YYYYMMDDHH (year, month, day, 24-hr time)
+$plugin->version = 2016041500;  //YYYYMMDDHH (year, month, day, 24-hr time)
 $plugin->requires = 2014051200; //Moodle 2.7
 $plugin->component = 'block_gismo'; // Full name of the plugin (used for diagnostics)
 $plugin->maturity = MATURITY_STABLE;
-$plugin->release = '3.3 (Build: 2014121500)';
+$plugin->release = '3.4 (Build: 2016041500)';

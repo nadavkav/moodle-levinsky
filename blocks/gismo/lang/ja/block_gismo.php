@@ -130,7 +130,7 @@ $string['err_missing_course_students'] = 'コースの学生を抽出できま�
 $string['gismo:view'] = 'GISMO - 認証失敗';
 
 //OTHERS
-$string['welcome'] = 'GISMO v. 3.3へようこそ';
+$string['welcome'] = 'GISMO v. 3.4へようこそ';
 $string['processing_wait'] = 'データを処理しています、お待ちください!';
 
 //Graphs labels

@@ -19,7 +19,7 @@
  *
  * @package    core_gismo
  * @category   test
- * @copyright  2014 Corbière Alain 
+ * @copyright  2015 Corbière Alain 
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 // NOTE: no MOODLE_INTERNAL test here, this file may be required by behat before including /config.php.
@@ -27,19 +27,17 @@
 require_once(__DIR__ . '/../../../../lib/behat/behat_base.php');
 
 // http://docs.behat.org/en/latest/guides/2.definitions.html
-// http://davidwinter.me/articles/2012/01/13/using-behat-with-mink/ Présente la technique pour se protéger des futurs changements
 // http://docs.behat.org/en/v2.5/guides/4.context.html \moodle271\lib\behat\features\bootstrap\behat_init_context.php
+// Chained steps are deprecated. See https://docs.moodle.org/dev/Acceptance_testing/Migrating_from_Behat_2.5_to_3.x_in_Moodle#Changes_required_in_context_file
 
-use Behat\Behat\Context\Step\Given as Given,
-    Behat\Behat\Context\Step\Then as Then,
-    Behat\Mink\Exception\ExpectationException as ExpectationException;
+use Behat\Mink\Exception\ExpectationException as ExpectationException;
 
 /**
  * Steps definitions to deal with the gismo component
  *
  * @package    core_gismo
  * @category   test
- * @copyright  2014 Corbière Alain <alain.corbiere@univ-lemans.fr>
+ * @copyright  2015 Corbière Alain <alain.corbiere@univ-lemans.fr>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class behat_block_gismo extends behat_base {
@@ -50,8 +48,21 @@ class behat_block_gismo extends behat_base {
      * @Given /^I synchronize gismo data$/
      */
     public function i_synchronize_gismo_data() {
-        $this->getSession()->visit($this->locate_path('/blocks/gismo/lib/gismo/server_side/export_data.php?password='));
-        $this->getSession()->back();
+		$plugin = new stdClass();
+		include(__DIR__ . "/../../version.php") ;
+		if ($plugin->version > 2013101501) {
+			// Version 3.3+
+			ob_start();
+			include(__DIR__ . "/../../lib/gismo/server_side/export_data.php") ;
+			$endOkMessageExportData = "GISMO - export data (end)!<br />" ;
+			if (substr_compare(ob_get_clean(), $endOkMessageExportData, -strlen($endOkMessageExportData))!== 0)
+				throw new Exception('Export data problem in the GISMO block (export_data.php)');
+		}
+		else {
+			// Version 3.2-
+			$this->getSession()->visit($this->locate_path('/blocks/gismo/lib/gismo/server_side/export_data.php?password=')) ;
+			$this->getSession()->back() ;
+		}
     }
 
     /**
@@ -61,35 +72,18 @@ class behat_block_gismo extends behat_base {
      * @param string $overview The menu item
      */
     public function i_go_to_the_gismo_report($overview) {
-        return array(
-            new Given('I follow "' . get_string('gismo_report_launch', 'block_gismo') . '"'),
-            new Given('I select a reporting on "' . $overview . '" with back')
-        );
-    }
-
-    /**
-     *  Select overview by gismo with back navigation.
-     *
-     * @Given /^I select a reporting on "(?P<parentnodes_string>(?:[^"]|\\")*)" with back$/
-     * @param string $parentnodes_string The menu items
-     */
-    public function i_select_a_reporting_on_with_back($parentnodes) {
-        if ($this->running_javascript()) {
-            $parentnodes = array_map('trim', explode('>', $parentnodes));
-            $javascript = $this->getSession()->getPage()->find("xpath", "//a[contains(text(),'" . $parentnodes[0] . "')]/../ul/li/a/div/nobr[contains(text(),'" . $parentnodes[1] . "')]/../..")->getAttribute("href");
-            $this->getSession()->executeScript($javascript);
-            $this->getSession()->wait(self::TIMEOUT * 1000, false);
-            $this->getSession()->back();
-        }
+		$this->execute('behat_general::click_link', get_string('gismo_report_launch', 'block_gismo'));
+		$this->i_select_a_reporting_on($overview) ;
+		$this->i_move_backward_one_page() ;
     }
 
     /**
      *  Select overview by gismo without back navigation.
      *
-     * @Given /^I select a reporting on "(?P<parentnodes_string>(?:[^"]|\\")*)" without back$/
+     * @Given /^I select a reporting on "(?P<parentnodes_string>(?:[^"]|\\")*)"$/
      * @param string $parentnodes_string The menu items
      */
-    public function i_select_a_reporting_on_without_back($parentnodes) {
+    public function i_select_a_reporting_on($parentnodes) {
         if ($this->running_javascript()) {
             $parentnodes = array_map('trim', explode('>', $parentnodes));
             $javascript = $this->getSession()->getPage()->find("xpath", "//a[contains(text(),'" . $parentnodes[0] . "')]/../ul/li/a/div/nobr[contains(text(),'" . $parentnodes[1] . "')]/../..")->getAttribute("href");
@@ -107,11 +101,9 @@ class behat_block_gismo extends behat_base {
      * @param string $parentnodes_string The menu items
      */
     public function i_should_see_accesses_on_overview($element, $parentnodes) {
-        return array(
-            new Given('I follow "' . get_string('gismo_report_launch', 'block_gismo') . '"'),
-            new Given('I select a reporting on "' . $parentnodes . '" without back'),
-            new Then('I see "' . $element . '"')
-        );
+		$this->execute('behat_general::click_link', get_string('gismo_report_launch', 'block_gismo'));
+		$this->i_select_a_reporting_on($parentnodes) ;
+		$this->i_see($element) ;
     }
 
     /**
@@ -126,22 +118,28 @@ class behat_block_gismo extends behat_base {
             // line 192 de gismo.js.php
             // accesses overview in resources: this.current_analysis.prepared_data["lines"] 
             // g.current_analysis.prepared_data[\"lines\"][0][0][2] = 1 and not 2 ([\"lines\"][0][1]) on "Activities > Forums over time" report
-            $javascript = "if (g.current_analysis.prepared_data[\"lines\"] !== undefined && typeof g.current_analysis.prepared_data[\"lines\"] !== \"object\" ) " .
-                    " return (g.current_analysis.prepared_data[\"lines\"]);";
+			// Selenium2Driver (Mink v 1.7.1)
+			// public function evaluateScript($script)
+            // {
+            //   if (0 !== strpos(trim($script), 'return ')) {
+            //     $script = 'return ' . $script;
+            // }
+			$javascript = "return function() { if (g.current_analysis.prepared_data[\"lines\"] !== undefined && typeof g.current_analysis.prepared_data[\"lines\"] !== \"object\" ) " .
+                    " return (g.current_analysis.prepared_data[\"lines\"]); }()";
             $elementReturn = $this->getSession()->evaluateScript($javascript);
             if (is_null($elementReturn)) {
-                $javascript = "if (g.current_analysis.prepared_data[\"lines\"][0] !== undefined && typeof g.current_analysis.prepared_data[\"lines\"][0] !== \"object\" ) " .
-                        " return (g.current_analysis.prepared_data[\"lines\"][0]);";
+                $javascript = "return function() { if (g.current_analysis.prepared_data[\"lines\"][0] !== undefined && typeof g.current_analysis.prepared_data[\"lines\"][0] !== \"object\" ) " .
+                        " return (g.current_analysis.prepared_data[\"lines\"][0]); }()";
                 $elementReturn = $this->getSession()->evaluateScript($javascript);
                 if (is_null($elementReturn)) {
                     // accesses by students & accesses overview : this.current_analysis.prepared_data["lines"][0][1]
-                    $javascript = "if (g.current_analysis.prepared_data[\"lines\"][0][1] !== undefined && typeof g.current_analysis.prepared_data[\"lines\"][0][1] !== \"object\" )  " .
-                            " return (g.current_analysis.prepared_data[\"lines\"][0][1]);";
+                    $javascript = "return function() { if (g.current_analysis.prepared_data[\"lines\"][0][1] !== undefined && typeof g.current_analysis.prepared_data[\"lines\"][0][1] !== \"object\" )  " .
+                            " return (g.current_analysis.prepared_data[\"lines\"][0][1]); }()";
                     $elementReturn = $this->getSession()->evaluateScript($javascript);
                     if (is_null($elementReturn)) {
                         // students overview & accesses overview : this.current_analysis.prepared_data["lines"][0][0][2]
-                        $javascript = "if (g.current_analysis.prepared_data[\"lines\"][0][0][2] !== undefined && typeof g.current_analysis.prepared_data[\"lines\"][0][0][2] !== \"object\" )  " .
-                                " return (g.current_analysis.prepared_data[\"lines\"][0][0][2]);";
+                        $javascript = "return function() { if (g.current_analysis.prepared_data[\"lines\"][0][0][2] !== undefined && typeof g.current_analysis.prepared_data[\"lines\"][0][0][2] !== \"object\" )  " .
+                                " return (g.current_analysis.prepared_data[\"lines\"][0][0][2]); }()";
                         $elementReturn = $this->getSession()->evaluateScript($javascript);
                     }
                 }
@@ -161,8 +159,30 @@ class behat_block_gismo extends behat_base {
     /**
      * @Given /^I move backward one page$/
      */
-    public function iMoveBackwardOnePage() {
+    public function i_move_backward_one_page() {
         $this->getSession()->back();
     }
+	
+    /**
+     * Opens Moodle site homepage. (New step in version 2.9)
+     *
+     * @Given /^I am on site homepage \(New step defintion in version 2.9\)$/
+	 * https://github.com/moodle/moodle/blob/v2.9.0/lib/tests/behat/behat_general.php#L87
+     */
+    public function i_am_on_site_homepage_new_step_in_version() {
+        $this->getSession()->visit($this->locate_path('/?redirect=0'));
+    }
 
+    /**
+     * Clicks link specific link to the cat.
+     *
+     * @When /^I follow chat link "(?P<link_string>(?:[^"]|\\")*)"$/
+     * @throws ElementNotFoundException Thrown by behat_base::find
+     * @param string $link
+     */
+    public function click_chat_link($link) {
+        $linknode = $this->find_link($link);
+		$this->getSession()->visit($linknode->getAttribute("href")) ;
+    }
+	
 }

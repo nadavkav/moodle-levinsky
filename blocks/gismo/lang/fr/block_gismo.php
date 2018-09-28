@@ -122,7 +122,7 @@ $string['gismo:view'] = "GISMO - Échec de l\'autorisation";
 
 
 //OTHERS
-$string['welcome'] = "Bienvenue dans GISMO v. 3.3";
+$string['welcome'] = "Bienvenue dans GISMO v. 3.4";
 $string['processing_wait'] = "Traitement des données, veuillez patienter !";
 
 //Graphs labels

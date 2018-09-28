@@ -1,7 +1,7 @@
 ===================================================================================
                                       G I S M O
                     
-                          Version 3.3 - December 3, 2014 
+                          Version 3.4 - April 12, 2016 
 		
 		Università della svizzera italiana, Lugano, Switzerland
                     
@@ -16,7 +16,7 @@
     The requirements for Gismo are:
     - PHP v. 5.4.4
     - MySQL 5.5.31
-    - Moodle 2.7.x
+    - Moodle 2.9.x
 
 1)  Setup
     
@@ -42,13 +42,9 @@
     This computation is done by a scheduled task, by default it runs at 2am (server time)
     but can be changed in Site Administration -> Server -> Scheduled tasks -> GIMSO data exporter task
 
-    When you install  Gismo block and you don't want to wait 
-    the next day to see the result, you can lunch this script manually (ONLY FROM CLI):
-
-    php blocks/gismo/lib/gismo/server_side/export_data.php?password=yourpassword
-
-    If you want to run behat acceptance tests please comment this line: define('CLI_SCRIPT', true); 
-    in the file lib/gismo/server/side/export_data.php
+    When you install  Gismo block and you don't want to wait the next day to see the result,
+    you can run the task manually (ONLY FROM CLI):
+    php admin/tool/task/cli/schedule_task.php --execute=\\block_gismo\\task\\export_data
 
 2)  Configuration
 

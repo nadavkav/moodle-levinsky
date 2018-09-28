@@ -40,11 +40,11 @@ $gismo_static_data->init();
             }
         }
         ?>
-<!--[if lt IE 9]><script language="javascript" type="text/javascript" src="lib/third_parties/client_side/jqplot.1.0.8r1250/excanvas.js"></script><![endif]-->
+<!--[if lt IE 9]><script language="javascript" type="text/javascript" src="lib/third_parties/client_side/jquery.jqplot.1.0.9.d96a669/excanvas.js"></script><![endif]-->
         <!-- client side libraries END -->
         <link rel="stylesheet" href="style/gismo.css" type="text/css" media="screen" charset="utf-8" />
         <link rel="stylesheet" href="lib/third_parties/client_side/jquery-ui-1.10.3/css/ui-darkness/jquery-ui-1.10.3.custom.min.css" type="text/css" media="screen" charset="utf-8" />
-        <link rel="stylesheet" type="text/css" href="lib/third_parties/client_side/jqplot.1.0.8r1250/jquery.jqplot.min.css" />
+        <link rel="stylesheet" type="text/css" href="lib/third_parties/client_side/jquery.jqplot.1.0.9.d96a669/jquery.jqplot.min.css" />
         <link rel="stylesheet" type="text/css" href="lib/third_parties/client_side/simpleFadeSlideShow/style.css" />
         <?php
         // static data + gismo instance not needed by help page 
@@ -93,8 +93,13 @@ $gismo_static_data->init();
                     setTimeout(function () {
                         g.resize();
                     }, 100);
+                    //If you want to go directly to a chart uncomment this
+                    <?php //if(optional_param('chart', NULL, PARAM_TEXT)){?>
+                        //g.analyse('<?php //echo optional_param('chart', NULL, PARAM_TEXT) ?>');
+                    <?php //} ?>
                 });
 
+                
                 // -->
             </script>
     <?php

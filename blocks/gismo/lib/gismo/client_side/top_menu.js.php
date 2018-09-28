@@ -128,6 +128,13 @@ function top_menu(g) {
                     "require": new Array("assignments"), 
                     "sub": null 
                 },
+                {
+                    "label": "<?php print_string('assignmentgrades', 'block_gismo'); ?>",
+                    "action": "g.analyse('assignmentgrades')",
+                    "roles": new Array("teacher", "student"),
+                    "require": new Array("assignments"),
+                    "sub": null
+                },
                 { 
                     "label": "<?php print_string('assignments22', 'block_gismo'); ?>", 
                     "action": "g.analyse('assignments22')", 
@@ -169,6 +176,13 @@ function top_menu(g) {
                     "roles": new Array("teacher", "student"), 
                     "require": new Array("quizzes"), 
                     "sub": null 
+                },
+                {
+                    "label": "<?php print_string('quizgrades', 'block_gismo'); ?>",
+                    "action": "g.analyse('quizgrades')",
+                    "roles": new Array("teacher", "student"),
+                    "require": new Array("quizzes"),
+                    "sub": null
                 },
                 { 
                     "label": "<?php print_string('wikis', 'block_gismo'); ?>", 

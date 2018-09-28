@@ -134,13 +134,23 @@ function left_menu(g) {
             'details': []
         }, 
         // activities -> assignments
+        'student@assignments': {
+            'lists': ['assignments'],
+            'default': 0,
+            'details': []
+        },
         'teacher@assignments': {
             'lists': ['users', 'assignments'],
             'default': 0,
             'details': []
         },
-        'student@assignments': {
+        'student@assignmentgrades': {
             'lists': ['assignments'],
+            'default': 0,
+            'details': []
+        },
+        'teacher@assignmentgrades': {
+            'lists': ['users', 'assignmentgrades'],
             'default': 0,
             'details': []
         },
@@ -214,6 +224,16 @@ function left_menu(g) {
             'details': []
         },
         'student@quizzes': {
+            'lists': ['quizzes'],
+            'default': 0,
+            'details': []
+        },
+        'teacher@quizgrades': {
+            'lists': ['users', 'quizzes'],
+            'default': 0,
+            'details': []
+        },
+        'student@quizgrades': {
             'lists': ['quizzes'],
             'default': 0,
             'details': []
@@ -433,8 +453,8 @@ function left_menu(g) {
 			case 'resources':
 				lab = "<?php print_string('resources', 'block_gismo'); ?>";
                                 break;
-                        case 'assignments':
-				lab = "<?php print_string('assignments', 'block_gismo'); ?>";
+                        case 'assignmentgrades':
+				lab = "<?php print_string('assignmentgrades', 'block_gismo'); ?>";
                                 break;
 			case 'assignments22':
 				lab = "<?php print_string('assignments22', 'block_gismo'); ?>";

@@ -44,15 +44,15 @@ $server_side_libraries = array("third_parties" => array());
 $client_side_libraries = array("gismo" => array("gismo.js.php", "top_menu.js.php", "left_menu.js.php", "time_line.js", "gismo_util.js"),
     "third_parties" => array("jquery/jquery-1.10.0.min.js",
         "jquery-ui-1.10.3/js/jquery-ui-1.10.3.custom.min.js",
-        "jqplot.1.0.8r1250/jquery.jqplot.min.js",
-        "jqplot.1.0.8r1250/plugins/jqplot.barRenderer.min.js",
-        "jqplot.1.0.8r1250/plugins/jqplot.canvasAxisLabelRenderer.min.js",
-        "jqplot.1.0.8r1250/plugins/jqplot.canvasAxisTickRenderer.min.js",
-        "jqplot.1.0.8r1250/plugins/jqplot.canvasTextRenderer.min.js",
-        "jqplot.1.0.8r1250/plugins/jqplot.categoryAxisRenderer.min.js",
-        "jqplot.1.0.8r1250/plugins/jqplot.dateAxisRenderer.min.js",
-        "jqplot.1.0.8r1250/plugins/jqplot.highlighter.min.js",
-        "jqplot.1.0.8r1250/plugins/jqplot.pointLabels.min.js",
+        "jquery.jqplot.1.0.9.d96a669/jquery.jqplot.min.js",
+        "jquery.jqplot.1.0.9.d96a669/plugins/jqplot.barRenderer.js",
+        "jquery.jqplot.1.0.9.d96a669/plugins/jqplot.canvasAxisLabelRenderer.js",
+        "jquery.jqplot.1.0.9.d96a669/plugins/jqplot.canvasAxisTickRenderer.js",
+        "jquery.jqplot.1.0.9.d96a669/plugins/jqplot.canvasTextRenderer.js",
+        "jquery.jqplot.1.0.9.d96a669/plugins/jqplot.categoryAxisRenderer.js",
+        "jquery.jqplot.1.0.9.d96a669/plugins/jqplot.dateAxisRenderer.js",
+        "jquery.jqplot.1.0.9.d96a669/plugins/jqplot.highlighter.js",
+        "jquery.jqplot.1.0.9.d96a669/plugins/jqplot.pointLabels.js",
         "simpleFadeSlideShow/fadeSlideShow.min.js"
         ));
 
@@ -162,8 +162,7 @@ $context_obj = context_block::instance(intval($srv_data->block_instance_id));
 $gismoconfig = get_config('block_gismo');
 if ($gismoconfig->student_reporting === "false") {
     // check authorization
-    //require_capability('block/gismo:view', $context_obj);
-    require_capability('block/gismo:view', context_course::instance($srv_data->course_id));
+    require_capability('block/gismo:view', $context_obj);
 }
 // get gismo settings
 

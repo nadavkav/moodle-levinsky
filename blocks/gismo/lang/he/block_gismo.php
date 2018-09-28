@@ -121,7 +121,7 @@ $string['gismo:view'] = "GISMO - Authorization failed";
 
 
 //OTHERS
-$string['welcome'] = "Welcome to GISMO v. 3.3";
+$string['welcome'] = "Welcome to GISMO v. 3.4";
 $string['processing_wait'] = "Processing data, please wait!";
 
 //Graphs labels

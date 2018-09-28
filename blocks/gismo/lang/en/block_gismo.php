@@ -8,8 +8,8 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 //ONLY IN ENGLISH
-$string['gismo_version_value'] = '3.3';
-$string['release_date_value'] = '2014-12-15';
+$string['gismo_version_value'] = '3.4';
+$string['release_date_value'] = '2016-04-12';
 
 // block title
 $string['pluginname'] = 'Gismo';
@@ -60,6 +60,8 @@ $string['resources_access_detail_chart_title'] = 'Resources: resource details on
 // Activities
 $string['activities'] = 'Activities';
 $string['assignments'] = 'Assignments';
+$string['assignmentgrades'] = 'Assignment grades';
+$string['assignmentgrades_chart_title'] = 'Activities: assignment grade overview';
 $string['assignments_chart_title'] = 'Activities: assignments overview';
 $string['assignments22'] = 'Assignments 2.2';
 $string['assignments22_chart_title'] = 'Activities: assignments 2.2 overview';
@@ -80,6 +82,8 @@ $string['forums_over_time_chart_title'] = 'Activities: contributions to forums o
 
 $string['quizzes'] = 'Quizzes';
 $string['quizzes_chart_title'] = 'Activities: quizzes overview';
+$string['quizgrades'] = 'Quiz grades';
+$string['quizgrades_chart_title'] = 'Activities: Quiz grade overview';
 
 $string['wikis'] = 'Wikis';
 
@@ -129,7 +133,7 @@ $string['gismo:view'] = "GISMO - Authorization failed";
 
 
 //OTHERS
-$string['welcome'] = "Welcome to GISMO v. 3.3";
+$string['welcome'] = "Welcome to GISMO v. 3.4";
 $string['processing_wait'] = "Processing data, please wait!";
 
 //Graphs labels
