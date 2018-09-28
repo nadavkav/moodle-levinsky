@@ -2929,12 +2929,39 @@ class global_navigation extends navigation_node {
      * They've expanded the 'my courses' branch.
      */
     protected function load_courses_enrolled() {
-        global $CFG;
+        global $CFG, $USER, $DB;
 
         $limit = (int) $CFG->navcourselimit;
 
-        $courses = enrol_get_my_courses('*');
+        $sortorder = 'visible DESC';
+        // Prevent undefined $CFG->navsortmycoursessort errors.
+        if (empty($CFG->navsortmycoursessort)) {
+            $CFG->navsortmycoursessort = 'sortorder';
+        }
+        // Append the chosen sortorder.
+        $sortorder = $sortorder . ',' . $CFG->navsortmycoursessort . ' ASC';
+
+        // Special sorting of idnumber desc
+        if (!empty($CFG->navsortmycoursessort) &&
+            ($CFG->navsortmycoursessort === 'idnumberdesc' || $CFG->navsortmycoursessort === 'lastaccess')) {
+            $sortorder = 'visible DESC, idnumber DESC';
+        }
+
+        $courses = enrol_get_my_courses('*', $sortorder);
+
         $flatnavcourses = [];
+
+                // Sort course by user's lastaccess.
+        if (!empty($CFG->navsortmycoursessort) && $CFG->navsortmycoursessort === 'lastaccess') {
+            $lastaccesscourses = $DB->get_records('user_lastaccess', array('userid' => $USER->id), 'timeaccess DESC');
+            foreach ($lastaccesscourses as $c) {
+                if (isset($courses[$c->courseid])) {
+                    $courses[$c->courseid]->lastaccess = $c->timeaccess;
+                }
+            }
+            // Sort by user's lastaccess to course
+            usort($courses, function($a, $b) { return $b->lastaccess - $a->lastaccess; });
+        }
 
         // Go through the courses and see which ones we want to display in the flatnav.
         foreach ($courses as $course) {

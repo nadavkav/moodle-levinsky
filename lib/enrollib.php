@@ -566,7 +566,9 @@ function enrol_get_my_courses($fields = null, $sort = null, $limit = 0, $coursei
         if (empty($CFG->navsortmycoursessort)) {
             $sort = 'visible DESC, sortorder ASC';
         } else {
-            $sort = 'visible DESC, '.$CFG->navsortmycoursessort.' ASC';
+            // TODO: fixme (nadavkav)
+            $sort = 'visible DESC, sortorder ASC';
+            //$sort = 'visible DESC, '.$CFG->navsortmycoursessort.' ASC';
         }
     }
 
@@ -901,7 +903,9 @@ function enrol_get_all_users_courses($userid, $onlyactive = false, $fields = nul
         if (empty($CFG->navsortmycoursessort)) {
             $sort = 'visible DESC, sortorder ASC';
         } else {
-            $sort = 'visible DESC, '.$CFG->navsortmycoursessort.' ASC';
+            // TODO: fixme (nadavkav)
+            $sort = 'visible DESC, sortorder ASC';
+            //$sort = 'visible DESC, '.$CFG->navsortmycoursessort.' ASC';
         }
     }
 
