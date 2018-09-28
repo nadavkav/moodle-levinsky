@@ -938,7 +938,7 @@ class assign_grading_table extends table_sql implements renderable {
         if (!$this->is_downloading() && $this->hasgrade) {
             $urlparams = array('id' => $this->assignment->get_course_module()->id,
                                'rownum' => 0,
-                               'action' => 'grade'); // disable "grader" link (nadavkav)
+                               'action' => 'grader'); // disable "grader" link (nadavkav)
 
             if ($this->assignment->is_blind_marking()) {
                 if (empty($row->recordid)) {
@@ -1175,7 +1175,7 @@ class assign_grading_table extends table_sql implements renderable {
 
         $urlparams = array('id' => $this->assignment->get_course_module()->id,
                                'rownum' => 0,
-                               'action' => 'grade'); // disable "grader" link (nadavkav)
+                               'action' => 'grader'); // disable "grader" link (nadavkav)
 
         if ($this->assignment->is_blind_marking()) {
             if (empty($row->recordid)) {
