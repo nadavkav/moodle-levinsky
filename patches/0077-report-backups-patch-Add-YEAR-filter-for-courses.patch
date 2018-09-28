@@ -1,0 +1,48 @@
+From 6643d62fed09f533bc1bc5ca3eb0b3368e9433f2 Mon Sep 17 00:00:00 2001
+From: Nadav Kavalerchik <nadavkav@gmail.com>
+Date: Mon, 16 Oct 2017 10:23:42 +0300
+Subject: [PATCH 77/95] report/backups (patch) Add YEAR filter for courses
+
+---
+ report/backups/index.php | 9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
+
+diff --git a/report/backups/index.php b/report/backups/index.php
+index 39dadc4..9d63476 100644
+--- a/report/backups/index.php
++++ b/report/backups/index.php
+@@ -31,6 +31,7 @@ require_once($CFG->dirroot . '/backup/util/interfaces/checksumable.class.php');
+ require_once($CFG->dirroot . '/backup/backup.class.php');
+ 
+ $courseid = optional_param('courseid', 0, PARAM_INT);
++$courseyear = optional_param('courseyear', '', PARAM_RAW);
+ $page = optional_param('page', 0, PARAM_INT); // This represents which backup we are viewing.
+ 
+ // Required for constants in backup_cron_automated_helper
+@@ -126,11 +127,11 @@ $table->data = array();
+ 
+ $select = ', ' . context_helper::get_preload_record_columns_sql('ctx');
+ $join = "LEFT JOIN {context} ctx ON (ctx.instanceid = c.id AND ctx.contextlevel = :contextlevel)";
+-$sql = "SELECT bc.*, c.id as courseid, c.fullname $select
++$sql = "SELECT bc.*, c.id as courseid, c.fullname, c.shortname $select
+           FROM {backup_courses} bc
+           JOIN {course} c ON c.id = bc.courseid
+-               $join";
+-$rs = $DB->get_recordset_sql($sql, array('contextlevel' => CONTEXT_COURSE));
++               $join WHERE c.shortname LIKE :courseyear ";
++$rs = $DB->get_recordset_sql($sql, array('contextlevel' => CONTEXT_COURSE, 'courseyear' => "%$courseyear%"));
+ foreach ($rs as $backuprow) {
+ 
+     // Cache the course context
+@@ -160,7 +161,7 @@ foreach ($rs as $backuprow) {
+     $status->attributes = array('class' => $statusclass);
+ 
+     // Create the row and add it to the table
+-    $backuprowname = format_string($backuprow->fullname, true, array('context' => context_course::instance($backuprow->courseid)));
++    $backuprowname = format_string($backuprow->shortname, true, array('context' => context_course::instance($backuprow->courseid)));
+     $backuplogsurl = new moodle_url('/report/backups/index.php', array('courseid' => $backuprow->courseid));
+     $backuplogsicon = new pix_icon('t/viewdetails', get_string('viewlogs', 'report_backups'));
+     $cells = array(
+-- 
+1.8.3.1
+

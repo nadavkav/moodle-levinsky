@@ -1,0 +1,2975 @@
+From 5ceed0ce7b0b9bf74cd82d7e69acc7830fd380eb Mon Sep 17 00:00:00 2001
+From: Nadav Kavalerchik <nadavkav@gmail.com>
+Date: Wed, 11 Oct 2017 16:46:47 +0300
+Subject: [PATCH 19/95] blocks/accessibility (new)
+
+---
+ blocks/accessibility/CHANGELOG.txt                 |  28 ++
+ blocks/accessibility/README.txt                    |  20 +
+ blocks/accessibility/block_accessibility.php       | 384 +++++++++++++++
+ blocks/accessibility/changecolour.php              |  80 ++++
+ blocks/accessibility/changesize.php                | 138 ++++++
+ blocks/accessibility/database.php                  | 123 +++++
+ blocks/accessibility/db/access.php                 |  50 ++
+ blocks/accessibility/db/install.xml                |  20 +
+ blocks/accessibility/db/upgrade.php                | 132 +++++
+ blocks/accessibility/defaults.php                  |  14 +
+ blocks/accessibility/edit_form.php                 |  94 ++++
+ .../accessibility/lang/de/block_accessibility.php  |  67 +++
+ .../accessibility/lang/en/block_accessibility.php  |  70 +++
+ .../accessibility/lang/es/block_accessibility.php  |  67 +++
+ .../accessibility/lang/fr/block_accessibility.php  |  68 +++
+ .../accessibility/lang/hr/block_accessibility.php  |  70 +++
+ .../lang/pt-br/block_accessibility.php             |  68 +++
+ blocks/accessibility/lib.php                       | 103 ++++
+ blocks/accessibility/module.js                     | 532 +++++++++++++++++++++
+ blocks/accessibility/pix/document-save-grey.png    | Bin 0 -> 1077 bytes
+ blocks/accessibility/pix/document-save.png         | Bin 0 -> 1150 bytes
+ blocks/accessibility/pix/loader.gif                | Bin 0 -> 13440 bytes
+ blocks/accessibility/styles.css                    | 127 +++++
+ blocks/accessibility/userstyles.php                | 187 ++++++++
+ blocks/accessibility/version.php                   |  39 ++
+ 25 files changed, 2481 insertions(+)
+ create mode 100755 blocks/accessibility/CHANGELOG.txt
+ create mode 100755 blocks/accessibility/README.txt
+ create mode 100755 blocks/accessibility/block_accessibility.php
+ create mode 100755 blocks/accessibility/changecolour.php
+ create mode 100755 blocks/accessibility/changesize.php
+ create mode 100755 blocks/accessibility/database.php
+ create mode 100755 blocks/accessibility/db/access.php
+ create mode 100755 blocks/accessibility/db/install.xml
+ create mode 100755 blocks/accessibility/db/upgrade.php
+ create mode 100755 blocks/accessibility/defaults.php
+ create mode 100755 blocks/accessibility/edit_form.php
+ create mode 100755 blocks/accessibility/lang/de/block_accessibility.php
+ create mode 100755 blocks/accessibility/lang/en/block_accessibility.php
+ create mode 100755 blocks/accessibility/lang/es/block_accessibility.php
+ create mode 100755 blocks/accessibility/lang/fr/block_accessibility.php
+ create mode 100755 blocks/accessibility/lang/hr/block_accessibility.php
+ create mode 100755 blocks/accessibility/lang/pt-br/block_accessibility.php
+ create mode 100755 blocks/accessibility/lib.php
+ create mode 100755 blocks/accessibility/module.js
+ create mode 100755 blocks/accessibility/pix/document-save-grey.png
+ create mode 100755 blocks/accessibility/pix/document-save.png
+ create mode 100755 blocks/accessibility/pix/loader.gif
+ create mode 100755 blocks/accessibility/styles.css
+ create mode 100755 blocks/accessibility/userstyles.php
+ create mode 100755 blocks/accessibility/version.php
+
+diff --git a/blocks/accessibility/CHANGELOG.txt b/blocks/accessibility/CHANGELOG.txt
+new file mode 100755
+index 0000000..df39a8c
+--- /dev/null
++++ b/blocks/accessibility/CHANGELOG.txt
+@@ -0,0 +1,28 @@
++New in 2.2.3:
++* Minor bugfixes
++
++New in 2.2.2:
++* Moodle 2.8 support
++* Various bugfixes and improvements
++
++New in 2.2.1:
++* IE support improved
++* Scaling of headings adjusted
++* Disabling/enabling buttons within block fixed
++* Javascript script improved
++* Various bugfixes and improvements
++
++New in 2.2:
++* Compatibility with "Clean" theme
++* Full no-js support (Plugin architecture is now moved entirely into server-side)
++* Major fixes from previous relases
++* Croatian language added
++* Block instance configuration form implemented
++
++New in version 2.1.5:
++* Fixed long-standing CSS inclusion bug, thanks to AviMoto
++
++New in version 2.1:
++* Updated ATBar
++* Added French Translation
++* Various bug fixes
+diff --git a/blocks/accessibility/README.txt b/blocks/accessibility/README.txt
+new file mode 100755
+index 0000000..2834aac
+--- /dev/null
++++ b/blocks/accessibility/README.txt
+@@ -0,0 +1,20 @@
++Accessibility Block for Moodle
++
++Provides options for changing text size and colour scheme. Settings can be saved to persist between sessions. Colour settings can be defined at the block instance level (Block instance configuration).
++
++Also integrates ATbar from Southampton University ECS http://www.atbar.org. Code used under BSD Licence.
++
++To install, place all files in /blocks/accessibility/ directory and visit /admin/index.php in your browser. To achieve block appearance throughout entire Moodle site (so-called "Sticky block") once the plugin is installed into Moodle, it's recommended to add its instance onto the Moodle homepage (/index.php). Homepage instance of the block enables "Page contexts" option in block instance configuration to be set to "Display throughout entire site".
++
++This block was initially written by Mark Johnson <mark@barrenfrozenwasteland.com>
++It is copyright of Mark Johnson, Richard Taunton's Sixth Form College and contributors.
++
++Developers can find the documentation here: https://drive.google.com/folderview?id=0BwrUG2o1JsD_bGo2S3hJNXFDd28&usp=sharing
++
++Translations are copyright of their respective authors, as indicated in each language file.
++
++Current languages are English, German, Spanish, Portuguese, Croatian and French.  If you're
++interested in adding a translation please raise a bug on Github
++https://github.com/marxjohnson/moodle-block_accessibility/issues
++
++Released Under the GNU General Public Licence http://www.gnu.org/copyleft/gpl.html
+diff --git a/blocks/accessibility/block_accessibility.php b/blocks/accessibility/block_accessibility.php
+new file mode 100755
+index 0000000..a0a4803
+--- /dev/null
++++ b/blocks/accessibility/block_accessibility.php
+@@ -0,0 +1,384 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++
++/**
++ * Define the accessibility block's class
++ *
++ * @package    block_accessibility
++ * @author      Mark Johnson <mark.johnson@tauntons.ac.uk>
++ * @copyright   2010 Tauntons College, UK
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++defined('MOODLE_INTERNAL') || die();
++require_once($CFG->dirroot.'/blocks/accessibility/lib.php');
++
++/**
++ * accessibility Block's class
++ */
++class block_accessibility extends block_base {
++
++	CONST JS_URL = '/blocks/accessibility/module.js';
++ 	CONST CSS_URL = '/blocks/accessibility/userstyles.php';
++ 	CONST FONTSIZE_URL = '/blocks/accessibility/changesize.php';
++	CONST COLOUR_URL = '/blocks/accessibility/changecolour.php';
++	CONST DB_URL = '/blocks/accessibility/database.php';
++	//CONST LOADER_ICON = '/blocks/accessibility/pix/loader.gif'; // not in use anymore
++
++	/**
++	 * Set the title and include the stylesheet
++	 *
++	 * We need to include the stylesheet here rather than in {@see get_content()} since get_content
++	 * is sometimes called after $OUTPUT->heading(), e.g. such as /user/index.php where the middle
++	 * region is hard-coded.
++	 * However, /admin/plugins.php calls init() for each plugin after $OUTPUT->heading(), so the
++	 * sheet is not included at all on that page.
++	 */
++	public function init() {
++		$this->title = get_string('pluginname', 'block_accessibility');
++	}
++
++	/**
++	 * Called after init(). Here we have instance id so we can use config for specific instance
++	 * The function will include CSS declarations into Moodle Page
++	 * CSS declarations will be generated according to user settings and instance configuration
++	 *
++	 */
++	public function specialization(){
++		$instance_id = $this->instance->id;
++
++		
++		if (!$this->page->requires->is_head_done()){
++
++			// link default/saved settings to a page
++			// each block instance has it's own configuration form, so we need instance id
++			$cssurl = self::CSS_URL.'?instance_id='.$instance_id;
++			$this->page->requires->css($cssurl);
++		}
++	}
++
++	/**
++	 * instance_allow_multiple explicitly tells there cannot be multiple
++	 * block instance on the same page
++	 *
++	 */
++	public function instance_allow_multiple(){
++		return FALSE;
++	}
++
++	/**
++	 * Set where the block should be allowed to be added
++	 *
++	 * @return array
++	 */
++	public function applicable_formats() {
++		return array('all' => true);
++	}
++
++	/**
++	 * Generate the contents for the block
++	 *
++	 * @return object Block contents and footer
++	 */
++	public function get_content () {
++		global $CFG;
++		global $USER;
++		global $FULLME;
++		global $DB;
++
++
++		// Until Issue #63 is fixed, we don't want to display block for unauthenticated users
++		if(!isloggedin()) return null;
++
++		if ($this->content !== null) {
++			return $this->content;
++		}
++
++		/* this is not implemented yet
++		// autosave block's config option
++		$autosave = DEFAULT_AUTOSAVE; // by default
++		if(isset($this->config->autosave)) $autosave = $this->config->autosave;
++		*/
++
++		// get the current page url (redirection after action when no Javascript)
++		$params = array('redirect' => $FULLME);
++
++		// set block services paths: changesize.php, changecolour.php and database.php
++		$size_url = new moodle_url(self::FONTSIZE_URL, $params);
++		$colour_url = new moodle_url(self::COLOUR_URL, $params);
++
++		$params['op'] = 'save';
++		$params['size'] = true;
++		$params['scheme'] = true;
++		$db_url = new moodle_url(self::DB_URL, $params);
++
++		// INITIALIZE BUTTON ATTRIBUTES
++		// ===============================================
++		// initialization of increase_font, decrease_font and save button
++		$inc_attrs = array(
++			'title' => get_string('inctext', 'block_accessibility'),
++			'id' => "block_accessibility_inc",
++			'href' => $size_url->out(false, array('op' => 'inc'))
++		);
++		$dec_attrs = array(
++			'title' => get_string('dectext', 'block_accessibility'),
++			'id' => "block_accessibility_dec",
++			'href' => $size_url->out(false, array('op' => 'dec'))
++		);
++		$save_attrs = array(
++			'title' => get_string('save', 'block_accessibility'),
++			'id' => "block_accessibility_save",
++			'href' => $db_url->out(false)
++		);
++
++		// initialization of reset button
++		$reset_attrs = array(
++			'id' => 'block_accessibility_reset',
++			'title' => get_string('resettext', 'block_accessibility'),
++			'href' => $size_url->out(false, array('op' => 'reset'))
++		);
++
++
++		// if any of increase/decrease buttons reached maximum size, disable it
++		if (isset($USER->fontsize)) {
++			if ($USER->fontsize == MIN_FONTSIZE) {
++				$dec_attrs['class'] = 'disabled';
++				unset($dec_attrs['href']);
++			}
++			if ($USER->fontsize == MAX_FONTSIZE) {
++				$inc_attrs['class'] = 'disabled';
++				unset($inc_attrs['href']);
++			}
++		}
++		// or disable reset button
++		else{
++			$reset_attrs['class'] = 'disabled';
++		}
++
++		// if user is not logged in, disable save button
++		// UPDATE 18.9.2014. Anyway the block will not be displayed for nonauthenticated users
++		/*
++		if (isset($USER->username) && (isset($USER->fontsize) || isset($USER->colourscheme))) {
++			$save_attrs['href'] = $db_url->out(false);
++		} else {
++			$save_attrs['class'] = 'disabled';
++		}
++		*/
++
++
++		// initialization of scheme profiles buttons
++		$c1_attrs = array(
++			'id' => 'block_accessibility_colour1',
++			'href' => $colour_url->out(false, array('scheme' => 1))
++		);
++		$c2_attrs = array(
++			'id' => 'block_accessibility_colour2',
++			'href' => $colour_url->out(false, array('scheme' => 2))
++		);
++		$c3_attrs = array(
++			'id' => 'block_accessibility_colour3',
++			'href' => $colour_url->out(false, array('scheme' => 3))
++		);
++		$c4_attrs = array(
++			'id' => 'block_accessibility_colour4',
++			'href' => $colour_url->out(false, array('scheme' => 4))
++		);
++		if (!isset($USER->colourscheme)) {
++			$c1_attrs['class'] = 'disabled';
++		}
++
++
++		// display:inline-block CSS declaration is not applied to block's buttons because IE7 doesn't support it. float is used insted for IE7 only
++		$clearfix = '';
++		if(preg_match('/(?i)msie [1-7]/',$_SERVER['HTTP_USER_AGENT'])){
++			$clearfix = html_writer::tag('div', '', array('style'=>'clear:both')); // required for IE7
++		}
++
++		// RENDER BLOCK HTML
++		// ===============================================
++		$content = '';
++
++		$strchar = get_string('char', 'block_accessibility');
++		$resetchar = "R";
++		$divattrs = array('id' => 'accessibility_controls', 'class' => 'content');
++		$listattrs = array('id' => 'block_accessibility_textresize', 'class' => 'button_row');
++
++		$content .= html_writer::start_tag('div', $divattrs);
++		$content .= html_writer::start_tag('ul', $listattrs);
++
++		$content .= html_writer::start_tag('li', array('class' => 'access-button'));
++		$content .= html_writer::tag('a', $strchar.'-', $dec_attrs);
++		$content .= html_writer::end_tag('li');
++
++		$content .= html_writer::start_tag('li', array('class' => 'access-button'));
++		$content .= html_writer::tag('a', $strchar, $reset_attrs);
++		$content .= html_writer::end_tag('li');
++
++		$content .= html_writer::start_tag('li', array('class' => 'access-button'));
++		$content .= html_writer::tag('a', $strchar.'+', $inc_attrs);
++		$content .= html_writer::end_tag('li');
++
++		$content .= html_writer::start_tag('li', array('class' => 'access-button'));
++		$content .= html_writer::tag('a', '&nbsp', $save_attrs);
++		$content .= html_writer::end_tag('li');
++
++		$content .= html_writer::end_tag('ul');
++		
++		$content .= $clearfix;
++
++
++		// Colour change buttons
++		$content .= html_writer::start_tag('ul', array('id' => 'block_accessibility_changecolour'));
++
++		$content .= html_writer::start_tag('li', array('class' => 'access-button'));
++		$content .= html_writer::tag('a', $resetchar, $c1_attrs);
++		$content .= html_writer::end_tag('li');
++
++		$content .= html_writer::start_tag('li', array('class' => 'access-button'));
++		$content .= html_writer::tag('a', $strchar, $c2_attrs);
++		$content .= html_writer::end_tag('li');
++
++		$content .= html_writer::start_tag('li', array('class' => 'access-button'));
++		$content .= html_writer::tag('a', $strchar, $c3_attrs);
++		$content .= html_writer::end_tag('li');
++
++		$content .= html_writer::start_tag('li', array('class' => 'access-button'));
++		$content .= html_writer::tag('a', $strchar, $c4_attrs);
++		$content .= html_writer::end_tag('li');
++
++		$content .= html_writer::end_tag('ul');
++
++		$content .= $clearfix;
++
++
++
++		// e.g. "settings saved" or etc.
++		if (isset($USER->accessabilitymsg)) {
++			$message = $USER->accessabilitymsg;
++			unset($USER->accessabilitymsg);
++		} else {
++			$message = '';
++		}
++		$messageattrs = array('id' => 'block_accessibility_message', 'class' => 'clearfix');
++		$content .= html_writer::tag('div', $message, $messageattrs);
++
++		// data to pass to module.js
++		$jsdata['autoload_atbar'] = false;
++		$jsdata['instance_id'] = $this->instance->id;
++
++		// RENDER ATBAR
++		// ===============================================
++		$showATbar = DEFAULT_SHOWATBAR; // by default
++		if(isset($this->config->showATbar)) $showATbar = $this->config->showATbar;
++
++		if($showATbar){
++
++
++			// load database record for a current user
++			$options = $DB->get_record('block_accessibility', array('userid' => $USER->id));
++
++			// initialize ATBar 
++			$checkbox_attrs = array(
++				'type' => 'checkbox',
++				'value' => 1,
++				'id' => 'atbar_auto',
++				'name' => 'atbar_auto',
++				'class' => 'atbar_control',
++			);
++
++			$label_attrs = array(
++				'for' => 'atbar_auto',
++				'class' => 'atbar_control'
++			);
++
++
++			if ($options && $options->autoload_atbar) {
++				$checkbox_attrs['checked'] = 'checked';
++				$jsdata['autoload_atbar'] = true;
++			} 
++
++			// ATbar launch button (if javascript is enabled)
++			$launch_attrs = array(
++				'type' => 'button',
++				'value' => get_string('launchtoolbar', 'block_accessibility'),
++				'id' => 'block_accessibility_launchtoolbar',
++				'class' => 'atbar_control access-button'
++			);
++
++			// render ATBar
++			$content .= html_writer::empty_tag('input', $launch_attrs);
++
++			$spanattrs = array('class' => 'atbar-always');
++			$content .= html_writer::start_tag('span', $spanattrs);
++			$content .= html_writer::empty_tag('input', $checkbox_attrs);
++			$strlaunch = get_string('autolaunch', 'block_accessibility');
++			$content .= html_writer::tag('label', $strlaunch, $label_attrs);
++			$content .= html_writer::end_tag('span');
++		}
++
++		$content .= html_writer::end_tag('div');
++
++		// loader icon
++		// html_writer::empty_tag('img', array('src' => new moodle_url(self::LOADER_ICON), 'alt' => 'loader icon')); // it doesn't work so it's implemented by CSS
++		$spanattrs = array('id' => 'loader-icon');
++		$content .= html_writer::start_tag('span', $spanattrs);
++		$content .= html_writer::end_tag('span');
++
++		$content .= $clearfix;
++
++
++
++
++		// SET THE BLOCK CONTENT
++		// ===============================================
++		$this->content = new stdClass;
++		$this->content->footer = '';
++		$this->content->text = $content;
++
++
++		// keep in mind that dynamic AJAX mode cannot work properly with IE <= 8 (for now), so javascript will not even be loaded
++		if(!preg_match('/(?i)msie [1-8]/',$_SERVER['HTTP_USER_AGENT']))
++		{
++			// INCLUDE JS AND PASS PARAMETERS
++			// ===============================================
++			// language strings to pass to module.js
++			$this->page->requires->string_for_js('saved', 'block_accessibility');
++			$this->page->requires->string_for_js('jsnosave', 'block_accessibility');
++			$this->page->requires->string_for_js('reset', 'block_accessibility');
++			$this->page->requires->string_for_js('jsnosizereset', 'block_accessibility');
++			$this->page->requires->string_for_js('jsnocolourreset', 'block_accessibility');
++			$this->page->requires->string_for_js('jsnosize', 'block_accessibility');
++			$this->page->requires->string_for_js('jsnocolour', 'block_accessibility');
++			$this->page->requires->string_for_js('jsnosizereset', 'block_accessibility');
++			$this->page->requires->string_for_js('jsnotloggedin', 'block_accessibility');
++			$this->page->requires->string_for_js('launchtoolbar', 'block_accessibility');
++
++			$jsmodule = array(
++				'name'  =>  'block_accessibility',
++				'fullpath'  =>  self::JS_URL,
++				'requires'  =>  array('base', 'node', 'stylesheet')
++			);
++
++			// include js script and pass the arguments
++			$this->page->requires->js_init_call('M.block_accessibility.init', $jsdata, false, $jsmodule);
++		}
++		
++
++		return $this->content;
++	}
++
++}
+diff --git a/blocks/accessibility/changecolour.php b/blocks/accessibility/changecolour.php
+new file mode 100755
+index 0000000..c3e9cf0
+--- /dev/null
++++ b/blocks/accessibility/changecolour.php
+@@ -0,0 +1,80 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++
++/**
++ * Sets the session variable for custom colour schemes                  (1)
++ *
++ * This page accepts the required colour scheme as an argument, and
++ * sets a session variable accordingly. If the colour scheme is 1 (the
++ * theme default) the variable is unset.
++ * If the page is being requested via AJAX, we just return HTTP 200, or
++ * 400 if the parameter was invalid. If requesting normally, we redirect
++ * to reset the saved setting, or to the page we came from as required. (2)
++ *
++ * @package   block_accessibility                                      (3)
++ * @copyright Copyright &copy; 2009 Taunton's College                   (4)
++ * @author  Mark Johnson                                               (5)
++ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later (6)
++ * @param int scheme - The number of the colour scheme, 1-4             (7)
++ */
++
++// INITIALIZATION
++// =========================================================
++require_once('../../config.php');
++require_once($CFG->dirroot.'/blocks/accessibility/lib.php');
++require_login();
++
++$scheme = required_param('scheme', PARAM_INT);
++
++switch($scheme) {
++    case 1: 
++        // Clear the scheme stored in the session
++        unset($USER->colourscheme);
++
++        // Clear user records in database
++        $urlparams = array(
++            'op' => 'reset',
++            'scheme' => true,
++            'userid' => $USER->id
++        );
++        if(!accessibility_is_ajax()){
++            $redirect = required_param('redirect', PARAM_TEXT);
++            $urlparams['redirect'] = $redirect; 
++        }
++        $redirecturl = new moodle_url('/blocks/accessibility/database.php', $urlparams);
++        redirect($redirecturl);
++        break;
++
++    case 2:
++    case 3:
++    case 4:
++        $USER->colourscheme = $scheme;
++        break;
++
++    default:
++        header("HTTP/1.0 400 Bad Request");
++        break;
++}
++
++if (accessibility_is_ajax()) {
++    // it would be good idea to include userstyles.php here as HTTP response
++    // this would save one extra HTTP request from module.js
++} else {
++    $redirect = required_param('redirect', PARAM_TEXT);
++    $redirecturl = new moodle_url($redirect);
++    redirect($redirecturl);
++}
+diff --git a/blocks/accessibility/changesize.php b/blocks/accessibility/changesize.php
+new file mode 100755
+index 0000000..10cba58
+--- /dev/null
++++ b/blocks/accessibility/changesize.php
+@@ -0,0 +1,138 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++
++/**
++ * Changes the text size via PHP or AJAX                               (1)
++ *
++ * This file finds the current font size, increases/decreases/resets it
++ * as specified, and stores it in the $USER->fontsize session variable.
++ * If requested via AJAX, it also returns the font size as a JSON
++ * string or suiable error code. If not, it redirects the user back to
++ * where they came from.                                               (2)
++ *
++ * @package   block_accessibility                                      (3)
++ * @author      Mark Johnson <mark.johnson@tauntons.ac.uk>
++ * @copyright   2010 Tauntons College, UK
++ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later (5)
++ */
++
++header('Cache-Control: no-cache');
++
++// INITIALIZATION
++// =========================================================
++require_once('../../config.php');
++require_once($CFG->dirroot.'/blocks/accessibility/lib.php');
++require_login();
++
++
++// if the user hasn't already changed the size, we need to find a default/referent so we know where we're increasing/decreasing from
++if (!isset($USER->defaultfontsize)) {
++    $USER->defaultfontsize = DEFAULT_FONTSIZE;
++
++    // if javascript enabled, get current font-size value directly from the page
++    // UPDATE 24.09.2014. It turns out not to be correct, needs to be adjusted...at least for clean theme...
++    /*
++    $cur = optional_param('cur', 0, PARAM_INT);
++    if ($cur) $USER->defaultfontsize = $cur;
++    */
++}
++
++// GET THE CURRENT FONT-SIZE VALUE IN PX
++// =========================================================
++// NOTE: User settings priority: 1. $USER session, 2. database, 3. default
++$current = $USER->defaultfontsize;
++if (isset($USER->fontsize)) {
++    $current = $USER->fontsize; // user session
++}
++else if ($userstyle = $DB->get_record('block_accessibility', array('userid' => $USER->id))) {
++    $current = $userstyle->fontsize; // user stored settings
++}
++
++// if value is in %, convert it to px to get array index of px so we are able to increment it...
++if ($current > MAX_PX_FONTSIZE) { // must be in % then
++    // If we're already dealing with a percentage,
++    $current = accessibility_getsize($current); // Get the size in pixels
++}
++
++// ok, we have font size in px now, get new percentage value from it
++// ...
++
++// CALCULATE THE NEW FONT SIZE
++// =========================================================
++$op = required_param('op', PARAM_TEXT);
++switch($op) {
++    case 'inc':
++        if ($current == MAX_PX_FONTSIZE) {
++            // If we're at the upper limit, don't increase any further.
++            $new = accessibility_getsize($current);
++        } else {
++            // Otherwise, increase
++            $new = accessibility_getsize($current+1);
++        }
++        break;
++    case 'dec':
++        if ($current == MIN_PX_FONTSIZE) {
++            // If we're at the lower limit, don't decrease any further.
++            $new = accessibility_getsize($current);
++        } else {
++            $new = accessibility_getsize($current-1);
++        }
++        break;
++    case 'reset':
++        // Clear the fontsize stored in the session
++        unset($USER->fontsize); 
++        unset($USER->defaultfontsize);
++
++        // Clear user records in database
++        $urlparams = array(
++            'op' => 'reset',
++            'size' => true,
++            'userid' => $USER->id
++        );
++        if(!accessibility_is_ajax()){
++            $redirect = required_param('redirect', PARAM_TEXT);
++            $urlparams['redirect'] = $redirect; 
++        }
++
++        $redirecturl = new moodle_url('/blocks/accessibility/database.php', $urlparams);
++        redirect($redirecturl);
++
++
++        // ... REDIRECTED! EXIT
++        
++        break;
++    default: // ERROR   
++        if (accessibility_is_ajax()) header('HTTP/1.0 400 Bad Request');
++        else print_error('invalidop', 'block_accessibility');
++        exit();
++}
++
++// SET THE NEW FONT SIZE IN % !!
++// =========================================================
++$USER->fontsize = $new; // If we've just increased or decreased, save the new size to the session
++
++if (accessibility_is_ajax()) {
++    // no redirect
++    // it would be good idea to include userstyles.php here as HTTP response
++    // this would save one extra HTTP request from module.js
++} else {
++    // Otherwise, redirect the user
++    // if action is not achieved through ajax, redirect back to page is required
++    $redirect = required_param('redirect', PARAM_TEXT);
++    $redirecturl = new moodle_url($redirect);
++    redirect($redirecturl);
++}
+diff --git a/blocks/accessibility/database.php b/blocks/accessibility/database.php
+new file mode 100755
+index 0000000..bd0829b
+--- /dev/null
++++ b/blocks/accessibility/database.php
+@@ -0,0 +1,123 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++
++/**
++ * Interacts with the database to save/reset font size settings        (1)
++ *
++ * This file handles all the blocks database interaction. If saving,
++ * it will check if the current user already has a saved setting, and
++ * create/update it as appropriate. If resetting, it will delete the
++ * user's setting from the database. If responding to AJAX, it responds
++ * with suitable HTTP error codes. Otherwise, it sets a message to
++ * display, and redirects the user back to where they came from.       (2)
++ *
++ * @package   block_accessibility                                      (3)
++ * @copyright 2009 &copy; Taunton's College                            (4)
++ * @author Mark Johnson <mark.johnson@taunton.ac.uk>
++ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later (5)
++ */
++
++require_once('../../config.php');
++require_once($CFG->dirroot.'/blocks/accessibility/lib.php');
++require_login();
++
++$op = required_param('op', PARAM_TEXT);
++$size = optional_param('size', false, PARAM_BOOL);
++$scheme = optional_param('scheme', false, PARAM_BOOL);
++$atbar = optional_param('atbar', false, PARAM_BOOL);
++
++
++if (!accessibility_is_ajax()) {
++    $redirect = required_param('redirect', PARAM_TEXT);
++    $redirecturl = new moodle_url($redirect);
++}
++
++switch ($op) {
++    case 'save':
++
++        if ($setting = $DB->get_record('block_accessibility', array('userid' => $USER->id))) {
++            // Check if the user's already got a saved setting. If they have, just update it.
++            if ($size && isset($USER->fontsize)) {
++                $setting->fontsize = $USER->fontsize;
++            }
++            if ($scheme && isset($USER->colourscheme)) {
++                $setting->colourscheme = $USER->colourscheme;
++            }
++            if ($atbar) {
++                $setting->autoload_atbar = 1;
++            }
++            $DB->update_record('block_accessibility', $setting);
++        } else {
++            $setting = new stdClass;
++            // Otherwise, create a new record for them.
++            if ($size && isset($USER->fontsize)) {
++                $setting->fontsize = $USER->fontsize;
++            }
++            if ($scheme && isset($USER->colourscheme)) {
++                $setting->colourscheme = $USER->colourscheme;
++            }
++            if ($atbar) {
++                $setting->autoload_atbar = 1;
++            }
++            $setting->userid = $USER->id;
++            $DB->insert_record('block_accessibility', $setting);
++        }
++        if (!accessibility_is_ajax()) {
++            // If not responding to AJAX, set a message to display and redirect.
++            $USER->accessabilitymsg = get_string('saved', 'block_accessibility');
++            redirect($redirecturl);
++        }
++        break;
++
++    case 'reset':
++        if ($setting = $DB->get_record('block_accessibility', array('userid' => $USER->id))) {
++            // if they've got a record, delete it and redirect the user if appropriate.
++            if ($size) {
++                $setting->fontsize = null;
++            } else if (!empty($USER->fontsize)) {
++                $setting->fontsize = $USER->fontsize;
++            }
++            if ($scheme) {
++                $setting->colourscheme = null;
++            } else if (!empty($USER->colourscheme)) {
++                $setting->colourscheme = $USER->colourscheme;
++            }
++            if ($atbar) {
++                $setting->autoload_atbar = 0;
++            }
++
++            if (empty($setting->fontsize) && empty($setting->colourscheme) && empty($setting->atbar)) {
++                $DB->delete_records('block_accessibility', array('userid' => $USER->id));
++            } else {
++                $DB->update_record('block_accessibility', $setting);
++            }
++            if (!accessibility_is_ajax()) {
++                $USER->accessabilitymsg = get_string('reset', 'block_accessibility');
++            }
++        } else if (accessibility_is_ajax()) {
++            // The request should return 404 in the event that there is no saved setting to be reset (the record is "Not Found", so 404 seemed the appropriate response)
++            // but if user wants to clear the setting (both session and db), we don't really care if setting existed
++            //header("HTTP/1.0 404 Not Found");
++        }
++        if (!accessibility_is_ajax()) {
++            redirect($redirecturl);
++        }
++        break;
++
++    default:
++        header("HTTP/1.0 400 Bad Request");
++}
+diff --git a/blocks/accessibility/db/access.php b/blocks/accessibility/db/access.php
+new file mode 100755
+index 0000000..7e0a35c
+--- /dev/null
++++ b/blocks/accessibility/db/access.php
+@@ -0,0 +1,50 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++/**
++ * Capability definitions for the course_menu block
++ *
++ * @package    block
++ * @subpackage course_accessibility
++ * @copyright  2013 onwards Paul Vaughan
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++defined('MOODLE_INTERNAL') || die();
++
++$capabilities = array(
++
++    // New standard capability 'addinstance'.
++    'block/accessibility:addinstance' => array(
++        'captype'       => 'write',
++        'contextlevel'  => CONTEXT_COURSE,
++        'archetypes'    => array(
++            'editingteacher'    => CAP_ALLOW,
++            'manager'           => CAP_ALLOW
++        ),
++        'clonepermissionsfrom'  => 'moodle/site:manageblocks'
++    ),
++    'block/accessibility:myaddinstance' => array(
++      'riskbitmask'  => RISK_PERSONAL,
++      'captype'      => 'read',
++      'contextlevel' => CONTEXT_SYSTEM,
++      'archetypes'   => array(
++        'user' => CAP_ALLOW,
++      ),
++      'clonepermissionsfrom' => 'moodle/my:manageblocks'
++    ),
++
++);
+diff --git a/blocks/accessibility/db/install.xml b/blocks/accessibility/db/install.xml
+new file mode 100755
+index 0000000..fc413d5
+--- /dev/null
++++ b/blocks/accessibility/db/install.xml
+@@ -0,0 +1,20 @@
++<?xml version="1.0" encoding="UTF-8" ?>
++<XMLDB PATH="blocks/accessibility/db" VERSION="20111220" COMMENT="XMLDB file for Moodle blocks/accessibility"
++    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
++    xsi:noNamespaceSchemaLocation="../../../lib/xmldb/xmldb.xsd"
++>
++  <TABLES>
++    <TABLE NAME="block_accessibility" COMMENT="Default comment for accessibility, please edit me">
++      <FIELDS>
++        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="true" SEQUENCE="true" NEXT="userid"/>
++        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="true" SEQUENCE="false" PREVIOUS="id" NEXT="fontsize"/>
++        <FIELD NAME="fontsize" TYPE="number" LENGTH="4" NOTNULL="false" UNSIGNED="true" SEQUENCE="false" DECIMALS="1" PREVIOUS="userid" NEXT="colourscheme"/>
++        <FIELD NAME="colourscheme" TYPE="int" LENGTH="1" NOTNULL="false" UNSIGNED="true" SEQUENCE="false" PREVIOUS="fontsize" NEXT="autoload_atbar"/>
++        <FIELD NAME="autoload_atbar" TYPE="int" LENGTH="1" NOTNULL="true" UNSIGNED="true" DEFAULT="0" SEQUENCE="false" COMMENT="Has the user set ATbar to autoload?" PREVIOUS="colourscheme"/>
++      </FIELDS>
++      <KEYS>
++        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
++      </KEYS>
++    </TABLE>
++  </TABLES>
++</XMLDB>
+\ No newline at end of file
+diff --git a/blocks/accessibility/db/upgrade.php b/blocks/accessibility/db/upgrade.php
+new file mode 100755
+index 0000000..1b17ead
+--- /dev/null
++++ b/blocks/accessibility/db/upgrade.php
+@@ -0,0 +1,132 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++
++/**
++ * Defines upgrades for Accessibility Block
++ *
++ * @package   block_accessibility                                      (4)
++ * @copyright Copyright 2009 onwards Taunton's College                   (5)
++ * @author Mark Johnson <mark.johnson@tauntons.ac.uk>                  (6)
++ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later (7)
++ */
++defined('MOODLE_INTERNAL') || die();
++
++function xmldb_block_accessibility_upgrade($oldversion=0) {
++
++    global $CFG, $THEME, $DB;
++
++    $dbman = $DB->get_manager();
++
++    $result = true;
++
++    // And upgrade begins here. For each one, you'll need one
++    // block of code similar to the next one. Please, delete
++    // this comment lines once this file start handling proper
++    // upgrade code.
++
++    if ($result && $oldversion < 2009071000) {
++
++        // Changing type of field fontsize on table accessibility to number
++        $table = new XMLDBTable('accessibility');
++        $field = new XMLDBField('fontsize');
++        $field->setAttributes(XMLDB_TYPE_NUMBER,
++                              '4, 1',
++                              XMLDB_UNSIGNED,
++                              null,
++                              null,
++                              null,
++                              null,
++                              null,
++                              'userid');
++
++        // Launch change of type for field fontsize
++        $result = $result && $dbman->change_field_type($table, $field);
++        upgrade_block_savepoint(true, 2009071000, 'accessibility');
++    }
++
++    if ($result && $oldversion < 2009082500) {
++
++        // Define field colourscheme to be added to accessibility
++        $table = new xmldb_table('accessibility');
++        $field = new xmldb_field('colourscheme',
++                              XMLDB_TYPE_INTEGER,
++                              '1',
++                              XMLDB_UNSIGNED,
++                              null,
++                              null,
++                              null,
++                              null,
++                              null,
++                              'fontsize');
++
++        // Launch add field colourschemea
++        if (!$dbman->field_exists($table,$field)) {
++            $dbman->add_field($table, $field);
++        }
++        upgrade_block_savepoint(true, 2009082500, 'accessibility');
++    }
++
++    if ($oldversion < 2010121500) {
++
++        // Define field autoload_atbar to be added to accessibility
++        $table = new xmldb_table('accessibility');
++        $cs = new xmldb_field('colourscheme',
++                              XMLDB_TYPE_INTEGER,
++                              '1',
++                              XMLDB_UNSIGNED,
++                              null,
++                              null,
++                              null,
++                              null,
++                              null,
++                              'fontsize');
++        $field = new xmldb_field('autoload_atbar',
++                                 XMLDB_TYPE_INTEGER,
++                                 '1',
++                                 XMLDB_UNSIGNED,
++                                 XMLDB_NOTNULL,
++                                 null,
++                                 '0',
++                                 'colourscheme');
++        if (!$dbman->field_exists($table, $cs)) {
++            $dbman->add_field($table, $cs);
++        }
++        // Conditionally launch add field autoload_atbar
++        if (!$dbman->field_exists($table, $field)) {
++            $dbman->add_field($table, $field);
++        }
++
++        // accessibility savepoint reached
++        upgrade_block_savepoint(true, 2010121500, 'accessibility');
++    }
++
++    if ($oldversion < 2011122000) {
++
++        // Define table accessibility to be renamed to block_accessibility
++        $table = new xmldb_table('accessibility');
++
++        // Launch rename table for accessibility
++        $dbman->rename_table($table, 'block_accessibility');
++
++        // accessibility savepoint reached
++        upgrade_block_savepoint(true, 2011122000, 'accessibility');
++    }
++
++
++    return $result;
++
++}
+diff --git a/blocks/accessibility/defaults.php b/blocks/accessibility/defaults.php
+new file mode 100755
+index 0000000..9ed9e98
+--- /dev/null
++++ b/blocks/accessibility/defaults.php
+@@ -0,0 +1,14 @@
++<?php
++/*
++	This file is used in edit_form.php and userstyles.php
++*/
++
++$defaults = array(
++	// fg1 and bg1 would be reset/default colour - do not define it
++	'bg2' => '#FFFFCC',
++	'fg2' => '', // default theme colours will be unchanged
++	'bg3' => '#99CCFF',
++	'fg3' => '',
++	'bg4' => '#000000',
++	'fg4' => '#FFFF00',
++);	
+\ No newline at end of file
+diff --git a/blocks/accessibility/edit_form.php b/blocks/accessibility/edit_form.php
+new file mode 100755
+index 0000000..4853071
+--- /dev/null
++++ b/blocks/accessibility/edit_form.php
+@@ -0,0 +1,94 @@
++<?php
++
++// This settings will be available throughout the block.
++// Usage example: $this->config->autosave
++
++class block_accessibility_edit_form extends block_edit_form {
++	
++	CONST CNF_AUTOSAVE = 'config_autosave';
++	CONST CNF_ATBAR = 'config_showATbar';
++	CONST CNF_FG = 'config_fg'; // fg1, fg2,...
++	CONST CNF_BG = 'config_bg'; // bg1, bg2,...
++
++	CONST RE_COLOUR = '/^#[a-f0-9]{6}$/i';
++
++	protected function specific_definition($mform) {	
++
++
++
++
++
++
++		// load default colours
++		global $CFG;
++		require_once($CFG->dirroot.'/blocks/accessibility/defaults.php');
++		
++		/* not implemented, so far I'm not sure if it's going to be useful
++		// auto-save user settings
++		$mform->addElement('advcheckbox',self::CNF_AUTOSAVE,
++			get_string (self::CNF_AUTOSAVE, 'block_accessibility'),
++			get_string (self::CNF_AUTOSAVE.'_checkbox', 'block_accessibility' ),
++			null,
++			array (0, 1)
++		);
++		$mform->setDefault(self::CNF_AUTOSAVE, 0);
++		$mform->setType (self::CNF_AUTOSAVE, PARAM_INT);
++		$mform->addHelpButton(self::CNF_AUTOSAVE, self::CNF_AUTOSAVE, 'block_accessibility');
++		*/
++
++		// allow ATbar 
++		$mform->addElement('advcheckbox', self::CNF_ATBAR,
++			get_string (self::CNF_ATBAR, 'block_accessibility'),
++			get_string (self::CNF_ATBAR.'_checkbox', 'block_accessibility'),
++			null,
++			array (0, 1)
++		);
++		$mform->setDefault(self::CNF_ATBAR, 1);
++		$mform->setType (self::CNF_ATBAR, PARAM_INT);
++		$mform->addHelpButton(self::CNF_ATBAR, self::CNF_ATBAR, 'block_accessibility');
++
++		// An idea: put here default font-size setting?
++
++		// colour schemes
++		for($i=2; $i<5; $i++) {  // this is how many declarations we defined in defaults.php
++			// get previously saved configuration
++			$form = $this->block->config; // or cast it to (array) and get properties like with []
++			$fg = str_replace('config_', '', self::CNF_FG);
++			$bg = str_replace('config_', '', self::CNF_BG);
++			$fg_colour = isset($form->{$fg.$i})? $form->{$fg.$i} : $defaults['fg'.$i];
++			$bg_colour = isset($form->{$bg.$i})? $form->{$bg.$i} : $defaults['bg'.$i];
++
++			// display scheme example and identifier number of a scheme
++			$mform->addElement('html', '
++			<div class="fitem" style="padding:10px 0 8px">
++				<div class="fitemtitle"></div>
++				<div class="felement">
++					<span style="padding:2px 8px; color:'.$fg_colour.'; border:1px solid '.$fg_colour.'; background:'.$bg_colour.' !important">A</span>
++					Colour scheme #'.$i.'
++				</div>
++			</div>');
++
++			// foreground colour
++			$id = self::CNF_FG.$i;
++			$mform->addElement('text', $id, get_string(self::CNF_FG, 'block_accessibility'));
++			$mform->setDefault($id, $defaults['fg'.$i]); 
++			$mform->setType($id, PARAM_TEXT);
++			$mform->addHelpButton($id, self::CNF_FG, 'block_accessibility');
++			$mform->addRule($id, get_string('color_input_error', 'block_accessibility'), 'regex', self::RE_COLOUR, 'server', false, false);
++			
++			// background colour
++			$id = self::CNF_BG.$i;
++			$mform->addElement('text', $id, get_string(self::CNF_BG, 'block_accessibility'));
++			$mform->setDefault($id, $defaults['bg'.$i]);
++			$mform->setType($id, PARAM_TEXT);
++			$mform->addHelpButton($id, self::CNF_BG, 'block_accessibility');
++			$mform->addRule($id, get_string('color_input_error', 'block_accessibility'), 'regex', self::RE_COLOUR, 'server', false, false);
++
++		}
++
++		// if someone is willing to do settings form reset button, it would be helpful
++			
++		
++		
++	}
++}
+\ No newline at end of file
+diff --git a/blocks/accessibility/lang/de/block_accessibility.php b/blocks/accessibility/lang/de/block_accessibility.php
+new file mode 100755
+index 0000000..1e6f814
+--- /dev/null
++++ b/blocks/accessibility/lang/de/block_accessibility.php
+@@ -0,0 +1,67 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++
++/**
++ * German translation                                                 (1)
++ *
++ * @author  Joachim Vogelgesang                                        (2)
++ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later (3)
++ */
++defined('MOODLE_INTERNAL') || die();
++
++$string['autolaunch'] = '(immer?)';
++$string['blockname'] = 'Barrierefreiheit';
++$string['char'] = 'A';
++$string['clearedoldcache'] = '{$a} alte Dateien aus dem Cache gelöscht';
++$string['dectext'] = 'Textgröße verkleinern';
++$string['inctext'] = 'Textgröße erhöhen';
++$string['invalidop'] = 'Die angegebene Operation war ungültig!';
++$string['jsnocolour'] = 'Fehler beim Ändern des Farbschemas';
++$string['jsnocolourreset'] = 'Fehler beim Zurücksetzen des Farbschemas';
++$string['jsnosave'] = 'Fehler beim Speichern der Einstellungen';
++$string['jsnosize'] = 'Fehler beim Ändern der Größe';
++$string['jsnosizereset'] = 'Fehler beim Zurücksetzen der Textgröße';
++$string['launchtoolbar'] = 'ATbar starten';
++$string['pluginname'] = 'Barrierefreiheit';
++$string['pluginnameplural'] = 'Barrierefreiheit';
++$string['resettext'] = 'Textgröße zurücksetzen (Löscht gespeicherte Einstellung';
++$string['reset'] = 'Einstellung gelöscht';
++$string['save'] = 'Einstellung speichern';
++$string['saved'] = 'Einstellung gespeichert';
++$string['col1text'] = 'Standard Farbschema (Löscht gespeicherte Einstellung)';
++$string['col2text'] = 'Reduzierter Kontrast 1';
++$string['col3text'] = 'Reduzierter Kontrast 2';
++$string['col4text'] = 'Hoher Kontrast';
++
++/*	Configuration form - please help us translate it on GitHub 
++	------------------------------------------------------------
++*/
++$string['config_autosave'] = 'Auto save'; // label
++$string['config_autosave_checkbox'] = 'Save user settings automatically (button "save" will disappear)'; // checkbox label
++$string['config_autosave_help'] = 'Font size and colour schemes settings are automatically saved to the session as long as user is logged in to the system. However, session settings will be cleared once the user log off. The user can keep chosen settings throughout the sessions using the "save" button in the block. Enabling Auto-save option will remove the "save" button and automatically save settings for the user. This might lead to slightly higher impact to the system performance, which is why this option is disabled by default.'; // help block
++$string['config_showATbar'] = 'ATbar';
++$string['config_showATbar_checkbox'] = 'Allow ATbar appearance within Accessibility block';
++$string['config_showATbar_help'] = 'Accessibility block also integrates ATbar from Southampton University ECS <a href="http://www.atbar.org">http://www.atbar.org</a>.';
++$string['config_fg'] = 'Text colour (not required)';
++$string['config_fg_help'] = 'Define colour scheme foreground colour here. Keep in mind that the colour will be applied uniformly to all user interface elements. It is not always desirable to have the same colour in each user interface element. <strong>It is recommended to leave foreground colour field empty</strong> so that elements can keep its default colours. Try to change background colour only.';
++$string['config_bg'] = 'Background colour';
++$string['config_bg_help'] = 'Define colour scheme background colour here. Keep in mind that the background colour will be applied uniformly to all user interface elements.';
++$string['color_input_error'] = 'Please enter a color in a format as such: #FF0050';
++
++$string['accessibility:addinstance'] = 'Add a new Accessibility block';
++$string['accessibility:myaddinstance'] = 'Add a new Accessibility block to My home';
++$string['jsnotloggedin'] = 'Error! Please check if you are logged-in to the system or contact your administrator';
+diff --git a/blocks/accessibility/lang/en/block_accessibility.php b/blocks/accessibility/lang/en/block_accessibility.php
+new file mode 100755
+index 0000000..e8f64d3
+--- /dev/null
++++ b/blocks/accessibility/lang/en/block_accessibility.php
+@@ -0,0 +1,70 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++
++/**
++ * English Lang Strings                                                (1)
++ *
++ * @author  Mark Johnson                                              (2)
++ * @copyright &copy; Taunton's College 2009                             (3)
++ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later (4)
++ */
++defined('MOODLE_INTERNAL') || die();
++
++$string['autolaunch'] = '(always?)';
++$string['blockname'] = 'Accessibility';
++$string['clearedoldcache'] = 'Cleared {$a} old files from the cache';
++$string['char'] = 'A';
++$string['dectext'] = 'Decrease Text Size';
++$string['inctext'] = 'Increase Text Size';
++$string['invalidop'] = 'The specified operation was invalid!';
++$string['jsnocolour'] = 'Error changing colour scheme';
++$string['jsnocolourreset'] = 'Error resetting colour scheme';
++$string['jsnosave'] = 'Error saving settings';
++$string['jsnosize'] = 'Error changing size';
++$string['jsnosizereset'] = 'Error resetting text size';
++$string['launchtoolbar'] = 'Launch ATbar';
++$string['pluginname'] = 'Accessibility';
++$string['pluginnameplural'] = 'Accessibility Blocks';
++$string['resettext'] = 'Reset Text Size (Clears Saved Setting)';
++$string['reset'] = 'Setting Cleared';
++$string['save'] = 'Save Setting';
++$string['saved'] = 'Setting Saved';
++$string['col1text'] = 'Deafult Colour Scheme (Clears Saved Setting)';
++$string['col2text'] = 'Lowered Contrast 1';
++$string['col3text'] = 'Lowered Contrast 2';
++$string['col4text'] = 'High Contrast';
++
++/*	Configuration form - please help us translate it on GitHub 
++	------------------------------------------------------------
++*/
++/* not implemented
++$string['config_autosave'] = 'Auto save'; // label
++$string['config_autosave_checkbox'] = 'Save user settings automatically (button "save" will disappear)'; // checkbox label
++$string['config_autosave_help'] = 'Font size and colour schemes settings are automatically saved to the session as long as user is logged in to the system. However, session settings will be cleared once the user log off. The user can keep chosen settings throughout the sessions using the "save" button in the block. Enabling Auto-save option will remove the "save" button and automatically save settings for the user. This might lead to slightly higher impact to the system performance, which is why this option is disabled by default.'; // help block
++*/
++$string['config_showATbar'] = 'ATbar';
++$string['config_showATbar_checkbox'] = 'Allow ATbar appearance within Accessibility block';
++$string['config_showATbar_help'] = 'Accessibility block also integrates ATbar from Southampton University ECS <a href="http://www.atbar.org">http://www.atbar.org</a>.';
++$string['config_fg'] = 'Text colour (not required)';
++$string['config_fg_help'] = 'Define colour scheme foreground colour here. Keep in mind that the colour will be applied uniformly to all user interface elements. It is not always desirable to have the same colour in each user interface element. <strong>It is recommended to leave foreground colour field empty</strong> so that elements can keep its default colours. Try to change background colour only.';
++$string['config_bg'] = 'Background colour';
++$string['config_bg_help'] = 'Define colour scheme background colour here. Keep in mind that the background colour will be applied uniformly to all user interface elements.';
++$string['color_input_error'] = 'Please enter a color in a format as such: #FF0050';
++
++$string['accessibility:addinstance'] = 'Add a new Accessibility block';
++$string['accessibility:myaddinstance'] = 'Add a new Accessibility block to My home';
++$string['jsnotloggedin'] = 'Error! Please check if you are logged-in to the system or contact your administrator';
+diff --git a/blocks/accessibility/lang/es/block_accessibility.php b/blocks/accessibility/lang/es/block_accessibility.php
+new file mode 100755
+index 0000000..eb133b8
+--- /dev/null
++++ b/blocks/accessibility/lang/es/block_accessibility.php
+@@ -0,0 +1,67 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++
++/**
++ * Spanish translation                                                 (1)
++ *
++ * @author  Enrique Robredo                                            (2)
++ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later (3)
++ */
++defined('MOODLE_INTERNAL') || die();
++
++$string['autolaunch'] = '(¿siempre?)';
++$string['blockname'] = 'Accesibilidad';
++$string['char'] = 'A';
++$string['clearedoldcache'] = 'Eliminados de la caché {$a} archivos antiguos';
++$string['dectext'] = 'Disminuir Texto';
++$string['inctext'] = 'Aumentar Texto';
++$string['invalidop'] = 'Esta operación será invalidada';
++$string['jsnocolour'] = 'Se ha producido un error cambiando el esquema de colores';
++$string['jsnocolourreset'] = 'Se ha producido un error reiniciano el esquema de colores';
++$string['jsnosave'] = 'Se ha producido un error cambiando la configuración';
++$string['jsnosize'] = 'Se ha producido un error cambiando el tamaño';
++$string['jsnosizereset'] = 'Se ha producido un error reiniciando el tamaño del texto';
++$string['launchtoolbar'] = 'Lanzar ATbar';
++$string['pluginname'] = 'Accesibilidad';
++$string['pluginnameplural'] = 'Accesibilidad';
++$string['resettext'] = 'Recuperar tamaño de la fuente (Se pierde la configuración guardada)';
++$string['reset'] = 'Configuración Reiniciada';
++$string['save'] = 'Guardar configuración';
++$string['saved'] = 'Configuración guardada';
++$string['col1text'] = 'Volver al esquema de colores original (Se pierde la configuración guardada)';
++$string['col2text'] = 'Bajo Contraste 1';
++$string['col3text'] = 'Bajo Contraste 2';
++$string['col4text'] = 'Alto Contraste';
++
++/*	Configuration form - please help us translate it on GitHub 
++	------------------------------------------------------------
++*/
++$string['config_autosave'] = 'Auto save'; // label
++$string['config_autosave_checkbox'] = 'Save user settings automatically (button "save" will disappear)'; // checkbox label
++$string['config_autosave_help'] = 'Font size and colour schemes settings are automatically saved to the session as long as user is logged in to the system. However, session settings will be cleared once the user log off. The user can keep chosen settings throughout the sessions using the "save" button in the block. Enabling Auto-save option will remove the "save" button and automatically save settings for the user. This might lead to slightly higher impact to the system performance, which is why this option is disabled by default.'; // help block
++$string['config_showATbar'] = 'ATbar';
++$string['config_showATbar_checkbox'] = 'Allow ATbar appearance within Accessibility block';
++$string['config_showATbar_help'] = 'Accessibility block also integrates ATbar from Southampton University ECS <a href="http://www.atbar.org">http://www.atbar.org</a>.';
++$string['config_fg'] = 'Text colour (not required)';
++$string['config_fg_help'] = 'Define colour scheme foreground colour here. Keep in mind that the colour will be applied uniformly to all user interface elements. It is not always desirable to have the same colour in each user interface element. <strong>It is recommended to leave foreground colour field empty</strong> so that elements can keep its default colours. Try to change background colour only.';
++$string['config_bg'] = 'Background colour';
++$string['config_bg_help'] = 'Define colour scheme background colour here. Keep in mind that the background colour will be applied uniformly to all user interface elements.';
++$string['color_input_error'] = 'Please enter a color in a format as such: #FF0050';
++
++$string['accessibility:addinstance'] = 'Add a new Accessibility block';
++$string['accessibility:myaddinstance'] = 'Add a new Accessibility block to My home';
++$string['jsnotloggedin'] = 'Error! Please check if you are logged-in to the system or contact your administrator';
+\ No newline at end of file
+diff --git a/blocks/accessibility/lang/fr/block_accessibility.php b/blocks/accessibility/lang/fr/block_accessibility.php
+new file mode 100755
+index 0000000..bb769e1
+--- /dev/null
++++ b/blocks/accessibility/lang/fr/block_accessibility.php
+@@ -0,0 +1,68 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++
++/**
++ * French Lang Strings                                                (1)
++ *
++ * @author  steve.colin@ecampus-hainaut.be                                       (2)
++ * @copyright &copy; eCampus Provincial 2012   http://www.ecampus-hainaut.be     (3)
++ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later (4)
++ */
++defined('MOODLE_INTERNAL') || die();
++
++$string['autolaunch'] = '(toujours?)';
++$string['blockname'] = 'Accessibilit�';
++$string['clearedoldcache'] = 'Nettoy� {$a} vieux fichier(s) dans le cache';
++$string['char'] = 'A';
++$string['dectext'] = 'Diminuer Taille du Texte';
++$string['inctext'] = 'Augmenter Taille du Texte';
++$string['invalidop'] = 'Op�ration invalide!';
++$string['jsnocolour'] = 'Erreur lors du changement de couleurs';
++$string['jsnocolourreset'] = 'Erreur lors de la remise � z�ro des couleurs';
++$string['jsnosave'] = 'Erreur lors de la sauvegarder des param�tres';
++$string['jsnosize'] = 'Erreur lors du changement de la taille';
++$string['jsnosizereset'] = 'Erreur lors de la remise � z�ro de la taille du texte';
++$string['launchtoolbar'] = 'Lancer ATbar';
++$string['pluginname'] = 'Accessibilit�';
++$string['pluginnameplural'] = 'Accessibilit� Block';
++$string['resettext'] = 'Remise � z�ro de la taille du texte';
++$string['reset'] = 'Param�tres r�-initialis�s';
++$string['save'] = 'Sauver les param�tres';
++$string['saved'] = 'Param�tres sauv�s';
++$string['col1text'] = 'Couleurs par d�faut';
++$string['col2text'] = 'Contraste �lev� 1';
++$string['col3text'] = 'Contraste �lev� 2';
++$string['col4text'] = 'Contraste Haut';
++
++/*	Configuration form - please help us translate it on GitHub 
++	------------------------------------------------------------
++*/
++$string['config_autosave'] = 'Auto save'; // label
++$string['config_autosave_checkbox'] = 'Save user settings automatically (button "save" will disappear)'; // checkbox label
++$string['config_autosave_help'] = 'Font size and colour schemes settings are automatically saved to the session as long as user is logged in to the system. However, session settings will be cleared once the user log off. The user can keep chosen settings throughout the sessions using the "save" button in the block. Enabling Auto-save option will remove the "save" button and automatically save settings for the user. This might lead to slightly higher impact to the system performance, which is why this option is disabled by default.'; // help block
++$string['config_showATbar'] = 'ATbar';
++$string['config_showATbar_checkbox'] = 'Allow ATbar appearance within Accessibility block';
++$string['config_showATbar_help'] = 'Accessibility block also integrates ATbar from Southampton University ECS <a href="http://www.atbar.org">http://www.atbar.org</a>.';
++$string['config_fg'] = 'Text colour (not required)';
++$string['config_fg_help'] = 'Define colour scheme foreground colour here. Keep in mind that the colour will be applied uniformly to all user interface elements. It is not always desirable to have the same colour in each user interface element. <strong>It is recommended to leave foreground colour field empty</strong> so that elements can keep its default colours. Try to change background colour only.';
++$string['config_bg'] = 'Background colour';
++$string['config_bg_help'] = 'Define colour scheme background colour here. Keep in mind that the background colour will be applied uniformly to all user interface elements.';
++$string['color_input_error'] = 'Please enter a color in a format as such: #FF0050';
++
++$string['accessibility:addinstance'] = 'Add a new Accessibility block';
++$string['accessibility:myaddinstance'] = 'Add a new Accessibility block to My home';
++$string['jsnotloggedin'] = 'Error! Please check if you are logged-in to the system or contact your administrator';
+\ No newline at end of file
+diff --git a/blocks/accessibility/lang/hr/block_accessibility.php b/blocks/accessibility/lang/hr/block_accessibility.php
+new file mode 100755
+index 0000000..04c89ca
+--- /dev/null
++++ b/blocks/accessibility/lang/hr/block_accessibility.php
+@@ -0,0 +1,70 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++
++/**
++ * English Lang Strings                                                (1)
++ *
++ * @author  Mark Johnson                                              (2)
++ * @copyright &copy; Taunton's College 2009                             (3)
++ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later (4)
++ */
++defined('MOODLE_INTERNAL') || die();
++
++$string['autolaunch'] = '(uvijek?)';
++$string['blockname'] = 'Pristupačnost';
++$string['clearedoldcache'] = 'Obrisano {$a} datoteka iz cachea';
++$string['char'] = 'A';
++$string['dectext'] = 'Povećaj tekst';
++$string['inctext'] = 'Smanji tekst';
++$string['invalidop'] = 'Tražena operacija ne postoji!';
++$string['jsnocolour'] = 'Greška kod promjene profila boja';
++$string['jsnocolourreset'] = 'Greška kod resetiranja profila boja';
++$string['jsnosave'] = 'Greška kod pohrane postavki';
++$string['jsnosize'] = 'Greška kod promjene veličine teksta';
++$string['jsnosizereset'] = 'Greška kod resetiranja veličine teksta';
++$string['launchtoolbar'] = 'Pokreni ATbar';
++$string['pluginname'] = 'Pristupačnost';
++$string['pluginnameplural'] = 'Blokovi za pristupačnost';
++$string['resettext'] = 'Resetiranje veličine teksta (postavke obrisane)';
++$string['reset'] = 'Postavke obrisane';
++$string['save'] = 'Pohrani postavke';
++$string['saved'] = 'Postavke pohranjene';
++$string['col1text'] = 'Pretpostavljeni profil boja (postavke obrisane)';
++$string['col2text'] = 'Smanjeni kontrast 1';
++$string['col3text'] = 'Smanjeni kontrast 2';
++$string['col4text'] = 'Visoki kontrast';
++
++/*	Configuration form - please help us translate it on GitHub 
++	------------------------------------------------------------
++*/
++/* not implemented
++$string['config_autosave'] = 'Auto save'; // label
++$string['config_autosave_checkbox'] = 'Save user settings automatically (button "save" will disappear)'; // checkbox label
++$string['config_autosave_help'] = 'Font size and colour schemes settings are automatically saved to the session as long as user is logged in to the system. However, session settings will be cleared once the user log off. The user can keep chosen settings throughout the sessions using the "save" button in the block. Enabling Auto-save option will remove the "save" button and automatically save settings for the user. This might lead to slightly higher impact to the system performance, which is why this option is disabled by default.'; // help block
++*/
++$string['config_showATbar'] = 'ATbar';
++$string['config_showATbar_checkbox'] = 'Allow ATbar appearance within Accessibility block';
++$string['config_showATbar_help'] = 'Accessibility block also integrates ATbar from Southampton University ECS <a href="http://www.atbar.org">http://www.atbar.org</a>.';
++$string['config_fg'] = 'Text colour (not required)';
++$string['config_fg_help'] = 'Define colour scheme foreground colour here. Keep in mind that the colour will be applied uniformly to all user interface elements. It is not always desirable to have the same colour in each user interface element. <strong>It is recommended to leave foreground colour field empty</strong> so that elements can keep its default colours. Try to change background colour only.';
++$string['config_bg'] = 'Background colour';
++$string['config_bg_help'] = 'Define colour scheme background colour here. Keep in mind that the background colour will be applied uniformly to all user interface elements.';
++$string['color_input_error'] = 'Please enter a color in a format as such: #FF0050';
++
++$string['accessibility:addinstance'] = 'Dodaj novi Accessibility block';
++$string['accessibility:myaddinstance'] = 'Dodaj novi Accessibility block na glavnu stranicu';
++$string['jsnotloggedin'] = 'Greška! Molimo Vas provjerite jeste li prijavljeni u sustav ili kontaktirajte administratora';
+diff --git a/blocks/accessibility/lang/pt-br/block_accessibility.php b/blocks/accessibility/lang/pt-br/block_accessibility.php
+new file mode 100755
+index 0000000..bf6896e
+--- /dev/null
++++ b/blocks/accessibility/lang/pt-br/block_accessibility.php
+@@ -0,0 +1,68 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++
++/**
++ * English Lang Strings                                                (1)
++ *
++ * @author  Fernando Souza                                             (2)
++ * @copyright Fernando Souza 2013	                               (3)
++ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later (4)
++ */
++defined('MOODLE_INTERNAL') || die();
++
++$string['autolaunch'] = '(sempre?)';
++$string['blockname'] = 'Acesibilidade';
++$string['clearedoldcache'] = 'Arquivos antigos {$a} apagados do cache';
++$string['char'] = 'A';
++$string['dectext'] = 'Diminuir o Tamanho do Texto';
++$string['inctext'] = 'Aumentar o Tamanho do Texto';
++$string['invalidop'] = 'A operação especificada é inválida!';
++$string['jsnocolour'] = 'Erro de mudança no esquema de cores';
++$string['jsnocolourreset'] = 'Erro em redefinir o esquema de cores';
++$string['jsnosave'] = 'Erro ao salvar as configurações';
++$string['jsnosize'] = 'Error ao mudar o tamanho';
++$string['jsnosizereset'] = 'Erro ao redefinir o tamanho do texto';
++$string['launchtoolbar'] = 'Lançar ATbar';
++$string['pluginname'] = 'Acesibilidade';
++$string['pluginnameplural'] = 'Blocos de Acesibilidade';
++$string['resettext'] = 'Redefiniri o Tamanho do Texto (Apaga a Configuração Salva)';
++$string['reset'] = 'Configuração Apagada';
++$string['save'] = 'Salvar Configuração';
++$string['saved'] = 'Configuração Salva';
++$string['col1text'] = 'Esquema de Cores Padrão (Apaga a configuração salva)';
++$string['col2text'] = 'Contraste Baixado 1';
++$string['col3text'] = 'Contraste Baixado 2';
++$string['col4text'] = 'Contraste Alto';
++
++/*	Configuration form - please help us translate it on GitHub 
++	------------------------------------------------------------
++*/
++$string['config_autosave'] = 'Auto save'; // label
++$string['config_autosave_checkbox'] = 'Save user settings automatically (button "save" will disappear)'; // checkbox label
++$string['config_autosave_help'] = 'Font size and colour schemes settings are automatically saved to the session as long as user is logged in to the system. However, session settings will be cleared once the user log off. The user can keep chosen settings throughout the sessions using the "save" button in the block. Enabling Auto-save option will remove the "save" button and automatically save settings for the user. This might lead to slightly higher impact to the system performance, which is why this option is disabled by default.'; // help block
++$string['config_showATbar'] = 'ATbar';
++$string['config_showATbar_checkbox'] = 'Allow ATbar appearance within Accessibility block';
++$string['config_showATbar_help'] = 'Accessibility block also integrates ATbar from Southampton University ECS <a href="http://www.atbar.org">http://www.atbar.org</a>.';
++$string['config_fg'] = 'Text colour (not required)';
++$string['config_fg_help'] = 'Define colour scheme foreground colour here. Keep in mind that the colour will be applied uniformly to all user interface elements. It is not always desirable to have the same colour in each user interface element. <strong>It is recommended to leave foreground colour field empty</strong> so that elements can keep its default colours. Try to change background colour only.';
++$string['config_bg'] = 'Background colour';
++$string['config_bg_help'] = 'Define colour scheme background colour here. Keep in mind that the background colour will be applied uniformly to all user interface elements.';
++$string['color_input_error'] = 'Please enter a color in a format as such: #FF0050';
++
++$string['accessibility:addinstance'] = 'Add a new Accessibility block';
++$string['accessibility:myaddinstance'] = 'Add a new Accessibility block to My home';
++$string['jsnotloggedin'] = 'Error! Please check if you are logged-in to the system or contact your administrator';
+\ No newline at end of file
+diff --git a/blocks/accessibility/lib.php b/blocks/accessibility/lib.php
+new file mode 100755
+index 0000000..c989a0b
+--- /dev/null
++++ b/blocks/accessibility/lib.php
+@@ -0,0 +1,103 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++
++/**
++ * Defines 2 functions used in the block                               (1)
++ *
++ * 2 functions are defined here. {@link accessibility_getsize()} which
++ * converts the current textsize between px and %, and
++ * {@link accessibility_is_ajax()} which finds out if we're responding
++ * to an AJAX request.                                                 (2)
++ *
++ * @package   block_accessibility                                      (3)
++ * @copyright Copyright 2009 onwards Taunton's College                   (4)
++ * @author  Mark Johnson <mark.johnson@tauntons.ac.uk>                 (5)
++ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later (6)
++ */
++
++/**
++ * Convert text size in pixels into a percentage eqivalent, or vice versa, accoring to the YUI
++ * fonts CSS guidelines
++ * http://developer.yahoo.com/yui/fonts/
++ *
++ * @param int|real $size the text size we're converting. Sizes between 10 and 26 will be treated
++ *                       as pixel values. Sizes between 77 and 197 will be treated as percentage
++ *                       values.
++ * @return number the converted size
++ */
++
++defined('MOODLE_INTERNAL') || die();
++
++// block constants
++// ! this definitions might cause conflicts to other Moodle plugins if there is used the same name
++define('DEFAULT_FONTSIZE', 100); // in %
++define('MAX_FONTSIZE', 197); // in %
++define('MIN_FONTSIZE', 77); // in %
++define('MAX_PX_FONTSIZE', 26); // in px
++define('MIN_PX_FONTSIZE', 10); // in px
++
++define('DEFAULT_SHOWATBAR', TRUE);
++define('DEFAULT_AUTOSAVE', FALSE);
++
++function accessibility_getsize($size) {
++
++    // Define the array of sizes in px against sizes as %
++    // make sure to maintain defined constants above in the script
++    // http://yuilibrary.com/yui/docs/cssfonts/
++    $sizes = array(
++        10 => 77,
++        11 => 85,
++        12 => 93,
++        13 => 100,
++        14 => 108,
++        15 => 116,
++        16 => 123.1,
++        17 => 131,
++        18 => 138.5,
++        19 => 146.5,
++        20 => 153.9,
++        21 => 161.6,
++        22 => 167,
++        23 => 174,
++        24 => 182,
++        25 => 189,
++        26 => 197
++    );
++    if (is_int($size) && array_key_exists($size, $sizes)) { // If we're looking at a key (px)
++        return $sizes[$size]; // Return the value (%)
++    } else if (in_array($size, $sizes)) { // If we're looking at a value (%)
++        return array_search($size, $sizes); // Return the key (px)
++    } else {
++        throw new moodle_exception('invalidsize', 'block_accessibility');
++    }
++}
++
++/**
++ * Find out whether we're desponding to an AJAX call by seeing if the HTTP_X_REQUESTED_WITH header
++ * is XMLHttpRequest
++ *
++ * @return boolean whether we're reponding to an AJAX call or not
++ */
++function accessibility_is_ajax() {
++    $reqwith = 'HTTP_X_REQUESTED_WITH';
++    if (isset($_SERVER[$reqwith]) && $_SERVER[$reqwith] == 'XMLHttpRequest') {
++        $xhr = true;
++    } else {
++        $xhr = false;
++    }
++    return $xhr;
++}
+diff --git a/blocks/accessibility/module.js b/blocks/accessibility/module.js
+new file mode 100755
+index 0000000..685bd94
+--- /dev/null
++++ b/blocks/accessibility/module.js
+@@ -0,0 +1,532 @@
++M.block_accessibility = {
++	/*
++		Note: As of 29.04.2014. no duplicate CSS declaration in both module.js and userstyles.php
++		CSS is now declared and generated based on user settings in a single point - userstyles.php
++		module.js script updates user settings and fetch updated stylesheet over AJAX for each action
++	*/
++
++	ATBAR_SRC: 'https://core.atbar.org/atbar/en/latest/atbar.min.js',
++
++	// font sizes in %, this is defined in changesize.php as well
++	DEFAULT_FONTSIZE: 100,
++	MAX_FONTSIZE: 197,
++	MIN_FONTSIZE: 77,
++
++	// only in JS-mode, because .getStyle('fontSize') will return computed style in px
++	DAFAULT_PX_FONTSIZE: 13,
++	MAX_PX_FONTSIZE: 26,
++	MIN_PX_FONTSIZE: 10+1, // +1 because of unknown error...YUI for 77% returns style of 11px
++
++	MAIN_SELECTOR : '#page', // userstyles.php applies CSS font-size to this element
++
++	//stylesheet: '',
++
++	sheetnode: '',
++
++	instance_id: '',
++
++	defaultsize: null,
++
++	watch: null,
++
++	debug: false,
++
++	transactionsCount: 0, // AJAX transactions
++
++	init: function(Y, autoload_atbar, instance_id) {
++		// keep in mind that dynamic AJAX mode cannot work properly with IE <= 8 (for now), so this script will not even be loaded in block_accessibillity.php
++
++
++		// TO-DO: determine if block is visible (for example in chat session is not)
++
++		this.Y = Y;
++		this.instance_id = instance_id;
++		
++		this.sheetnode = Y.one('link[href="'+M.cfg.wwwroot+
++			'/blocks/accessibility/userstyles.php?instance_id='+instance_id+'"]');
++		//this.stylesheet = Y.StyleSheet(this.sheetnode);
++
++		// Set default font size
++		//this.log('Initial size: '+Y.one('body').getStyle('fontSize'));
++		//this.defaultsize = M.block_accessibility.get_current_fontsize('body'); // this is disabled because it gives false results...
++		this.defaultsize = M.block_accessibility.DEFAULT_FONTSIZE; 
++
++		// Attach the click handler
++		Y.all('#block_accessibility_textresize a').on('click', function(e) {
++			if (!e.target.hasClass('disabled')) {
++				// If it is, and the button's not disabled, pass it's id to the changesize function
++				M.block_accessibility.changesize(e.target);
++			}
++		});
++
++		Y.all('#block_accessibility_changecolour a').on('click', function(e) {
++			if (!e.target.hasClass('disabled')) {
++				// If it is, and the button's not disabled, pass it's id to the changecolour function
++				M.block_accessibility.changecolour(e.target);
++			}
++		});
++
++		// Remove href attributes from anchors
++		Y.all('#accessibility_controls a').each(function(node){
++			node.removeAttribute('href');
++		});
++
++		// ATBar might be disabled in block's config
++		if(Y.one('#atbar_auto') !== null){
++			// checkbox for setting 'always' chackbox
++		   Y.one('#atbar_auto').on('click', function(e) {
++				if (e.target.get('checked')) {
++					M.block_accessibility.atbar_autoload('on');
++				} else {
++					M.block_accessibility.atbar_autoload('off');
++				}
++			});
++			
++			// Create Bookmarklet-style link using code from ATbar site
++			// http://access.ecs.soton.ac.uk/StudyBar/versions
++			Y.one('#block_accessibility_launchtoolbar').on('click', function() {
++				M.block_accessibility.load_atbar();
++
++				// Do we really need it?
++				// Hide block buttons until ATbar is closed
++				Y.one('#block_accessibility_textresize').setStyle('display', 'none');
++				Y.one('#block_accessibility_changecolour').setStyle('display', 'none');
++				M.block_accessibility.watch_atbar_for_close();
++			});
++
++			if (autoload_atbar) {
++				M.block_accessibility.load_atbar();
++				// Hide block buttons until ATbar is closed
++				Y.one('#block_accessibility_textresize').setStyle('display', 'none');
++				Y.one('#block_accessibility_changecolour').setStyle('display', 'none');
++				// Wait 1 second to give the bar a chance to load
++				setTimeout("M.block_accessibility.watch_atbar_for_close();", 1000);
++			}
++		}
++
++
++
++		// assign loader icon events
++		// Y.on('io:start', M.block_accessibility.show_loading); // this triggers even for io actions outside block causing conflicts
++		// Y.on('io:complete', M.block_accessibility.hide_loading);
++	},
++
++
++	/**
++	 *  Code from ATbar bookmarklet to load bar into page
++	 */
++	load_atbar: function() {
++		var jf = document.createElement('script');
++		jf.src = M.block_accessibility.ATBAR_SRC;
++		jf.type = 'text/javascript';
++		jf.id = 'ToolBar';
++		document.getElementsByTagName('head')[0].appendChild(jf);
++	},
++
++	/**
++	 * Displays the specified message in the block's footer
++	 *
++	 * @param {String} msg the message to display
++	 */
++	show_message: function(msg) {
++		//this.log('Message set to '+msg);
++		this.Y.one('#block_accessibility_message').setContent(msg);
++
++		// make message disappear after some time
++		if(msg) setTimeout("M.block_accessibility.show_message('')", 5000);
++	},
++
++	/**
++	 * Calls the database script on the server to save the current setting to
++	 * the database. Displays a message on success, or an error on failure.
++	 *
++	 * @requires accessibility_show_message
++	 * @requires webroot
++	 *
++	 */
++	savesize: function() {
++		this.Y.io(M.cfg.wwwroot+'/blocks/accessibility/database.php', {
++			data: 'op=save&size=true&scheme=true',
++			method: 'get',
++			on: {
++				success: function(id, o) {
++					M.block_accessibility.show_message(M.util.get_string('saved', 'block_accessibility'));
++					//setTimeout("M.block_accessibility.show_message('')", 5000);
++				},
++				failure: function(id, o) {
++					alert(M.util.get_string('jsnosave', 'block_accessibility')+' '+o.status+' '+o.statusText);
++				},
++				start: M.block_accessibility.show_loading,
++				end: M.block_accessibility.hide_loading
++			}
++		});
++	},
++
++	/**
++	 * Enables or disables the buttons as specified
++	 *
++	 * @requires webroot
++	 *
++	 * @param {String} id the ID of the button to enable/disable
++	 * @param {String} op the operation we're doing, either 'on' or 'off'.
++	 *
++	 */
++	toggle_textsizer: function(id, op) {
++		var button = this.Y.one('#block_accessibility_'+id);
++		if (op == 'on') {
++			if (button.hasClass('disabled')) {
++				//this.log('Enabling '+button);
++				button.removeClass('disabled');
++			}
++		} else if (op == 'off') {
++			if(!button.hasClass('disabled')) {
++				//this.log('Disabling '+button);
++				button.addClass('disabled');
++			}
++		}
++	},
++
++	/**
++	 * This handles clicks from the buttons. If increasing, decreasing or
++	 * resetting size, it calls changesize.php via AJAX and sets the text
++	 * size to the number returned from the server. If saving the size, it
++	 * calls accessibility_savesize.
++	 * Also enables/disables buttons as required when sizes are changed.
++	 *
++	 * @requires accessibility_toggle_textsizer
++	 * @requires accessibility_savesize
++	 * @requires accessibility_resetsize
++	 * @requires stylesheet
++	 * @requires webroot
++	 *
++	 * @param {Node} button the button that was pushed
++	 *
++	 */
++	changesize: function(button) {
++
++		Y = this.Y;
++
++		switch (button.get('id')) {
++			case "block_accessibility_inc":
++				//this.log('Increasing size from '+this.defaultsize);
++				Y.io(M.cfg.wwwroot+'/blocks/accessibility/changesize.php', {
++					data: 'op=inc&cur='+this.defaultsize, // we need to find a default so we know where we're increasing/decreasing from, otherwise PHP will assume 100%
++					method: 'get',
++					on: {
++						success: function(id, o) {
++							
++							// if redirected to login page, or some other error...
++							if (!(o.response === undefined) && o.response.length > 0) {
++								alert(M.util.get_string('jsnotloggedin', 'block_accessibility')+': '+o.status+' '+o.statusText);
++							}
++
++							// now that we updated user setting to the server, load updated stylesheet
++							M.block_accessibility.reload_stylesheet();  
++							var new_fontsize =  M.block_accessibility.get_current_fontsize(M.block_accessibility.MAIN_SELECTOR);
++							M.block_accessibility.log('Increasing size to '+new_fontsize);
++
++							// Disable/enable buttons as necessary
++							var min_fontsize = M.block_accessibility.MIN_PX_FONTSIZE;
++							var max_fontsize = M.block_accessibility.MAX_PX_FONTSIZE;
++							if(new_fontsize == M.block_accessibility.defaultsize) {
++								M.block_accessibility.toggle_textsizer('reset', 'off');
++							} else {
++								M.block_accessibility.toggle_textsizer('reset', 'on');
++							}
++							if (new_fontsize >= max_fontsize) {
++								M.block_accessibility.toggle_textsizer('inc', 'off');
++							}
++							M.block_accessibility.toggle_textsizer('dec', 'on');
++							M.block_accessibility.toggle_textsizer('save', 'on');
++							
++						},
++						failure: function(o) {
++							alert(M.util.get_string('jsnosize', 'block_accessibility')+': '+o.status+' '+o.statusText);
++						},
++						start: M.block_accessibility.show_loading,
++						end: M.block_accessibility.hide_loading
++				   }
++				});
++				break;
++			case "block_accessibility_dec":
++				//this.log('Decreasing size from '+this.defaultsize);
++				Y.io(M.cfg.wwwroot+'/blocks/accessibility/changesize.php', {
++					data: 'op=dec&cur='+this.defaultsize,
++					method: 'get',
++					on: {
++						success: function(id, o) {
++
++							// if redirected to login page, or some other error...
++							if (!(o.response === undefined) && o.response.length > 0) {
++								alert(M.util.get_string('jsnotloggedin', 'block_accessibility')+': '+o.status+' '+o.statusText);
++							}
++
++							// now that we updated user setting to the server, load updated stylesheet
++							M.block_accessibility.reload_stylesheet();
++							var new_fontsize =  M.block_accessibility.get_current_fontsize(M.block_accessibility.MAIN_SELECTOR);
++							M.block_accessibility.log('Decreasing size to '+new_fontsize);
++
++							// Disable/enable buttons as necessary
++							var min_fontsize = M.block_accessibility.MIN_PX_FONTSIZE;
++							var max_fontsize = M.block_accessibility.MAX_PX_FONTSIZE;
++							if(new_fontsize == M.block_accessibility.defaultsize) {
++								M.block_accessibility.toggle_textsizer('reset', 'off');
++							} else {
++								M.block_accessibility.toggle_textsizer('reset', 'on');
++							}
++							if (new_fontsize <= min_fontsize) {
++								M.block_accessibility.toggle_textsizer('dec', 'off');
++							} 
++							M.block_accessibility.toggle_textsizer('inc', 'on');
++							M.block_accessibility.toggle_textsizer('save', 'on');
++							
++						},
++						failure: function(id, o) {
++							alert(M.util.get_string('jsnosize', 'block_accessibility')+': '+o.status+' '+o.statusText);
++						},
++						start: M.block_accessibility.show_loading,
++						end: M.block_accessibility.hide_loading
++				   }
++				});
++				break;
++			case "block_accessibility_reset":
++				//this.log('Resetting size from '+this.defaultsize);
++				Y.io(M.cfg.wwwroot+'/blocks/accessibility/changesize.php', {
++					data: 'op=reset&cur='+this.defaultsize,
++					method: 'get',
++					on: {
++						success: function(id, o) {
++
++							// if redirected to login page, or some other error...
++							if (!(o.response === undefined) && o.response.length > 0) {
++								alert(M.util.get_string('jsnotloggedin', 'block_accessibility')+': '+o.status+' '+o.statusText);
++							}
++
++							// now that we updated user setting to the server, load updated stylesheet
++							M.block_accessibility.reload_stylesheet();
++							var new_fontsize =  M.block_accessibility.get_current_fontsize(M.block_accessibility.MAIN_SELECTOR);
++							M.block_accessibility.log('Resetting size to '+new_fontsize);
++  
++							// Disable/enable buttons as necessary
++							var min_fontsize = M.block_accessibility.MIN_PX_FONTSIZE;
++							var max_fontsize = M.block_accessibility.MAX_PX_FONTSIZE;
++							M.block_accessibility.toggle_textsizer('reset', 'off');
++							if(new_fontsize <= min_fontsize) {
++								M.block_accessibility.toggle_textsizer('dec', 'on');
++							} else if (new_fontsize >= max_fontsize){
++								M.block_accessibility.toggle_textsizer('inc', 'on');
++							}
++							M.block_accessibility.toggle_textsizer('save', 'off');
++							//M.block_accessibility.resetsize();
++							
++						},
++						failure: function(id, o) {
++							alert(M.util.get_string('jsnosize', 'block_accessibility')+': '+o.status+' '+o.statusText);
++						},
++						start: M.block_accessibility.show_loading,
++						end: M.block_accessibility.hide_loading
++				   }
++				});
++				break;
++			case "block_accessibility_save":
++				//this.log('Saving Size');
++				M.block_accessibility.savesize();
++				break;
++		}
++	},
++
++	/**
++	 * This handles clicks from the colour scheme buttons.
++	 * We start by getting the scheme number from the theme button's ID.
++	 * We then get the elements that need dynamically re-styling via their
++	 * CSS selectors and loop through the arrays to style them appropriately.
++	 *
++	 * @requires accessibility_toggle_textsizer
++	 * @requires accessibility_resetscheme
++	 * @requires stylesheet
++	 * @requires webroot
++	 *
++	 * @param {String} button - the button that was clicked.
++	 *
++	 */
++
++	changecolour: function(button) {
++		Y = this.Y;
++		scheme = button.get('id').substring(26);
++		Y.io(M.cfg.wwwroot+'/blocks/accessibility/changecolour.php', {
++			data: 'scheme='+scheme,
++			method: 'get',
++			on: {
++				success: function (id, o) {
++					// if redirected to login page, or some other error...
++					if (!(o.response === undefined) && o.response.length > 0) {
++						alert(M.util.get_string('jsnotloggedin', 'block_accessibility')+': '+o.status+' '+o.statusText);
++					}
++					
++					M.block_accessibility.reload_stylesheet(); 
++					if(scheme == 1){
++						M.block_accessibility.toggle_textsizer('save', 'off'); // reset
++						M.block_accessibility.toggle_textsizer('colour1', 'off');
++					}
++					else{
++						M.block_accessibility.toggle_textsizer('save', 'on');
++						M.block_accessibility.toggle_textsizer('colour1', 'on');
++					} 
++				},
++				failure: function(id, o) {
++					alert(get_string('jsnocolour', 'block_accessibility')+': '+o.status+' '+o.statusText);
++				},
++				start: M.block_accessibility.show_loading,
++				end: M.block_accessibility.hide_loading
++			}
++		});
++	},
++
++	atbar_autoload: function(op) {
++		if (op == 'on') {
++			this.Y.io(M.cfg.wwwroot+'/blocks/accessibility/database.php', {
++				data: 'op=save&atbar=true',
++				method: 'get',
++				on: {
++					success: function(id, o) {
++						M.block_accessibility.show_message(M.util.get_string('saved', 'block_accessibility'));
++						//setTimeout("M.block_accessibility.show_message('')", 5000);
++					},
++					failure: function(id, o) {
++						if (o.status != '404') {
++							alert(M.util.get_string('jsnosave', 'block_accessibility')+': '+o.status+' '+o.statusText);
++						}
++					},
++					start: M.block_accessibility.show_loading,
++					end: M.block_accessibility.hide_loading
++			   }
++			});
++		} else if (op == 'off') {
++			this.Y.io(M.cfg.wwwroot+'/blocks/accessibility/database.php', {
++				data: 'op=reset&atbar=true',
++				method: 'get',
++				on: {
++					success: function(id, o) {
++						M.block_accessibility.show_message(M.util.get_string('reset', 'block_accessibility'));
++						//setTimeout("M.block_accessibility.show_message('')", 5000);
++					},
++					failure: function(id, o) {
++						if (o.status != '404') {
++							alert(M.util.get_string('jsnoreset', 'block_accessibility')+': '+o.status+' '+o.statusText);
++						}
++					},
++					start: M.block_accessibility.show_loading,
++					end: M.block_accessibility.hide_loading
++			   }
++			});
++		}
++	},
++
++	watch_atbar_for_close: function() {
++		Y = this.Y;
++		this.watch = setInterval(function() {
++
++			if (typeof AtKit !== 'undefined') {
++				if (AtKit.isRendered()) {
++					Y.one('#block_accessibility_textresize').setStyle('display', 'block');
++					Y.one('#block_accessibility_changecolour').setStyle('display', 'block');
++					clearInterval(M.block_accessibility.watch);
++				}
++			}
++		}, 1000);
++	},
++
++	log: function(data) {
++		if (this.debug) {
++			console.log(data);
++		}
++	},
++
++	/**
++	 * Stylesheet is generated by userstyles.php based on user settings (e.g. font size)
++	 * After settings are changed, the script should download and include updated stylesheet
++	 *
++	 */
++	reload_stylesheet: function(){
++		var cache_prevention_salt = new Date().getTime();
++		var oldStylesheet = M.block_accessibility.sheetnode;
++		var newStylesheet = null;
++		var cssURL = M.cfg.wwwroot+
++			'/blocks/accessibility/userstyles.php?instance_id='+
++			M.block_accessibility.instance_id+
++			'&v='+cache_prevention_salt
++		
++		if (document.createStyleSheet) // only for IE < 11 and IE > 8
++		{
++			/* 
++				here we use href attribute change which makes some delay while reloading stylesheet
++
++				1. one another idea would be to load stylesheet using this.Y.io(.. and create <style> element
++				var styleSheet = document.createElement('STYLE');
++				document.documentElement.firstChild.appendChild(styleSheet);
++
++				2. initial idea was the same as for non-IE browsers but somehow doesn't work:
++				oldStylesheet.remove(true);
++				newStylesheet = document.createStyleSheet(cssURL);
++				// also keep in mind that createStyleSheet can create up to 31 stylesheets	
++				// http://msdn.microsoft.com/en-us/library/ie/ms531194(v=vs.85).aspx			
++			*/
++			
++			oldStylesheet.set('href', cssURL);
++		}
++		else
++		{
++			// IE 11 and non-IE browsers:
++			// creating new stylesheet and deleting old one makes more smooth transition
++			// Why wouldn't we just set the href attribute insted of creating another stylesheet node? Because before the new stylesheet is loaded and while old one is deleted, the page will lose all the styles and all the elements get unstyled for a some time (poor user experience)
++
++			newStylesheet = oldStylesheet.cloneNode(true);
++			newStylesheet.set('href', cssURL); 
++			this.Y.one('head').append(newStylesheet);
++			// remove old stylesheet
++			newStylesheet.getDOMNode().onload = function(){
++				oldStylesheet.remove(true);
++			};
++
++			M.block_accessibility.sheetnode = newStylesheet;
++		}
++
++
++	},
++
++	/**
++	 * Stripes px or % and gives value only
++	 * For improved user experience, only in JS-mode, we can set current font size as default font size
++	 * We would initially put 100%, but it doesn't have to be true for all themes
++	 * Also font-size value can be in % or in px, there is mapping defined in lib.php in the block
++	 * The function needs to return percentage fontsize value as integer
++	 *
++	 * @param {String} root element to check font-size declaration (e.g. body or #page)
++	 */
++	get_current_fontsize: function(root_element){
++		var currentsize = M.block_accessibility.DEFAULT_FONTSIZE;
++		//var defaultsize = Y.one(root_element).getStyle('fontSize');
++		var defaultsize = Y.one(root_element).getComputedStyle('fontSize');
++		if (defaultsize.substr(-2) == 'px') {
++			currentsize = defaultsize.substr(0, defaultsize.length-2);
++		} else if (defaultsize.substr(-1) == '%') {
++			currentsize = defaultsize.substr(0, defaultsize.length-1);
++		}
++		return currentsize;
++	},
++
++	show_loading: function(){
++		this.transactionsCount++;
++		Y.one('#loader-icon').setStyle('display', 'block');
++		Y.one('#accessibility_controls').setStyle('opacity', '0.2');	
++	},
++	hide_loading: function(){
++		if(this.transactionsCount < 0) this.transactionsCount--;
++		else this.transactionsCount = 0; // prevention if count would end up to less than 0
++
++		if(this.transactionsCount == 0){
++			Y.one('#loader-icon').setStyle('display', 'none');
++			Y.one('#accessibility_controls').setStyle('opacity', '1');	
++		}
++	},
++}
+diff --git a/blocks/accessibility/pix/document-save-grey.png b/blocks/accessibility/pix/document-save-grey.png
+new file mode 100755
+index 0000000000000000000000000000000000000000..0e311a1b4d36dd74b31108a79baa78f7fe08070f
+GIT binary patch
+literal 1077
+zcmV-51j_q~P)<h;3K|Lk000e1NJLTq000&M000&U1^@s6#I$TX00001b5ch_0Itp)
+z=>Px#24YJ`L;(K){{a7>y{D4^000SaNLh0L01ejw01ejxLMWSf00007bV*G`2iXS*
+z3IiTe#Q4qt00Xs2L_t(I%dM2nODks-#(y)3PLfGXCORf6<3(#EBG(UG)qNN3;!-Gf
+z)m=C0Vz7c<NY#Z4@w#*&B6L~WF1qQ$+kc>&LZk%zA}CS?4TI*(WRgriy6DZ+T<`6b
+z(g$AN;XUU(@56b|GXf8=y1M#ZKA->m?(Q!5@Vu?9t>E+djyxXEHyaxpzwrbJ&5ymk
+zy@`W^gWrdShRQuXJz}L&aRmYaF_XzqEEY*7ljp@^Q3?bCFSoX~zJC(&-rnBC(b3V*
+z!^6Y<CnqOjrBV?r%Mt>C0E2^rcsw4e)hfwk62maeP$=}p=H}+>e<KzFPESu?sj7N$
+zadC0l-QE4w?(VMm?AfzVbGcmZ{QSI;$z-^{zeiP7y1Kd~!!Uk~#bWXYiA~cSs?}=Q
+zNF?&f%F4<Q0BdV&zxMa{uV*qDA)n7vDwP1xG)?q+y?<6Jm7Nc^VsUZt7g?4Q*=+XP
+zhe1h_NTpJYjEuAtRVo!ysT5A9^KHJD+uPe)08RkE-~T$B&F*Y$Y&^Poet!PZSs)PL
+z?Cgx4omSDYSnL(BWw+w?_BN>~3Z`iSP$(4a)kHG}(B9tOl6QG|Nuf|cRaJCdpRg4J
+zABDqVJ6V?HcPee7TCFw}Vp$gJ>+1k0ih^Mn!@wWno7@-U<Kr!g0j8#=n3|eGQ53tk
+z0Hsoiv9U2mM@Ip0yWIdxPfr6pw_5>x*4x|LqH1Yri9{j+z}3|i0G4H8nkLz77J$RU
+zLlzbm>>5qe09F7*UDqevZa0!75e)w0<nHcn=H}*z$K$A~O1)lhdAvj-!Q9*&eSLiZ
+z$nxJ~9SjE1b$vnvhC`tc0O@oZS(cGy8HdAxrfKN9Zj+0mNJmEpi9`Zj*U>c1&QGV)
+z0CaS801S)3^O2DeEX!&*olbJO9O-l#m&=7L%S5A5mY0`_$K!N%c5-}t%<}Rw(P-2r
+zOsCV->vit$?;8UH0{|b3<#Kr}91bJPvQVv7snu$>`sVWc{mjqL6OYH4ot?$+_uDam
+zdcBSy2q=moXqrZ;RPs3`NqP~9MC@^S9~4D-WQcbm8ja#|xxRJ+7>2>^?d^M$8;!=3
+zW2&n1&>&crMKBm-e}5lIlJI)Hc)eakQN-<bBM1U+w;P|&$KBl>p-_laD)ne@5{qv;
+z%HeR(XfzN-k#f0=WmzpYekxjiPo`-yIXOwKR>R?N*rflN*f5MnI2;z9TIBcp0eCZ7
+vE&I*QO#={wnVFd{dwP0);(x^T_4V{$J2I7JCucW200000NkvXXu0mjf;NSYl
+
+literal 0
+HcmV?d00001
+
+diff --git a/blocks/accessibility/pix/document-save.png b/blocks/accessibility/pix/document-save.png
+new file mode 100755
+index 0000000000000000000000000000000000000000..a94e0eab97def13486256451f08973e0b68f9ad8
+GIT binary patch
+literal 1150
+zcmV-^1cCdBP)<h;3K|Lk000e1NJLTq000&M000&U1^@s6#I$TX00006VoOIv0RI60
+z0RN!9r;`8x010qNS#tmY4c7nw4c7reD4Tcy000McNliru)e8y@G!;l?as~hZ1Pe(-
+zK~y-)t(9GD6jc<*e>3|zoo&0*WtZL7Wm!I!A_dx#R*N546CW@_G)8>T7t{CvHAq!b
+z1NtCF0vL;FY#&4)G>VeQiw|fFF*e4CG(l9XCA76R#n#=n({{gSXLo#PcWkLpO#CM|
+z=jNVs{`Y^+Ju_Ee0iJuK{rx`@m5;`zw2Fo6lFdl^T=Bk@@^5XOuYUF&w*jFz>H46p
+z_Uw=0i>o6Wv!RtfF`g5hRb@``&$z}^I?MFc^Fyg*#t~Nf+q+*o{qb_dmLlo-{=nH)
+zTOM!^5A@pyhlgz=zYmHd6O-6VD^Q$voZfZHbh=P>J?7lG>k-eTi{Jb@a4TXF;D>9@
+z<9DpE4kre_y4vWy@N`edKJmU#@6O!J_1V$ED@JrSPCS`F@dc25LB}t#t)IU1`Yw4{
+zVl^eLv*Z&q_pcv)=;({@eFAXo;74CJ1V@h~R8>gMPN8K|0QiFIMX#)lOlaZmWo!J@
+zp%*?6J90nIs)fS~oeoLh+o=$%H`Omna;N*4_-mZX!t{-N?VWFTodB=`1k2)Iq$cg%
+z$Bw?aWakIlx|XbEJa;iV)We4-7wO>TLkEuoC(Kf$#_iV>x0h6E?zqWh(i|pP`k%SQ
+zW?vLHGCD#snZ)b$vj0G9t*IDT>-Pr$NF)=uWY@ncEy5@i0C?=kX>?8F%;7x%D2hTX
+z7K;Fv#rfFXbzAF6r_%@srqb$$9aJ~$pj`0+kj-Z1Y&y=m+Phg((*Qt;R06;~P4@z9
+zHcJ6KTv=JQNY%T~H#6|l_W+EI4uN5i*K=gjN#Zjq07F-Ld1v2tGbb1f0lWer?my64
+zD@i5T?RGpKj~Nv3hUjS7Mt^S)72Zk;hB03UgEF^=fy)=@XxT=nG6H}s%k$;%u>U}7
+ztq4R``uqT>s){Vj$g+$miiE2+(7CtCBo_q%S9t{kmoLz{w~27o1~Xn&=T1>xRt^vm
+zfz5Yr+(a&yGptq%Gcz-&s){5@$g)gLq@Gi4&Gh&7;9e16xbG6D+M20})SHB=s*=y^
+zBoYZ@?V7a!O=32i-QxHAak*TAuIDMt-*_=WRaGiV19UvwK!0x!Z#`2_MQOnF0p#;K
+z2%sp65Dcy&lgXA^9S+CtNF-vm%gvxDjeLEwaoOKxb#*mPr=!IR5R1i_oSeLQ-xe?K
+zHhf<1Tx%9T5HwB0<MD9r+&LT$2ePY#Qdb$GC?ZJ`f*>GC5-yhuRaNo%d_<$sCALT`
+zF5FGmbu1POhG8HI7P8qanx<hG1~!}RmdbC0saOyM(&;pHb+zbv9*f0-uIpx?-EQZ<
+zzzPtJMh(B;KmSa5mQ8ZI-2jBc;U#u#Y|H=z;fW_7-xCP<&+tEDY;1h{-{)YTQ*a{D
+QY5)KL07*qoM6N<$f;Ms&U;qFB
+
+literal 0
+HcmV?d00001
+
+diff --git a/blocks/accessibility/pix/loader.gif b/blocks/accessibility/pix/loader.gif
+new file mode 100755
+index 0000000000000000000000000000000000000000..b08c111b10cc23fb347bb1d69da6c840185d2eb3
+GIT binary patch
+literal 13440
+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
+D$nVc7
+
+literal 0
+HcmV?d00001
+
+diff --git a/blocks/accessibility/styles.css b/blocks/accessibility/styles.css
+new file mode 100755
+index 0000000..4527d87
+--- /dev/null
++++ b/blocks/accessibility/styles.css
+@@ -0,0 +1,127 @@
++body.jsdisabled #block_accessibility_launchtoolbar {
++    display: none;
++}
++
++.block_accessibility{
++    position: relative; /* for loader.gif to position absolute */
++
++    /*disable selection*/
++    -webkit-touch-callout: none;
++    -webkit-user-select: none;
++    -khtml-user-select: none;
++    -moz-user-select: none;
++    -ms-user-select: none;
++    user-select: none;
++}
++
++#accessibility_controls .access-button {
++    display: inline-block;
++    vertical-align: middle;
++    margin: 0 .15em;
++    border: 1px solid #ccc;
++    border-radius: 3px;
++    text-align: center;
++    background: -moz-linear-gradient(top, rgba(254,255,232,0) 0%, rgba(214,219,191,0.3) 100%) !important; /* FF3.6+ */
++    background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,rgba(254,255,232,0)), color-stop(100%,rgba(214,219,191,0.3))) !important; /* Chrome,Safari4+ */
++    background: -webkit-linear-gradient(top, rgba(254,255,232,0) 0%,rgba(214,219,191,0.3) 100%) !important; /* Chrome10+,Safari5.1+ */
++    background: -o-linear-gradient(top, rgba(254,255,232,0) 0%,rgba(214,219,191,0.3) 100%) !important; /* Opera11.10+ */
++    background: -ms-linear-gradient(top, rgba(254,255,232,0) 0%,rgba(214,219,191,0.3) 100%) !important; /* IE10+ */
++    filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#00feffe8', endColorstr='#4dd6dbbf',GradientType=0 ) !important; /* IE6-9 */
++    background: linear-gradient(top, rgba(254,255,232,0) 0%,rgba(214,219,191,0.3) 100%) !important; /* W3C */
++
++    /*disable selection*/
++    -webkit-touch-callout: none;
++    -webkit-user-select: none;
++    -khtml-user-select: none;
++    -moz-user-select: none;
++    -ms-user-select: none;
++    user-select: none;
++}
++
++#accessibility_controls .access-button:hover {
++    background: -moz-linear-gradient(top, rgba(254,255,232,0) 0%, rgba(214,219,191,0.5) 50%) !important; /* FF3.6+ */
++    background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,rgba(254,255,232,0)), color-stop(50%,rgba(214,219,191,0.5))) !important; /* Chrome,Safari4+ */
++    background: -webkit-linear-gradient(top, rgba(254,255,232,0) 0%,rgba(214,219,191,0.5) 50%) !important; /* Chrome10+,Safari5.1+ */
++    background: -o-linear-gradient(top, rgba(254,255,232,0) 0%,rgba(214,219,191,0.5) 50%) !important; /* Opera11.10+ */
++    background: -ms-linear-gradient(top, rgba(254,255,232,0) 0%,rgba(214,219,191,0.5) 50%) !important; /* IE10+ */
++    filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#00feffe8', endColorstr='#80d6dbbf',GradientType=0 ) !important; /* IE6-9 */
++    background: linear-gradient(top, rgba(254,255,232,0) 0%,rgba(214,219,191,0.5) 50%) !important; /* W3C */
++}
++
++.access-button a#block_accessibility_save {
++    background: url('[[pix:block_accessibility|document-save]]') !important;
++    background-attachment: fixed;
++    background-repeat: no-repeat !important;
++    background-position: center !important;
++}
++
++.access-button a#block_accessibility_save.disabled {
++    background: url('[[pix:block_accessibility|document-save-grey]]') !important;
++    background-attachment: fixed;
++    background-repeat: no-repeat !important;
++    background-position: center !important;
++}
++
++#accessibility_controls .access-button .disabled {
++    opacity:0.3;
++    cursor:not-allowed;;
++}
++
++#accessibility_controls .access-button a {
++    display: block;
++    cursor: pointer;
++    color: #000;
++    border-radius: 2px;
++    padding: .15em .3em;
++    min-width: 1.5em;
++}
++
++#accessibility_controls .access-button a:hover {
++}
++
++
++#accessibility_controls .access-button:active, #accessibility_controls .access-button:focus {
++    border: 1px solid #F24602
++}
++
++#accessibility_controls .access-button img {
++    vertical-align: middle;
++}
++-
++#accessibility_controls input {
++    margin: 0 .2em;
++}
++
++#accessibility_controls ul {
++    list-style: none;
++    margin: .4em 0;
++    padding: 0;
++}
++
++/* ATBar styles */
++#toolbar-launch {
++	position: absolute;
++	padding: 0;
++	top: -3px;
++	left: 50%;
++}
++
++#toolbar-launch img {
++	padding: 0;
++	opacity: 0.6;
++}
++
++.atbar-always{
++    display: inline-block;
++}
++
++#loader-icon{
++    position: absolute;
++    width: 54px;
++    height: 55px;
++    top: 42%;
++    left:5em;
++    background: url('[[pix:block_accessibility|loader]]') !important;
++    display:none;
++
++}
+\ No newline at end of file
+diff --git a/blocks/accessibility/userstyles.php b/blocks/accessibility/userstyles.php
+new file mode 100755
+index 0000000..5172068
+--- /dev/null
++++ b/blocks/accessibility/userstyles.php
+@@ -0,0 +1,187 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++
++/**
++ * Sets per-user styles (all the CSS declarations are here)            (1)
++ *
++ * This file is the cornerstone of the block - when the page loads, it
++ * checks if the user has a custom settings for the font size and colour
++ * scheme (either in the session or the database) and creates a stylesheet
++ * to override the standard styles with this setting.                  (2)
++ *
++ * @see block_accessibility.php                                        (3)
++ * @package   block_accessibility                                      (4)
++ * @copyright Copyright 2009 onwards Taunton's College                   (5)
++ * @author Mark Johnson <mark.johnson@tauntons.ac.uk>                  (6)
++ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later (7)
++ */
++
++/**
++ config.php overwrites header content-type in moodle 2.8
++ */
++require_once('../../config.php');
++
++header('Content-Type: text/css', true);
++header("X-Content-Type-Options: nosniff"); // for IE
++header('Cache-Control: no-cache');
++
++if (!isloggedin()) die();
++
++/* Get block instance config data outside of it's class
++   https://moodle.org/mod/forum/discuss.php?d=129799
++   Also check configdata encoding in C:\...\blocks\moodleblock.class.php
++*/
++$instance_id = required_param('instance_id', PARAM_INT);
++$data = $DB->get_record('block_instances', array('id' => $instance_id), '*', MUST_EXIST); 
++$block_instance = block_instance('accessibility', $data); // test it in all languages?
++// if (!$block_instance) error...
++
++
++
++// READ USER SETTINGS
++// ================================================
++// First, check the session to see if the user's overridden the default/saved setting
++$options = $DB->get_record('block_accessibility', array('userid' => $USER->id));
++
++// NOTE: User settings priority: 1. $USER session, 2. database
++// check for fontsize user setting
++if (!empty($USER->fontsize)) $fontsize = $USER->fontsize;
++else if (!empty($options->fontsize)) $fontsize = $options->fontsize;
++
++// check for colourscheme user setting
++if (!empty($USER->colourscheme)) $colourscheme = $USER->colourscheme;
++else if (!empty($options->colourscheme)) $colourscheme = $options->colourscheme;
++
++
++// FONT SIZE CSS DECLARATIONS
++// ================================================
++// Echo out CSS for the body element. Use !important to override any other external stylesheets.
++if (!empty($fontsize)) {
++	echo '
++	
++	#page { /* block elements */
++		font-size: '.$fontsize.'% !important;
++		line-height:1.5; /*WCAG 2.0*/
++	}
++
++	#page *{
++		line-height: inherit !important;
++		font-size: inherit !important;
++	}
++
++
++	/* issue #74 - default h* sizes from Moodle CSS */
++	#page #page-header h1, #page #region-main h1{font-size:'. (0.32 * $fontsize) .'px !important}
++	#page #page-header h2, #page #region-main h2{font-size:'. (0.28 * $fontsize) .'px !important}
++	#page #page-header h3, #page #region-main h3{font-size:'. (0.24 * $fontsize) .'px !important}
++	#page #page-header h4, #page #region-main h4{font-size:'. (0.20 * $fontsize) .'px !important}
++	#page #page-header h5, #page #region-main h5{font-size:'. (0.16 * $fontsize) .'px !important}
++	#page #page-header h6, #page #region-main h6{font-size:'. (0.12 * $fontsize) .'px !important}
++	';
++}
++
++
++// COLOUR SCHEMES CSS DECLARATIONS
++// ================================================
++/*
++	So far, selector * is used. This might cause some problems. Idea: Maybe better solution is to apply backgrounds to specific elements like body, .header, ...
++*/
++if (!empty($colourscheme)) {
++	// $colourscheme == 1 is reset, so don't output any styles
++	if($colourscheme > 1 && $colourscheme < 5){ // this is how many declarations we defined in edit_form.php
++		if($block_instance->config !== NULL){
++			$fg_colour = $block_instance->config->{'fg'.$colourscheme};
++			$bg_colour = $block_instance->config->{'bg'.$colourscheme};
++		}
++		else{ // block has never been configured, load default colours
++			require_once($CFG->dirroot.'/blocks/accessibility/defaults.php');
++			$fg_colour = $defaults['fg'.$colourscheme];
++			$bg_colour = $defaults['bg'.$colourscheme];
++		}
++		
++	}
++
++
++	// keep in mind that :not selector cannot work properly with IE <= 8 so this will not be included
++	$not_selector_for_gteIE8 = '';
++	if(!preg_match('/(?i)msie [1-8]/',$_SERVER['HTTP_USER_AGENT']))
++	{
++		$not_selector_for_gteIE8 = ':not([class*="mce"]):not([id*="mce"]):not([id*="editor"])';
++	}
++
++	// if no colours defined, no output, it will remain as default
++	if(!empty($bg_colour)){ echo '
++		forumpost .topic {
++			background-image: none !important;
++		}
++		*'. $not_selector_for_gteIE8 .'{
++			/* it works well only with * selector but mce editor gets unusable */
++			background-color: '.$bg_colour.' !important;
++			background-image: none !important;
++			text-shadow:none !important;
++		}
++		';
++	}
++
++	// it is recommended not to change forground colour
++	if(!empty($fg_colour)){ echo '
++		*'. $not_selector_for_gteIE8 .'{
++			/* it works well only with * selector but mce editor gets unusable */
++			color: '.$fg_colour.' !important;
++		}
++		#content a, .tabrow0 span {
++			color: '.$fg_colour.' !important;
++		}
++		.tabrow0 span:hover {
++			text-decoration: underline;
++		}
++		.block_accessibility .outer {
++			border-color: '.$bg_colour.' !important;
++		}
++		';
++	}
++
++	
++}
++
++// ACCESSIBILITY BLOCK'S COLOUR SCHEMES BUTTONS
++// Do not edit (this part of code is not in styles.php because colours are defined in block's configuration form)
++// ================================================
++for($i=2; $i<5; $i++) {  // this is how many declarations we defined in defaults.php
++	$colourscheme = $i;
++	if($block_instance->config !== NULL){
++		//var_dump($block_instance->config->{'fg'.$colourscheme}, $block_instance->config->{'bg'.$colourscheme});
++		$fg_colour = $block_instance->config->{'fg'.$colourscheme};
++		$bg_colour = $block_instance->config->{'bg'.$colourscheme};
++	}
++	else{ // block has never been configured, load default colours
++		require_once($CFG->dirroot.'/blocks/accessibility/defaults.php');
++		$fg_colour = $defaults['fg'.$colourscheme];
++		$bg_colour = $defaults['bg'.$colourscheme];
++	}
++	echo '#block_accessibility_colour'.$colourscheme.'{';
++	if(!empty($fg_colour)) echo 'color:'.$fg_colour.' !important;';
++	if(!empty($bg_colour)) echo 'background-color:'.$bg_colour.' !important;';
++	echo '}';
++}
++		
++// display:inline-block CSS declaration is not applied to block's buttons because IE7 doesn't support it. float is used insted for IE7 only
++if(preg_match('/(?i)msie [1-7]/',$_SERVER['HTTP_USER_AGENT']))
++{
++	echo '#accessibility_controls .access-button{float:left;}';
++	echo '.atbar-always{float:left;}';
++}
+diff --git a/blocks/accessibility/version.php b/blocks/accessibility/version.php
+new file mode 100755
+index 0000000..1ebbf43
+--- /dev/null
++++ b/blocks/accessibility/version.php
+@@ -0,0 +1,39 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++
++/**
++ * Define metadata for Accessibility block
++ *
++ * This file is the cornerstone of the block - when the page loads, it
++ * checks if the user has a custom settings for the font size and colour
++ * scheme (either in the session or the database) and creates a stylesheet
++ * to override the standard styles with this setting.                  (2)
++ *
++ * @package   block_accessibility                                      (4)
++ * @copyright Copyright 2009 onwards Taunton's College                   (5)
++ * @author Mark Johnson                                                 (6)
++ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later (7)
++ */
++
++defined('MOODLE_INTERNAL') || die();
++
++$plugin->version = 2015011600;
++$plugin->cron = 3600;
++$plugin->requires = 2011120500;
++$plugin->component = 'block_accessibility';
++$plugin->maturity = MATURITY_STABLE;
++$plugin->release = '2.2.3';
+-- 
+1.8.3.1
+

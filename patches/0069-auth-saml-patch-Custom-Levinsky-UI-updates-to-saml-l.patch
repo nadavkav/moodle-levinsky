@@ -1,0 +1,52 @@
+From 71b3d486f3375d7ba4207945bf2055803f2f8d05 Mon Sep 17 00:00:00 2001
+From: Nadav Kavalerchik <nadavkav@gmail.com>
+Date: Mon, 16 Oct 2017 10:10:25 +0300
+Subject: [PATCH 69/95] auth/saml (patch) Custom Levinsky UI updates to saml
+ login page
+
+---
+ auth/saml/login.php | 13 +++++++++++--
+ 1 file changed, 11 insertions(+), 2 deletions(-)
+
+diff --git a/auth/saml/login.php b/auth/saml/login.php
+index b769b60..12096cf 100755
+--- a/auth/saml/login.php
++++ b/auth/saml/login.php
+@@ -21,7 +21,7 @@ if(isset($saml_config->autologin)  && $saml_config->autologin)
+        exit;
+ }
+ 
+-$context = CONTEXT_SYSTEM::instance();
++$context = context_system::instance();
+ $PAGE->set_url("$CFG->httpswwwroot/auth/saml/login.php");
+ $PAGE->set_context($context);
+ $PAGE->set_pagelayout('login');
+@@ -43,7 +43,16 @@ $PAGE->set_title("$site->fullname: $loginsite");
+ $PAGE->set_heading("$site->fullname");
+ 
+ echo $OUTPUT->header();
++?>
++<!--    <div id="sitename">--><?php //echo format_string($SITE->shortname, true, array('context' => context_course::instance(SITEID))) ?><!--</div>-->
++
++    <!--div class="headerlogo">
++        <img src="<?php echo $PAGE->theme->setting_file_url('headerlogo', 'headerlogo');?>" class="img-fluid" alt="Responsive image">
++    </div-->
++
++<div id="logo"></div>
+ 
++<?php
+ if ($show_instructions) {
+     $columns = 'twocolumns';
+ } else {
+@@ -182,7 +191,7 @@ echo '</center>';
+     </div>
+ <?php } ?>
+ </div>
+-
++    <div id="moodlelogo"></div>
+ <?php
+ 
+ if (!empty($CFG->loginpageautofocus)) {
+-- 
+1.8.3.1
+

@@ -1,0 +1,154 @@
+From 852a2c21307296368d7818870d5fc2a04fbe46e4 Mon Sep 17 00:00:00 2001
+From: Nadav Kavalerchik <nadavkav@gmail.com>
+Date: Sat, 14 Oct 2017 13:09:10 +0300
+Subject: [PATCH 63/95] mod/assign/feedback/editpdf (patch) Fix PDF comment
+ Hebrew fonts (MDL-45301)
+
+---
+ mod/assign/feedback/editpdf/classes/pdf.php        |  6 +--
+ .../editpdf/lang/en/assignfeedback_editpdf.php     |  2 +
+ mod/assign/feedback/editpdf/settings.php           |  8 +++
+ mod/assign/feedback/editpdf/settingslib.php        | 62 ++++++++++++++++++++++
+ 4 files changed, 75 insertions(+), 3 deletions(-)
+ create mode 100644 mod/assign/feedback/editpdf/settingslib.php
+
+diff --git a/mod/assign/feedback/editpdf/classes/pdf.php b/mod/assign/feedback/editpdf/classes/pdf.php
+index 5a0e147..8a4a1eb 100644
+--- a/mod/assign/feedback/editpdf/classes/pdf.php
++++ b/mod/assign/feedback/editpdf/classes/pdf.php
+@@ -86,7 +86,7 @@ class pdf extends \FPDI {
+         $this->setPrintHeader(false);
+         $this->setPrintFooter(false);
+         $this->scale = 72.0 / 100.0;
+-        $this->SetFont('helvetica', '', 16.0 * $this->scale);
++        $this->SetFont(get_config('assignfeedback_editpdf', 'editfont'), '', 16.0 * $this->scale);
+         $this->SetTextColor(0, 0, 0);
+ 
+         $totalpagecount = 0;
+@@ -133,7 +133,7 @@ class pdf extends \FPDI {
+ 
+         $this->setPageUnit('pt');
+         $this->scale = 72.0 / 100.0;
+-        $this->SetFont('helvetica', '', 16.0 * $this->scale);
++        $this->SetFont(get_config('assignfeedback_editpdf', 'editfont'), '', 16.0 * $this->scale);
+         $this->SetFillColor(255, 255, 176);
+         $this->SetDrawColor(0, 0, 0);
+         $this->SetLineWidth(1.0 * $this->scale);
+@@ -226,7 +226,7 @@ class pdf extends \FPDI {
+         $this->SetFontSize(12 * $this->scale);
+         $this->SetMargins(100 * $this->scale, 120 * $this->scale, -1, true);
+         $this->SetAutoPageBreak(true, 100 * $this->scale);
+-        $this->setHeaderFont(array('helvetica', '', 24 * $this->scale));
++        $this->setHeaderFont(array(get_config('assignfeedback_editpdf', 'editfont'), '', 24 * $this->scale));
+         $this->setHeaderMargin(24 * $this->scale);
+         $this->setHeaderData('', 0, '', get_string('commentindex', 'assignfeedback_editpdf'));
+ 
+diff --git a/mod/assign/feedback/editpdf/lang/en/assignfeedback_editpdf.php b/mod/assign/feedback/editpdf/lang/en/assignfeedback_editpdf.php
+index 6aec217..1f19fee 100644
+--- a/mod/assign/feedback/editpdf/lang/en/assignfeedback_editpdf.php
++++ b/mod/assign/feedback/editpdf/lang/en/assignfeedback_editpdf.php
+@@ -53,6 +53,8 @@ $string['enabled'] = 'Annotate PDF';
+ $string['enabled_help'] = 'If enabled, the teacher will be able to create annotated PDF files when marking the assignments. This allows the teacher to add comments, drawing and stamps directly on top of the students work. The annotating is done in the browser and no extra software is required.';
+ $string['expcolcomments'] = 'Expand/collapse all comments';
+ $string['filter'] = 'Filter comments...';
++$string['fontname'] = 'Font name';
++$string['fontname_help'] = 'Choose a font from the list to be used in comments added to the document. (Fonts are read from the folder {$a})';
+ $string['generatefeedback'] = 'Generate feedback PDF';
+ $string['gotopage'] = 'Go to page';
+ $string['green'] = 'Green';
+diff --git a/mod/assign/feedback/editpdf/settings.php b/mod/assign/feedback/editpdf/settings.php
+index 674a21f..04c52c8 100644
+--- a/mod/assign/feedback/editpdf/settings.php
++++ b/mod/assign/feedback/editpdf/settings.php
+@@ -23,6 +23,8 @@
+  */
+ 
+ defined('MOODLE_INTERNAL') || die();
++require_once($CFG->dirroot. '/mod/assign/feedback/editpdf/settingslib.php');
++require_once($CFG->libdir. '/pdflib.php');
+ 
+ // Stamp files setting.
+ $name = 'assignfeedback_editpdf/stamps';
+@@ -42,3 +44,9 @@ $settings->add(new admin_setting_heading('pathtogs', get_string('pathtogs', 'adm
+ $url = new moodle_url('/mod/assign/feedback/editpdf/testgs.php');
+ $link = html_writer::link($url, get_string('testgs', 'assignfeedback_editpdf'));
+ $settings->add(new admin_setting_heading('testgs', '', $link));
++
++$settings->add(new assignfeedback_editpdf_admin_setting_configselect('assignfeedback_editpdf/editfont',
++    get_string('fontname', 'assignfeedback_editpdf'),
++    get_string('fontname_help', 'assignfeedback_editpdf', K_PATH_FONTS),
++    PDF_DEFAULT_FONT,
++    null));
+\ No newline at end of file
+diff --git a/mod/assign/feedback/editpdf/settingslib.php b/mod/assign/feedback/editpdf/settingslib.php
+new file mode 100644
+index 0000000..57fe6ee
+--- /dev/null
++++ b/mod/assign/feedback/editpdf/settingslib.php
+@@ -0,0 +1,62 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++/**
++ * Admin settings class for the assignfeedback PDF plugin
++ * subclassing admin_setting_configselect to lazy load the font list
++ * from a folder on the server
++ *
++ * @package    assignfeedback_editpdf
++ * @copyright  2013 Davo Smith
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++defined('MOODLE_INTERNAL') || die;
++
++class assignfeedback_editpdf_admin_setting_configselect extends admin_setting_configselect {
++    /**
++     * This function is used to lazy load list of font choices
++     *
++     * Override this method if loading of choices is expensive, such
++     * as when it requires multiple db requests.
++     *
++     * @return bool true if loaded, false if error
++     */
++    public function load_choices() {
++        global $CFG;
++        require_once($CFG->libdir.'/pdflib.php');
++
++        if (is_array($this->choices)) {
++            return true;
++        }
++
++        // Select pdf editing font.
++        $fonts = array();
++        $filesindir = scandir(K_PATH_FONTS);
++        foreach ($filesindir as $file) {
++            if (substr($file, -4) != '.php') {
++                continue;
++            }
++            $contents = file_get_contents(K_PATH_FONTS . $file);
++            if (preg_match('/\$name\s*=\s*\'(.*)\';/', $contents, $fontname) !== 1) {
++                continue;
++            }
++            $fonts[substr($file, 0, strlen($file) - 4)] = $fontname[1];
++        }
++        $this->choices = $fonts;
++        return true;
++    }
++}
+\ No newline at end of file
+-- 
+1.8.3.1
+

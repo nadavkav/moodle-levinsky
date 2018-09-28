@@ -1,0 +1,546 @@
+From a318254694946cc86255444df87aa072ca8bac71 Mon Sep 17 00:00:00 2001
+From: Nadav Kavalerchik <nadavkav@gmail.com>
+Date: Wed, 11 Oct 2017 21:15:47 +0300
+Subject: [PATCH 25/95] blocks/google_hangout (new)
+
+---
+ blocks/google_hangout/README.txt                   |  45 +++++++++
+ blocks/google_hangout/block_google_hangout.php     | 108 +++++++++++++++++++++
+ blocks/google_hangout/db/access.php                |  51 ++++++++++
+ blocks/google_hangout/edit_form.php                |  16 +++
+ .../lang/en/block_google_hangout.php               |  36 +++++++
+ .../lang/he/block_google_hangout.php               |  35 +++++++
+ blocks/google_hangout/select_users.php             | 107 ++++++++++++++++++++
+ blocks/google_hangout/settings.php                 |  34 +++++++
+ blocks/google_hangout/version.php                  |  30 ++++++
+ 9 files changed, 462 insertions(+)
+ create mode 100755 blocks/google_hangout/README.txt
+ create mode 100755 blocks/google_hangout/block_google_hangout.php
+ create mode 100755 blocks/google_hangout/db/access.php
+ create mode 100755 blocks/google_hangout/edit_form.php
+ create mode 100755 blocks/google_hangout/lang/en/block_google_hangout.php
+ create mode 100755 blocks/google_hangout/lang/he/block_google_hangout.php
+ create mode 100755 blocks/google_hangout/select_users.php
+ create mode 100755 blocks/google_hangout/settings.php
+ create mode 100755 blocks/google_hangout/version.php
+
+diff --git a/blocks/google_hangout/README.txt b/blocks/google_hangout/README.txt
+new file mode 100755
+index 0000000..45819b1
+--- /dev/null
++++ b/blocks/google_hangout/README.txt
+@@ -0,0 +1,45 @@
++The following steps should get you up and running with
++this block template code.
++
++* DO NOT PANIC!
++
++* Unzip the archive and read this file
++
++* Rename the google_hangout/ folder to the name of your module (eg "widget").
++The module folder MUST be lower case. You should check the Moodle Plugins
++Database at https://moodle.org/plugins to make sure that
++your name is not already used by an other block. Registering the plugin
++name @ http://moodle.org/plugins will secure it for you.
++
++* Edit all the files in this directory and its subdirectories and change
++all the instances of the string "google_hangout" to your module name
++(eg "widget"). If you are using Linux, you can use the following command
++$ find . -type f -exec sed -i 's/google_hangout/widget/g' {} \;
++
++* Rename the file lang/en/google_hangout.php to lang/en/widget.php
++where "widget" is the name of your module. Also rename block_google_hangout.php
++in the main directory to block_widget.php
++
++* Place the widget folder into the /block folder of the moodle
++directory.
++
++* Go to Settings > Site Administration > Development > XMLDB editor
++and modify the module's tables.
++
++* Modify version.php and set the initial version of you module.
++
++* Visit Settings > Site Administration > Notifications, you should find
++the module's tables successfully created
++
++* Go to Site Administration > Plugins > Blocks > Manage blocks
++and you should find that this google_hangout has been added to the list of
++installed modules.
++
++* You may now proceed to run your own code in an attempt to develop
++your module. You will probably want to modify block_newmodule.php
++and edit_form.php as a first step. Check db/access.php to add
++capabilities.
++
++We encourage you to share your code and experience - visit http://moodle.org
++
++Good luck!
+diff --git a/blocks/google_hangout/block_google_hangout.php b/blocks/google_hangout/block_google_hangout.php
+new file mode 100755
+index 0000000..22e1df1
+--- /dev/null
++++ b/blocks/google_hangout/block_google_hangout.php
+@@ -0,0 +1,108 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++/**
++ * google_hangout block caps.
++ *
++ * @package    block_google_hangout
++ * @copyright  @copyright Nadav Kavalerchik <nadavkav@gmail.com>
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++defined('MOODLE_INTERNAL') || die();
++
++class block_google_hangout extends block_base {
++
++    function init() {
++        $this->title = get_string('pluginname', 'block_google_hangout');
++    }
++
++    function get_content() {
++        global $CFG, $OUTPUT;
++
++        if ($this->content !== null) {
++            return $this->content;
++        }
++
++        $this->content = new stdClass;
++        $this->content->footer = '';
++
++        if (empty($this->instance)) {
++            $this->content->text   = '';
++            return $this->content;
++        }
++
++        // user/index.php expect course context, so get one if page has module context.
++        $currentcontext = $this->page->context->get_course_context(false);
++
++        if (! empty($this->config->text)) {
++            $this->content->text = $this->config->text;
++        }
++
++        $this->content->text = 'No Hangout';
++        if (empty($currentcontext)) {
++            return $this->content;
++        }
++        if ($this->page->course->id == SITEID) {
++            $this->context->text .= "site context";
++        }
++
++        $users = get_enrolled_users($currentcontext);
++        $usersemails = '';
++        foreach ($users as $user) {
++            $usersemails .= "{ id : '$user->email', invite_type : 'EMAIL' },";
++        }
++
++        $this->content->text = "<script src=\"https://apis.google.com/js/platform.js\" async defer></script>
++            <g:hangout render=\"createhangout\" invites=\"[$usersemails]\"></g:hangout>";
++
++        $this->content->text .=
++        '<br><a href= "'.$CFG->wwwroot.'/blocks/google_hangout/select_users.php?courseid='.$this->page->course->id.'" alt="Select users">Hangout with selected users</a>';
++
++        if (! empty($this->config->text)) {
++            $this->content->text .= $this->config->text;
++        }
++
++        return $this->content;
++    }
++
++    // my moodle can only have SITEID and it's redundant here, so take it away
++    public function applicable_formats() {
++        return array('all' => false,
++                     'site' => true,
++                     'site-index' => true,
++                     'course-view' => true, 
++                     'course-view-social' => false,
++                     'mod' => true, 
++                     'mod-quiz' => false);
++    }
++
++    public function instance_allow_multiple() {
++          return false;
++    }
++
++    function has_config() {
++        return true;
++    }
++
++    public function cron() {
++            mtrace( "Hey, my cron script is running" );
++             
++                 // do something
++                  
++                      return true;
++    }
++}
+diff --git a/blocks/google_hangout/db/access.php b/blocks/google_hangout/db/access.php
+new file mode 100755
+index 0000000..db6b2b4
+--- /dev/null
++++ b/blocks/google_hangout/db/access.php
+@@ -0,0 +1,51 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++/**
++ * Newblock block caps.
++ *
++ * @package   block_google_hangout
++ * @copyright Nadav Kavalerchik <nadavkav@gmail.com>
++ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++defined('MOODLE_INTERNAL') || die();
++
++$capabilities = array(
++
++    'block/google_hangout:myaddinstance' => array(
++        'captype' => 'write',
++        'contextlevel' => CONTEXT_SYSTEM,
++        'archetypes' => array(
++            'user' => CAP_ALLOW
++        ),
++
++        'clonepermissionsfrom' => 'moodle/my:manageblocks'
++    ),
++
++    'block/google_hangout:addinstance' => array(
++        'riskbitmask' => RISK_SPAM | RISK_XSS,
++
++        'captype' => 'write',
++        'contextlevel' => CONTEXT_BLOCK,
++        'archetypes' => array(
++            'editingteacher' => CAP_ALLOW,
++            'manager' => CAP_ALLOW
++        ),
++
++        'clonepermissionsfrom' => 'moodle/site:manageblocks'
++    ),
++);
+diff --git a/blocks/google_hangout/edit_form.php b/blocks/google_hangout/edit_form.php
+new file mode 100755
+index 0000000..4cb2ea7
+--- /dev/null
++++ b/blocks/google_hangout/edit_form.php
+@@ -0,0 +1,16 @@
++<?php
++
++class block_google_hangout_edit_form extends block_edit_form {
++
++    protected function specific_definition($mform) {
++
++        // Section header title according to language file.
++        $mform->addElement('header', 'configheader', get_string('blocksettings', 'block'));
++
++        // A sample string variable with a default value.
++        $mform->addElement('text', 'config_text', get_string('blockstring', 'block_google_hangout'));
++        $mform->setDefault('config_text', 'default value');
++        $mform->setType('config_text', PARAM_MULTILANG);        
++
++    }
++}
+diff --git a/blocks/google_hangout/lang/en/block_google_hangout.php b/blocks/google_hangout/lang/en/block_google_hangout.php
+new file mode 100755
+index 0000000..7762f84
+--- /dev/null
++++ b/blocks/google_hangout/lang/en/block_google_hangout.php
+@@ -0,0 +1,36 @@
++<?php
++
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++/**
++ * Strings for component 'block_google_hangout', language 'en'
++ *
++ * @package   block_google_hangout
++ * @copyright Nadav Kavalerchik <nadavkav@gmail.com>
++ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++$string['blockstring'] = 'Google Hangout';
++$string['descconfig'] = 'Description of the config section';
++$string['descfoo'] = 'Config description';
++$string['headerconfig'] = 'Config section header';
++$string['labelfoo'] = 'Config label';
++$string['google_hangout:addinstance'] = 'Add a google_hangout block';
++$string['google_hangout:myaddinstance'] = 'Add a google_hangout block to my moodle';
++$string['pluginname'] = 'Google Hangout';
++$string['starthangoutwithfollowing'] = 'The following users will be emailed to join the Hangout';
++$string['starthangoutsession'] = 'Click the "Google Hangout" button to start a new session';
++
+diff --git a/blocks/google_hangout/lang/he/block_google_hangout.php b/blocks/google_hangout/lang/he/block_google_hangout.php
+new file mode 100755
+index 0000000..c4f9417
+--- /dev/null
++++ b/blocks/google_hangout/lang/he/block_google_hangout.php
+@@ -0,0 +1,35 @@
++<?php
++
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++/**
++ * Strings for component 'block_google_hangout', language 'he'
++ *
++ * @package   block_google_hangout
++ * @copyright Nadav Kavalerchik <nadavkav@gmail.com>
++ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++$string['blockstring'] = 'Google Hangout';
++$string['descconfig'] = 'Description of the config section';
++$string['descfoo'] = 'Config description';
++$string['headerconfig'] = 'Config section header';
++$string['labelfoo'] = 'Config label';
++$string['google_hangout:addinstance'] = 'Add a google_hangout block';
++$string['google_hangout:myaddinstance'] = 'Add a google_hangout block to my moodle';
++$string['pluginname'] = 'Google Hangout';
++$string['starthangoutwithfollowing'] = 'הזמנת הצטרפות למפגש המקוון תשלח לדוא"ל של התלמידים הבאים:';
++$string['starthangoutsession'] = 'הקליקו על כפתור ה"Google Hangout" להתחלת המפגש המקוון';
+diff --git a/blocks/google_hangout/select_users.php b/blocks/google_hangout/select_users.php
+new file mode 100755
+index 0000000..ae20f3b
+--- /dev/null
++++ b/blocks/google_hangout/select_users.php
+@@ -0,0 +1,107 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++/**
++ * google_hangout block caps.
++ *
++ * @package    block_google_hangout
++ * @copyright  @copyright Nadav Kavalerchik <nadavkav@gmail.com>
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++include_once('../../config.php');
++global $PAGE, $COURSE, $OUTPUT, $DB, $CFG;
++require_once($CFG->libdir . '/formslib.php');
++
++$courseid = optional_param('courseid', 0, PARAM_INT);
++
++require_login();
++
++$context = context_course::instance($courseid);
++$PAGE->set_context($context);
++
++//$users = get_enrolled_users($context);
++//$usersemails = '';
++//foreach ($users as $user) {
++//    $usersemails .= "{ id : '$user->email', invite_type : 'EMAIL' },";
++//}
++//echo $usersemails;
++
++class selectusers_to_hanghout_with_form extends moodleform {
++
++    function definition() {
++        $courseid = optional_param('courseid', 0, PARAM_INT);
++        $mform    =& $this->_form;
++        $context = context_course::instance($courseid);
++
++        $mform->addElement('hidden', 'courseid', $courseid);
++        $mform->setType('courseid', PARAM_INT);
++
++        $users = get_enrolled_users($context);
++        foreach ($users as $user) {
++            $mform->addElement('advcheckbox', 'usersids[]', $user->firstname . ' ' . $user->lastname , ' email: ' . $user->email, array('group' => 1), array(0,$user->id));
++            //$mform->setDefault('usersids', $user->id);
++        }
++         $buttons = array();
++        $buttons[] =& $mform->createElement('submit', 'send', get_string('email_send','block_configurable_reports'));
++        $buttons[] =& $mform->createElement('cancel');
++
++        $mform->addGroup($buttons, 'buttons', get_string('actions'), array(' '), false);
++    }
++}
++
++$form = new selectusers_to_hanghout_with_form();
++$userslist = '';
++
++if ($form->is_cancelled()) {
++    redirect(new moodle_url('/course/view.php?id='.$data->courseid));
++} else if ($data = $form->get_data()) {
++    //print_r($data);
++    $usersids = $_POST['usersids'];
++    $usersemails = '';
++    //$userslist = '';
++    foreach($usersids as $userid){
++        //echo "userid=".$userid."<br/>";
++        if ($userid != 0){
++            $hangout_user = $DB->get_record('user', array('id'=>$userid));
++            $userslist .= '<br>'. $hangout_user->firstname . ' ' . $hangout_user->lastname . ' email: ' . $hangout_user->email.'<br>';
++            $usersemails .= "{ id : '$hangout_user->email', invite_type : 'EMAIL' },";
++        }
++    }
++    $hangout_button = "<script src=\"https://apis.google.com/js/platform.js\" async defer></script>
++            <g:hangout render=\"createhangout\" invites=\"[$usersemails]\"></g:hangout>";
++}
++
++$PAGE->set_title(get_string('pluginname', 'block_google_hangout'));
++$PAGE->set_heading(format_string($COURSE->fullname));
++$PAGE->navbar->add(format_string($COURSE->fullname), new moodle_url('/course/view.php', array('id'=>$courseid)));
++$PAGE->navbar->add(get_string('pluginname', 'block_google_hangout'));
++$PAGE->set_url(new moodle_url('/course/view.php', array('id'=>$courseid)));
++
++echo $OUTPUT->header() ; //  header();
++
++echo html_writer::start_tag('div', array('class' => 'no-overflow'));
++if (isset($hangout_button)) {
++    echo html_writer::tag('h2', get_string('starthangoutwithfollowing', 'block_google_hangout'));
++    echo $userslist."<br>";
++    echo html_writer::tag('h4', get_string('starthangoutsession', 'block_google_hangout'));
++    echo $hangout_button;
++} else {
++    $form->display();
++}
++echo html_writer::end_tag('div');
++
++echo $OUTPUT->footer();
+\ No newline at end of file
+diff --git a/blocks/google_hangout/settings.php b/blocks/google_hangout/settings.php
+new file mode 100755
+index 0000000..4eea94c
+--- /dev/null
++++ b/blocks/google_hangout/settings.php
+@@ -0,0 +1,34 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++/**
++ * Newblock block caps.
++ *
++ * @package    block_google_hangout
++ * @copyright Nadav Kavalerchik <nadavkav@gmail.com>
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++defined('MOODLE_INTERNAL') || die();
++
++$settings->add(new admin_setting_heading('sampleheader',
++                                         get_string('headerconfig', 'block_google_hangout'),
++                                         get_string('descconfig', 'block_google_hangout')));
++
++$settings->add(new admin_setting_configcheckbox('google_hangout/foo',
++                                                get_string('labelfoo', 'block_google_hangout'),
++                                                get_string('descfoo', 'block_google_hangout'),
++                                                '0'));
+diff --git a/blocks/google_hangout/version.php b/blocks/google_hangout/version.php
+new file mode 100755
+index 0000000..dbf19b9
+--- /dev/null
++++ b/blocks/google_hangout/version.php
+@@ -0,0 +1,30 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++/**
++ * Version details
++ *
++ * @package    block_google_hangout
++ * @copyright  @copyright Nadav Kavalerchik <nadavkav@gmail.com>
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++defined('MOODLE_INTERNAL') || die();
++
++$plugin->version   = 2013011300;        // The current plugin version (Date: YYYYMMDDXX)
++$plugin->requires  = 2012112900;        // Requires this Moodle version
++$plugin->component = 'block_google_hangout'; // Full name of the plugin (used for diagnostics)
++$plugin->cron = 300;
+-- 
+1.8.3.1
+

@@ -1,0 +1,45 @@
+From e4072c8e7402b027921449ef7f3e905e0f77670c Mon Sep 17 00:00:00 2001
+From: Nadav Kavalerchik <nadavkav@gmail.com>
+Date: Sun, 5 Nov 2017 14:08:44 +0200
+Subject: [PATCH 85/95] Teachers are not allowed to change quiz maxgrade, only
+ admin
+
+---
+ mod/quiz/classes/output/edit_renderer.php | 17 +++++++++++++----
+ 1 file changed, 13 insertions(+), 4 deletions(-)
+
+diff --git a/mod/quiz/classes/output/edit_renderer.php b/mod/quiz/classes/output/edit_renderer.php
+index 238a1a8..6e900cc 100644
+--- a/mod/quiz/classes/output/edit_renderer.php
++++ b/mod/quiz/classes/output/edit_renderer.php
+@@ -173,14 +173,23 @@ class edit_renderer extends \plugin_renderer_base {
+         $output .= html_writer::start_tag('fieldset', array('class' => 'invisiblefieldset'));
+         $output .= html_writer::empty_tag('input', array('type' => 'hidden', 'name' => 'sesskey', 'value' => sesskey()));
+         $output .= html_writer::input_hidden_params($pageurl);
+-        $output .= html_writer::tag('label', get_string('maximumgrade') . ' ',
+-                array('for' => 'inputmaxgrade'));
+-        $output .= html_writer::empty_tag('input', array('type' => 'text', 'id' => 'inputmaxgrade',
++
++        if (has_capability('moodle/site:config', \context_system::instance())) {
++            $output .= html_writer::tag('label', get_string('maximumgrade') . ' ', array('for' => 'inputmaxgrade'));
++            $output .= html_writer::empty_tag('input', array('type' => 'text', 'id' => 'inputmaxgrade',
+                 'name' => 'maxgrade', 'size' => ($structure->get_decimal_places_for_grades() + 2),
+                 'value' => $structure->formatted_quiz_grade(),
+                 'class' => 'form-control'));
+-        $output .= html_writer::empty_tag('input', array('type' => 'submit', 'class' => 'btn btn-secondary m-l-1',
++            $output .= html_writer::empty_tag('input', array('type' => 'submit', 'class' => 'btn btn-secondary m-l-1',
+                 'name' => 'savechanges', 'value' => get_string('save', 'quiz')));
++        } else {
++            $output .= html_writer::empty_tag('input', array('type' => 'hidden', 'name' => 'maxgrade',
++                'id' => 'hiddenmaxgrade',
++                'value' => $structure->formatted_quiz_grade()));
++            $output .= html_writer::tag('label', get_string('maximumgrade') . ': '. $structure->formatted_quiz_grade(),
++                array('for' => 'hiddenmaxgrade'));
++        }
++
+         $output .= html_writer::end_tag('fieldset');
+         $output .= html_writer::end_tag('form');
+         $output .= html_writer::end_tag('div');
+-- 
+1.8.3.1
+

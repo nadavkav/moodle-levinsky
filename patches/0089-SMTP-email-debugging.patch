@@ -1,0 +1,44 @@
+From 3564582be8ff8ce346b4e994931533d9b8664bc6 Mon Sep 17 00:00:00 2001
+From: Nadav Kavalerchik <nadavkav@gmail.com>
+Date: Fri, 28 Sep 2018 16:17:45 +0300
+Subject: [PATCH 89/95] SMTP email debugging
+
+---
+ lib/moodlelib.php | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/lib/moodlelib.php b/lib/moodlelib.php
+index 98a7b98..1ac7216 100644
+--- a/lib/moodlelib.php
++++ b/lib/moodlelib.php
+@@ -5584,7 +5584,8 @@ function get_mailer($action='get') {
+             // Use SMTP directly.
+             $mailer->isSMTP();
+             if (!empty($CFG->debugsmtp)) {
+-                $mailer->SMTPDebug = true;
++                // comment out since causing user sending messages json errors (nadavkav)
++                //$mailer->SMTPDebug = true;
+             }
+             // Specify main and backup servers.
+             $mailer->Host          = $CFG->smtphosts;
+@@ -5764,7 +5765,7 @@ function email_to_user($user, $from, $subject, $messagetext, $messagehtml = '',
+     //echo strpos(';', $user->email);die;
+     if (strpos($user->email, ';')>0) {
+         list($user->email, $user->email2) = explode(';', $user->email);
+-        echo "Split emails to: $user->email, $user->email2\n";
++        debugging("Split emails to: $user->email, $user->email2\n");
+     } else {
+         $user->email2 = $user->email;
+     }
+@@ -5842,7 +5843,7 @@ function email_to_user($user, $from, $subject, $messagetext, $messagehtml = '',
+     // Fix sender (from) email to second (private) email, if one is available from the Michlol. (nadavkav@gmail.com)
+     if (strpos($from->email, ';')>0) {
+         list($from->email, $from->email2) = explode(';', $from->email);
+-        echo "Split 'from' emails to: $from->email, $from->email2\n";
++        debugging("Split 'from' emails to: $from->email, $from->email2\n");
+     } else {
+         $from->email2 = $from->email;
+     }
+-- 
+1.8.3.1
+

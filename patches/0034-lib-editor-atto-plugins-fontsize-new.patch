@@ -1,0 +1,415 @@
+From 0b697b475b9d6e8a7f84efcdd7a67f5ad4ad01af Mon Sep 17 00:00:00 2001
+From: Nadav Kavalerchik <nadavkav@gmail.com>
+Date: Wed, 11 Oct 2017 21:21:15 +0300
+Subject: [PATCH 34/95] lib/editor/atto/plugins/fontsize (new)
+
+---
+ lib/editor/atto/plugins/fontsize/README.md         |  16 ++++
+ .../plugins/fontsize/lang/en/atto_fontsize.php     |  25 ++++++
+ lib/editor/atto/plugins/fontsize/pix/icon.png      | Bin 0 -> 205 bytes
+ lib/editor/atto/plugins/fontsize/pix/icon.svg      |  15 ++++
+ lib/editor/atto/plugins/fontsize/styles.css        |   3 +
+ lib/editor/atto/plugins/fontsize/version.php       |  31 ++++++++
+ .../moodle-atto_fontsize-button-coverage.js        | Bin 0 -> 5369 bytes
+ .../moodle-atto_fontsize-button-debug.js           | Bin 0 -> 2426 bytes
+ .../moodle-atto_fontsize-button-min.js             | Bin 0 -> 672 bytes
+ .../moodle-atto_fontsize-button.js                 | Bin 0 -> 2426 bytes
+ .../plugins/fontsize/yui/src/button/build.json     |  10 +++
+ .../plugins/fontsize/yui/src/button/js/button.js   |  87 +++++++++++++++++++++
+ .../plugins/fontsize/yui/src/button/meta/editor.js |   7 ++
+ 13 files changed, 194 insertions(+)
+ create mode 100644 lib/editor/atto/plugins/fontsize/README.md
+ create mode 100644 lib/editor/atto/plugins/fontsize/lang/en/atto_fontsize.php
+ create mode 100644 lib/editor/atto/plugins/fontsize/pix/icon.png
+ create mode 100644 lib/editor/atto/plugins/fontsize/pix/icon.svg
+ create mode 100644 lib/editor/atto/plugins/fontsize/styles.css
+ create mode 100644 lib/editor/atto/plugins/fontsize/version.php
+ create mode 100644 lib/editor/atto/plugins/fontsize/yui/build/moodle-atto_fontsize-button/moodle-atto_fontsize-button-coverage.js
+ create mode 100644 lib/editor/atto/plugins/fontsize/yui/build/moodle-atto_fontsize-button/moodle-atto_fontsize-button-debug.js
+ create mode 100644 lib/editor/atto/plugins/fontsize/yui/build/moodle-atto_fontsize-button/moodle-atto_fontsize-button-min.js
+ create mode 100644 lib/editor/atto/plugins/fontsize/yui/build/moodle-atto_fontsize-button/moodle-atto_fontsize-button.js
+ create mode 100644 lib/editor/atto/plugins/fontsize/yui/src/button/build.json
+ create mode 100644 lib/editor/atto/plugins/fontsize/yui/src/button/js/button.js
+ create mode 100644 lib/editor/atto/plugins/fontsize/yui/src/button/meta/editor.js
+
+diff --git a/lib/editor/atto/plugins/fontsize/README.md b/lib/editor/atto/plugins/fontsize/README.md
+new file mode 100644
+index 0000000..9d78e5e
+--- /dev/null
++++ b/lib/editor/atto/plugins/fontsize/README.md
+@@ -0,0 +1,16 @@
++Font Size plugin for Atto
++=========================
++
++Requirements
++============
++
++- Moodle 2.7
++- Moodle 2.8
++
++Installation
++============
++
++* Place in lib/editor/atto/plugins
++* Upgrade your Moodle
++* Navigate to Site administration -> Plugins -> Text editors -> Atto HTML editor -> Atto toolbar settings
++* Add the 'fontsize' plugin in your location of choice
+diff --git a/lib/editor/atto/plugins/fontsize/lang/en/atto_fontsize.php b/lib/editor/atto/plugins/fontsize/lang/en/atto_fontsize.php
+new file mode 100644
+index 0000000..57ae076
+--- /dev/null
++++ b/lib/editor/atto/plugins/fontsize/lang/en/atto_fontsize.php
+@@ -0,0 +1,25 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++/**
++ * Strings for component 'atto_fontsize', language 'en'.
++ *
++ * @package    atto_fontsize
++ * @copyright  2014 Andrew Nicols
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++$string['pluginname'] = 'Font size';
+diff --git a/lib/editor/atto/plugins/fontsize/pix/icon.png b/lib/editor/atto/plugins/fontsize/pix/icon.png
+new file mode 100644
+index 0000000000000000000000000000000000000000..c2381e87135ccc2e39593865d3b1f580ac080aaf
+GIT binary patch
+literal 205
+zcmeAS@N?(olHy`uVBq!ia0vp^0wB!61|;P_|4#%`Q#@T9Ln>}1&#<fA#k_I`qvV-6
+zmY?l~>KKl&Pxv9f;1B<aR~sY)8V+AzHrV*{^K)*7pWGWH3mO@D6O0*73WPAHot-t+
+zVGW~#LGrO4PM#J9JLU!JDi{`>G-7zdG(jeA`U4{diB_%?8yO!>PGN`=NiJ1%)E8i7
+zThA!c&KS6n!DlAhiJ6^CN*J!}VYGejSp0%1MpKYM>bi2Z@uj$Wp!*m+UHx3vIVCg!
+E0LYg`pa1{>
+
+literal 0
+HcmV?d00001
+
+diff --git a/lib/editor/atto/plugins/fontsize/pix/icon.svg b/lib/editor/atto/plugins/fontsize/pix/icon.svg
+new file mode 100644
+index 0000000..88c0a10
+--- /dev/null
++++ b/lib/editor/atto/plugins/fontsize/pix/icon.svg
+@@ -0,0 +1,15 @@
++<?xml version="1.0" encoding="utf-8"?>
++<!-- Generator: Adobe Illustrator 15.1.0, SVG Export Plug-In  -->
++<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd" [
++	<!ENTITY ns_flows "http://ns.adobe.com/Flows/1.0/">
++]>
++<svg version="1.1"
++	 xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:a="http://ns.adobe.com/AdobeSVGViewerExtensions/3.0/"
++	 x="0px" y="0px" width="16px" height="16px" viewBox="0.3 -0.8 16 16"
++	 style="overflow:visible;enable-background:new 0.3 -0.8 16 16;" xml:space="preserve">
++<defs>
++</defs>
++<path style="fill:#999999;" d="M16.1,11.2L15,13.1l-1.2,2.2l-1.2-2.2l-1.1-1.8H16.1z M16.1,8.2L15,6.4l-1.2-2.2l-1.2,2.2l-1.1,1.8
++	H16.1z M0,3.9h0.6c0.2-1.2,0.6-2,1-2.4C2.1,1.1,2.9,1,4.2,1h1.3v11.5c0,1-0.1,1.6-0.4,1.9s-0.8,0.4-1.8,0.5v0.4H10v-0.4
++	c-0.9-0.1-1.5-0.2-1.8-0.4c-0.3-0.2-0.4-0.8-0.4-1.6V1h1.3c1.3,0,2.2,0.2,2.6,0.6c0.4,0.4,0.8,1.2,1,2.4h0.6L13.1,0h-13L0,3.9z"/>
++</svg>
+diff --git a/lib/editor/atto/plugins/fontsize/styles.css b/lib/editor/atto/plugins/fontsize/styles.css
+new file mode 100644
+index 0000000..ef1274b
+--- /dev/null
++++ b/lib/editor/atto/plugins/fontsize/styles.css
+@@ -0,0 +1,3 @@
++.atto_fontsize_button .dropdown-menu a {
++  line-height: normal;
++}
+diff --git a/lib/editor/atto/plugins/fontsize/version.php b/lib/editor/atto/plugins/fontsize/version.php
+new file mode 100644
+index 0000000..f41d245
+--- /dev/null
++++ b/lib/editor/atto/plugins/fontsize/version.php
+@@ -0,0 +1,31 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++/**
++ * Atto text editor integration version file.
++ *
++ * @package    atto_fontsize
++ * @copyright  2014 Andrew Nicols 2015 Adam Jenkins
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++defined('MOODLE_INTERNAL') || die();
++
++$plugin->version   = 2015042701;        // The current plugin version (Date: YYYYMMDDXX).
++$plugin->requires  = 2014050800;        // Requires this Moodle version.
++$plugin->component = 'atto_fontsize';   // Full name of the plugin (used for diagnostics).
++$plugin->maturity = MATURITY_STABLE;
++$plugin->release = '2.8 (Build 2015042701)';
+diff --git a/lib/editor/atto/plugins/fontsize/yui/build/moodle-atto_fontsize-button/moodle-atto_fontsize-button-coverage.js b/lib/editor/atto/plugins/fontsize/yui/build/moodle-atto_fontsize-button/moodle-atto_fontsize-button-coverage.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..52b5663159779cb429e6974bd6b84672fc3bd187
+GIT binary patch
+literal 5369
+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
+D+=6^@
+
+literal 0
+HcmV?d00001
+
+diff --git a/lib/editor/atto/plugins/fontsize/yui/build/moodle-atto_fontsize-button/moodle-atto_fontsize-button-debug.js b/lib/editor/atto/plugins/fontsize/yui/build/moodle-atto_fontsize-button/moodle-atto_fontsize-button-debug.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..763845db9a4b62481a5025138785ad386d3f2af0
+GIT binary patch
+literal 2426
+zcma)8T~FgW5Pk2j81d4ww@vToOJNZKmEEqORBgGdYPCXcGEJ;??8tUnxQPFLXPkaO
+zSr+<|#GW~GX3lur+07slY1(QQ#-s{6!h3VOFxor$A9m&yed=Z#7L`uCG#Xm7HVosd
+z{vkXx8r?2TbLn6q6#_j=VLg}yTm>xXK<<6n>vn7G$k?n)KJ2!(U|)*}&Mf>&SnR>Q
+zsUQ&=ET+<VD~SO?dk{M98ViL<<>H<ZXsyyITJSl7M_V|K%paeIH}DBHTA^T6&6P~x
+zQYNS!f*_8(;&M!39&p&>f;mjq9N@wbu;6UlfRgqtEYUj7{;y4pHDDWzWil<{nYjg1
+zvfm-my$2<T*2Xn@k@zmZ6r>K!b5l|-Ie}4jE2$LB5h{m^O0_u*6$8Ewrk}5GrVtNj
+z@HHNf<Kc96M8-Zhw2Moup=41iNl8*wt<e6Sh%>@fe|-L#T;j9A<zPA^`fxFr4*Qb{
+zTwISKhEY784$f~b<1vhG#-r;=KLVIgd8iHy@QdOuf<6`@MK7dso0MlHsUvnOg<LF=
+zq)kvRiJO4Ll+5f6**LCHMrR?-b?*?Z!2-1LZE!^Ic-?BN)hfz#6?%=7XVqQzB%)sZ
+z(0~tcT8iX{$PnoFtkuIN)3GwkJ;0y8|M54(I<>fhp-hZ&yz~#msVLwJ>K{_O;Ij_G
+zfIp$Yhzb|Jo0TfceWB_CjxJ$Iy=3biA)GD~tQk^^S9F|yaUP%9$8<ue|L;iqRC<Ek
+z99}3@l}R0ubs(xmfsWEgxQc#~x)RQDgVA{p=7fkkb!1%Q-m*{B4>3joxu&rc7I;=T
+z_z2$`Tn7F<Y~T2cL-*j|?ylnsq13^4^RfMk<$Dd^iC0h#Rq=LQC2WRoo85KZYxvSK
+z<o^Ar(U?VBMOw{0Nt%bzS&)K?I*ZPP!zi&x^Q6_RC8Ci$i(Z$e4d1?RN-MSWQYezh
+z_O^4p#q*n`;U7yVJ<<dv35i<03KSux;c*|KNb*+Dcy|$m@24Q_6hNY~a(QcqzCq(2
+z?LqUHdQgM&bSyp|aIbb4xz~i>LK}sm(0lXf;N->HahIJ>n(Zyc4R}IrHK(H;+syTL
+zK(8D2Xy!;4-6pxv8BUnaGtkGwT^;y+yBXZ*#+({M5$zS~YA@MLnYmB{D(Jb<3z_wv
+zlzN}<n>3zhK!ZqA4f(NG1YSBfMQJo@F7vY!zHiG~_iDAad2JGYY}dJlal~{#z<H=q
+z7}6|QC@=8Tp{vuCn8*d+G%O<xo8Yp3z-fVWFQxFZ%wZH;nxzkYy0ZL*NJNT{uohvr
+z%l`p%_E^W9Qb0`udCOuOr?hfO$7B6X)0AmEjryeZk!}p)`m}k2s2TcJGdIrD>7%=>
+z5PpIR!{45PR#MkpvL`lEnQ#LK%sM`W-c*y`8lim}H0qkC|Mtg|!S(R8Ngee+dtJu^
+
+literal 0
+HcmV?d00001
+
+diff --git a/lib/editor/atto/plugins/fontsize/yui/build/moodle-atto_fontsize-button/moodle-atto_fontsize-button-min.js b/lib/editor/atto/plugins/fontsize/yui/build/moodle-atto_fontsize-button/moodle-atto_fontsize-button-min.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..a4181da1187ae8cb9a7792ba10d347491e5e551a
+GIT binary patch
+literal 672
+zcmZuvO-}+b5WV{=NH6ThZoL;UsPVu7HKHbl7*dvDx3N1V?W_Se{CC?We8x-Dd7Zv_
+z@3o)rBcT?HgjLoq3}lMP&XyL*>tD#`btsYXWsNy$iwST_n;+#mIG8r5Dv)fw&U~ee
+zVOzdOE`f{l3KqJqj{Qct0*>W6y95r%R}Vy->Q^d<gpI|ST$YOaR`3ACz49P(2Z}=9
+z-Uf)V2(!t$S-dD7+x?5F3ypmG#T$*9v@*fElLyZ`!!(%2>37bljR2LG37*7~HY8TH
+zFO!B~O|sh$3bEs9V_?8yoLS6McCUB(ue&{Vdnj1{Cbr))o`)RgD*wK7g_pb51171|
+zUd-}RVF8oKyiK<$Z_)6AZ`OvZZVXr_O=0X@nGr$tU~#Dn+3cDBVc|NrC|O)tyMM6N
+z$|4|1cAhWSfze9}gZZhDV^;0|XeAXu2`jCq@G48|Dn%18(Eg$k8jU*(NfX1F#B3sK
+SBxb{p$Jfc|`Dw_~-qj!8H}d%a
+
+literal 0
+HcmV?d00001
+
+diff --git a/lib/editor/atto/plugins/fontsize/yui/build/moodle-atto_fontsize-button/moodle-atto_fontsize-button.js b/lib/editor/atto/plugins/fontsize/yui/build/moodle-atto_fontsize-button/moodle-atto_fontsize-button.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..763845db9a4b62481a5025138785ad386d3f2af0
+GIT binary patch
+literal 2426
+zcma)8T~FgW5Pk2j81d4ww@vToOJNZKmEEqORBgGdYPCXcGEJ;??8tUnxQPFLXPkaO
+zSr+<|#GW~GX3lur+07slY1(QQ#-s{6!h3VOFxor$A9m&yed=Z#7L`uCG#Xm7HVosd
+z{vkXx8r?2TbLn6q6#_j=VLg}yTm>xXK<<6n>vn7G$k?n)KJ2!(U|)*}&Mf>&SnR>Q
+zsUQ&=ET+<VD~SO?dk{M98ViL<<>H<ZXsyyITJSl7M_V|K%paeIH}DBHTA^T6&6P~x
+zQYNS!f*_8(;&M!39&p&>f;mjq9N@wbu;6UlfRgqtEYUj7{;y4pHDDWzWil<{nYjg1
+zvfm-my$2<T*2Xn@k@zmZ6r>K!b5l|-Ie}4jE2$LB5h{m^O0_u*6$8Ewrk}5GrVtNj
+z@HHNf<Kc96M8-Zhw2Moup=41iNl8*wt<e6Sh%>@fe|-L#T;j9A<zPA^`fxFr4*Qb{
+zTwISKhEY784$f~b<1vhG#-r;=KLVIgd8iHy@QdOuf<6`@MK7dso0MlHsUvnOg<LF=
+zq)kvRiJO4Ll+5f6**LCHMrR?-b?*?Z!2-1LZE!^Ic-?BN)hfz#6?%=7XVqQzB%)sZ
+z(0~tcT8iX{$PnoFtkuIN)3GwkJ;0y8|M54(I<>fhp-hZ&yz~#msVLwJ>K{_O;Ij_G
+zfIp$Yhzb|Jo0TfceWB_CjxJ$Iy=3biA)GD~tQk^^S9F|yaUP%9$8<ue|L;iqRC<Ek
+z99}3@l}R0ubs(xmfsWEgxQc#~x)RQDgVA{p=7fkkb!1%Q-m*{B4>3joxu&rc7I;=T
+z_z2$`Tn7F<Y~T2cL-*j|?ylnsq13^4^RfMk<$Dd^iC0h#Rq=LQC2WRoo85KZYxvSK
+z<o^Ar(U?VBMOw{0Nt%bzS&)K?I*ZPP!zi&x^Q6_RC8Ci$i(Z$e4d1?RN-MSWQYezh
+z_O^4p#q*n`;U7yVJ<<dv35i<03KSux;c*|KNb*+Dcy|$m@24Q_6hNY~a(QcqzCq(2
+z?LqUHdQgM&bSyp|aIbb4xz~i>LK}sm(0lXf;N->HahIJ>n(Zyc4R}IrHK(H;+syTL
+zK(8D2Xy!;4-6pxv8BUnaGtkGwT^;y+yBXZ*#+({M5$zS~YA@MLnYmB{D(Jb<3z_wv
+zlzN}<n>3zhK!ZqA4f(NG1YSBfMQJo@F7vY!zHiG~_iDAad2JGYY}dJlal~{#z<H=q
+z7}6|QC@=8Tp{vuCn8*d+G%O<xo8Yp3z-fVWFQxFZ%wZH;nxzkYy0ZL*NJNT{uohvr
+z%l`p%_E^W9Qb0`udCOuOr?hfO$7B6X)0AmEjryeZk!}p)`m}k2s2TcJGdIrD>7%=>
+z5PpIR!{45PR#MkpvL`lEnQ#LK%sM`W-c*y`8lim}H0qkC|Mtg|!S(R8Ngee+dtJu^
+
+literal 0
+HcmV?d00001
+
+diff --git a/lib/editor/atto/plugins/fontsize/yui/src/button/build.json b/lib/editor/atto/plugins/fontsize/yui/src/button/build.json
+new file mode 100644
+index 0000000..4e207ac
+--- /dev/null
++++ b/lib/editor/atto/plugins/fontsize/yui/src/button/build.json
+@@ -0,0 +1,10 @@
++{
++    "name": "moodle-atto_fontsize-button",
++    "builds": {
++        "moodle-atto_fontsize-button": {
++            "jsfiles": [
++                "button.js"
++            ]
++        }
++    }
++}
+diff --git a/lib/editor/atto/plugins/fontsize/yui/src/button/js/button.js b/lib/editor/atto/plugins/fontsize/yui/src/button/js/button.js
+new file mode 100644
+index 0000000..2a7bc16
+--- /dev/null
++++ b/lib/editor/atto/plugins/fontsize/yui/src/button/js/button.js
+@@ -0,0 +1,87 @@
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++/*
++ * @package    atto_fontsize
++ * @copyright  2014 Andrew Nicols 2015 Adam Jenkins
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++/**
++ * @module moodle-atto_fontsize-button
++ */
++
++/**
++ * Atto text editor fontsize plugin.
++ *
++ * @namespace M.atto_fontsize
++ * @class button
++ * @extends M.editor_atto.EditorPlugin
++ */
++
++var sizes = [
++        {
++            name: "xx-small"
++        }, {
++            name: "x-small"
++        }, {
++            name: "small"
++        }, {
++            name: "medium"
++        }, {
++            name: "large"
++        }, {
++            name: "x-large"
++        }, {
++            name: "xx-large"
++        }
++    ];
++
++Y.namespace('M.atto_fontsize').Button = Y.Base.create('button', Y.M.editor_atto.EditorPlugin, [], {
++    initializer: function() {
++        var items = [];
++        Y.Array.each(sizes, function(size) {
++            items.push({
++                text: '<span style="font-size:' + size.name + ';">' + size.name + '</span>',
++                callbackArgs: size.name,
++                callback: this._changeStyle
++            });
++        });
++
++        this.addToolbarMenu({
++            globalItemConfig: {
++                callback: this._changeStyle
++            },
++            icon: 'icon',
++            iconComponent: 'atto_fontsize',
++            items: items
++        });
++    },
++
++    /**
++     * Change the font size to the specified size.
++     *
++     * @method _changeStyle
++     * @param {EventFacade} e
++     * @param {string} size The new font size
++     * @private
++     */
++
++    _changeStyle: function(e, size) {
++        this.get('host').formatSelectionInlineStyle({
++            fontSize: size
++        });
++      }
++});
+diff --git a/lib/editor/atto/plugins/fontsize/yui/src/button/meta/editor.js b/lib/editor/atto/plugins/fontsize/yui/src/button/meta/editor.js
+new file mode 100644
+index 0000000..be729e6
+--- /dev/null
++++ b/lib/editor/atto/plugins/fontsize/yui/src/button/meta/editor.js
+@@ -0,0 +1,7 @@
++{
++    "moodle-atto_fontsize-button": {
++        "requires": [
++            "node"
++        ]
++    }
++}
+-- 
+1.8.3.1
+

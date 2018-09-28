@@ -1,0 +1,38 @@
+From 6909231a22b0ee5de242e7665f314d39283f6a64 Mon Sep 17 00:00:00 2001
+From: Nadav Kavalerchik <nadavkav@gmail.com>
+Date: Sat, 14 Oct 2017 12:53:37 +0300
+Subject: [PATCH 61/95] b/moodlelib (patch) Switch Michlol course short and
+ full name + remote teacher name
+
+---
+ lib/moodlelib.php | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
+
+diff --git a/lib/moodlelib.php b/lib/moodlelib.php
+index 25e1a40..98a7b98 100644
+--- a/lib/moodlelib.php
++++ b/lib/moodlelib.php
+@@ -9744,10 +9744,20 @@ function get_home_page() {
+  */
+ function get_course_display_name_for_list($course) {
+     global $CFG;
++
++    // Galit shortname - remove Teacher's name from course name.
++    $noteachershortname = explode(') - ', $course->fullname);
++    if (isset($noteachershortname[1]))
++        $fullcourseshortname = $noteachershortname[1];
++    //  if (!empty($noteachershortname[0])) $fullcourseshortname = $noteachershortname[0]." - $fullcourseshortname";
++    if (!empty($noteachershortname[0])) $fullcourseshortname = $noteachershortname[0];
++    // Galit shortname end
++
+     if (!empty($CFG->courselistshortnames)) {
+         if (!($course instanceof stdClass)) {
+             $course = (object)convert_to_array($course);
+         }
++        $course->shortname = $fullcourseshortname.')' ; // Galit - update course's shortname.
+         return get_string('courseextendednamedisplay', '', $course);
+     } else {
+         return $course->fullname;
+-- 
+1.8.3.1
+

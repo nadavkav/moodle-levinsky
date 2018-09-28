@@ -1,0 +1,3796 @@
+From 378c70ba9835ea3fca95cee42f2d5c2d006585b5 Mon Sep 17 00:00:00 2001
+From: root <root@moodle.levinsky.ac.il>
+Date: Sat, 23 Sep 2017 11:35:14 +0300
+Subject: [PATCH 08/95] mod/tab (new)
+
+---
+ mod/tab/.gitignore                                 |   1 +
+ mod/tab/README.txt                                 |  28 ++
+ mod/tab/SpryTabbedPanels.css                       | 259 ++++++++++
+ mod/tab/backup/moodle1/lib.php                     | 149 ++++++
+ .../moodle2/backup_tab_activity_task.class.php     |  57 +++
+ mod/tab/backup/moodle2/backup_tab_settingslib.php  |  18 +
+ mod/tab/backup/moodle2/backup_tab_stepslib.php     |  58 +++
+ .../moodle2/restore_tab_activity_task.class.php    |  71 +++
+ mod/tab/backup/moodle2/restore_tab_stepslib.php    |  77 +++
+ .../event/course_module_instance_list_viewed.php   |  18 +
+ mod/tab/classes/event/course_module_viewed.php     |  51 ++
+ mod/tab/db/access.php                              |  40 ++
+ mod/tab/db/install.xml                             |  47 ++
+ mod/tab/db/upgrade.php                             | 303 ++++++++++++
+ mod/tab/ie-style.css                               |  34 ++
+ mod/tab/index.php                                  | 114 +++++
+ mod/tab/js/SpryTabbedPanels.js                     | 401 ++++++++++++++++
+ mod/tab/js/tab.js                                  |  14 +
+ mod/tab/lang/en/tab.php                            |  54 +++
+ mod/tab/lang/fr/tab.php                            |  41 ++
+ mod/tab/lang/fr_ca/tab.php                         |  32 ++
+ mod/tab/lib.php                                    | 519 +++++++++++++++++++++
+ mod/tab/locallib.php                               | 145 ++++++
+ mod/tab/mod_form.php                               | 194 ++++++++
+ mod/tab/module.js                                  |  60 +++
+ mod/tab/pix/icon.png                               | Bin 0 -> 905 bytes
+ mod/tab/pix/icon2.png                              | Bin 0 -> 19938 bytes
+ mod/tab/styles.css                                 |  62 +++
+ mod/tab/version.php                                |  21 +
+ mod/tab/view.php                                   | 256 ++++++++++
+ 30 files changed, 3124 insertions(+)
+ create mode 100644 mod/tab/.gitignore
+ create mode 100644 mod/tab/README.txt
+ create mode 100644 mod/tab/SpryTabbedPanels.css
+ create mode 100644 mod/tab/backup/moodle1/lib.php
+ create mode 100644 mod/tab/backup/moodle2/backup_tab_activity_task.class.php
+ create mode 100644 mod/tab/backup/moodle2/backup_tab_settingslib.php
+ create mode 100644 mod/tab/backup/moodle2/backup_tab_stepslib.php
+ create mode 100644 mod/tab/backup/moodle2/restore_tab_activity_task.class.php
+ create mode 100644 mod/tab/backup/moodle2/restore_tab_stepslib.php
+ create mode 100644 mod/tab/classes/event/course_module_instance_list_viewed.php
+ create mode 100644 mod/tab/classes/event/course_module_viewed.php
+ create mode 100644 mod/tab/db/access.php
+ create mode 100644 mod/tab/db/install.xml
+ create mode 100644 mod/tab/db/upgrade.php
+ create mode 100644 mod/tab/ie-style.css
+ create mode 100644 mod/tab/index.php
+ create mode 100644 mod/tab/js/SpryTabbedPanels.js
+ create mode 100644 mod/tab/js/tab.js
+ create mode 100644 mod/tab/lang/en/tab.php
+ create mode 100644 mod/tab/lang/fr/tab.php
+ create mode 100644 mod/tab/lang/fr_ca/tab.php
+ create mode 100644 mod/tab/lib.php
+ create mode 100644 mod/tab/locallib.php
+ create mode 100644 mod/tab/mod_form.php
+ create mode 100644 mod/tab/module.js
+ create mode 100644 mod/tab/pix/icon.png
+ create mode 100644 mod/tab/pix/icon2.png
+ create mode 100644 mod/tab/styles.css
+ create mode 100644 mod/tab/version.php
+ create mode 100644 mod/tab/view.php
+
+diff --git a/mod/tab/.gitignore b/mod/tab/.gitignore
+new file mode 100644
+index 0000000..187adb2
+--- /dev/null
++++ b/mod/tab/.gitignore
+@@ -0,0 +1 @@
++/nbproject/
+\ No newline at end of file
+diff --git a/mod/tab/README.txt b/mod/tab/README.txt
+new file mode 100644
+index 0000000..369648d
+--- /dev/null
++++ b/mod/tab/README.txt
+@@ -0,0 +1,28 @@
++--------------------------------------------------------------------------------
++------------------------------- OOHOO TAB DISPLAY ------------------------------
++--------------------------------------------------------------------------------
++
++--------------------------------------------------------------------------------
++Description
++--------------------------------------------------------------------------------
++
++The tab display module allows you to setup your information in a tabbed format. 
++This helps to clean up your course by combining several resources into Tabs.
++
++--------------------------------------------------------------------------------
++Prerequisites
++--------------------------------------------------------------------------------
++
++N/A
++
++--------------------------------------------------------------------------------
++Installation
++--------------------------------------------------------------------------------
++
++ 1. Rename the folder to 'tab'
++ 2. Copy the folder tab to moodle/mod
++ 3. Install the plugin
++
++--------------------------------------------------------------------------------
++
++For more informations, please go to the online documentation => http://oohoo.biz
+diff --git a/mod/tab/SpryTabbedPanels.css b/mod/tab/SpryTabbedPanels.css
+new file mode 100644
+index 0000000..1596bcf
+--- /dev/null
++++ b/mod/tab/SpryTabbedPanels.css
+@@ -0,0 +1,259 @@
++@charset "UTF-8";
++
++/* SpryTabbedPanels.css - version 0.6 - Spry Pre-Release 1.6.1 */
++
++/* Copyright (c) 2006. Adobe Systems Incorporated. All rights reserved. */
++
++/* Horizontal Tabbed Panels
++ *
++ * The default style for a TabbedPanels widget places all tab buttons
++ * (left aligned) above the content panel.
++ */
++
++/* This is the selector for the main TabbedPanels container. For our
++ * default style, this container does not contribute anything visually,
++ * but it is floated left to make sure that any floating or clearing done
++ * with any of its child elements are contained completely within the
++ * TabbedPanels container, to minimize any impact or undesireable
++ * interaction with other floated elements on the page that may be used
++ * for layout.
++ *
++ * If you want to constrain the width of the TabbedPanels widget, set a
++ * width on the TabbedPanels container. By default, the TabbedPanels widget
++ * expands horizontally to fill up available space.
++ *
++ * The name of the class ("TabbedPanels") used in this selector is not
++ * necessary to make the widget function. You can use any class name you
++ * want to style the TabbedPanels container.
++ */
++.TabbedPanels {
++	overflow: auto;
++	margin: 0px;
++	padding: 0px 0px 0px 10px;
++	clear: none;
++	/*width: 100%;*/ /* IE Hack to force proper layout when preceded by a paragraph. (hasLayout Bug)*/
++}
++
++/* This is the selector for the TabGroup. The TabGroup container houses
++ * all of the tab buttons for each tabbed panel in the widget. This container
++ * does not contribute anything visually to the look of the widget for our
++ * default style.
++ *
++ * The name of the class ("TabbedPanelsTabGroup") used in this selector is not
++ * necessary to make the widget function. You can use any class name you
++ * want to style the TabGroup container.
++ */
++.TabbedPanelsTabGroup {
++	margin: 0px;
++	padding: 0px;
++}
++
++/* This is the selector for the TabbedPanelsTab. This container houses
++ * the title for the panel. This is also the tab "button" that the user clicks
++ * on to activate the corresponding content panel so that it appears on top
++ * of the other tabbed panels contained in the widget.
++ *
++ * For our default style, each tab is positioned relatively 1 pixel down from
++ * where it wold normally render. This allows each tab to overlap the content
++ * panel that renders below it. Each tab is rendered with a 1 pixel bottom
++ * border that has a color that matches the top border of the current content
++ * panel. This gives the appearance that the tab is being drawn behind the
++ * content panel.
++ *
++ * The name of the class ("TabbedPanelsTab") used in this selector is not
++ * necessary to make the widget function. You can use any class name you want
++ * to style this tab container.
++ */
++.TabbedPanelsTab {
++	position: relative;
++	top: 1px;
++	float: left;
++	padding: 4px 10px;
++	margin: 0px 1px 0px 0px;
++	font: bold 0.9em sans-serif;
++	background-color: #165E38;
++	list-style: none;
++	border-left: solid 1px #CCC;
++	border-bottom: solid 1px #999;
++	border-top: solid 1px #999;
++	border-right: solid 1px #999;
++	-moz-user-select: none;
++	-khtml-user-select: none;
++	cursor: pointer;
++        border-top-right-radius: 5px;
++        border-top-left-radius: 5px;
++        -moz-border-radius-topright: 5px;
++        -moz-border-radius-topleft: 5px;
++        -webkit-border-top-right-radius: 5px;
++        -webkit-border-top-left-radius: 5px;
++    color: #FFF;
++}
++.dir-rtl .TabbedPanelsTab {float: right;}
++
++/* This selector is an example of how to change the appearnce of a tab button
++ * container as the mouse enters it. The class "TabbedPanelsTabHover" is
++ * programatically added and removed from the tab element as the mouse enters
++ * and exits the container.
++ */
++.TabbedPanelsTabHover {
++	background-color: #339900;
++}
++
++/* This selector is an example of how to change the appearance of a tab button
++ * container after the user has clicked on it to activate a content panel.
++ * The class "TabbedPanelsTabSelected" is programatically added and removed
++ * from the tab element as the user clicks on the tab button containers in
++ * the widget.
++ *
++ * As mentioned above, for our default style, tab buttons are positioned
++ * 1 pixel down from where it would normally render. When the tab button is
++ * selected, we change its bottom border to match the background color of the
++ * content panel so that it looks like the tab is part of the content panel.
++ */
++.TabbedPanelsTabSelected {
++	background-color: #FFDA28;
++	border-bottom: 1px solid #EEE;
++        color: #000;
++}
++
++/* This selector is an example of how to make a link inside of a tab button
++ * look like normal text. Users may want to use links inside of a tab button
++ * so that when it gets focus, the text *inside* the tab button gets a focus
++ * ring around it, instead of the focus ring around the entire tab.
++ */
++.TabbedPanelsTab a {
++	color: black;
++	text-decoration: none;
++}
++
++/* This is the selector for the ContentGroup. The ContentGroup container houses
++ * all of the content panels for each tabbed panel in the widget. For our
++ * default style, this container provides the background color and borders that
++ * surround the content.
++ *
++ * The name of the class ("TabbedPanelsContentGroup") used in this selector is
++ * not necessary to make the widget function. You can use any class name you
++ * want to style the ContentGroup container.
++ */
++.TabbedPanelsContentGroup {
++	clear: both;
++	border-left: solid 1px #CCC;
++	border-bottom: solid 1px #CCC;
++	border-top: solid 1px #999;
++	border-right: solid 1px #999;
++	background-color: #FFF;
++}
++
++/* This is the selector for the Content panel. The Content panel holds the
++ * content for a single tabbed panel. For our default style, this container
++ * provides some padding, so that the content is not pushed up against the
++ * widget borders.
++ *
++ * The name of the class ("TabbedPanelsContent") used in this selector is
++ * not necessary to make the widget function. You can use any class name you
++ * want to style the Content container.
++ */
++.TabbedPanelsContent {
++	overflow: hidden;
++	padding: 4px;
++}
++
++/* This selector is an example of how to change the appearnce of the currently
++ * active container panel. The class "TabbedPanelsContentVisible" is
++ * programatically added and removed from the content element as the panel
++ * is activated/deactivated.
++ */
++.TabbedPanelsContentVisible {
++}
++
++/* Vertical Tabbed Panels
++ *
++ * The following rules override some of the default rules above so that the
++ * TabbedPanels widget renders with its tab buttons along the left side of
++ * the currently active content panel.
++ *
++ * With the rules defined below, the only change that will have to be made
++ * to switch a horizontal tabbed panels widget to a vertical tabbed panels
++ * widget, is to use the "VTabbedPanels" class on the top-level widget
++ * container element, instead of "TabbedPanels".
++ */
++
++.VTabbedPanels {
++	overflow: hidden;
++	zoom: 1;
++}
++
++/* This selector floats the TabGroup so that the tab buttons it contains
++ * render to the left of the active content panel. A border is drawn around
++ * the group container to make it look like a list container.
++ */
++.VTabbedPanels .TabbedPanelsTabGroup {
++	float: left;
++	width: 10em;
++	height: 20em;
++	background-color: #003300;
++	position: relative;
++	border-top: solid 1px #999;
++	border-right: solid 1px #999;
++	border-left: solid 1px #CCC;
++	border-bottom: solid 1px #CCC;
++    color: #003300;
++}
++.dir-rtl .VTabbedPanels .TabbedPanelsTabGroup {float: right;}
++
++/* This selector disables the float property that is placed on each tab button
++ * by the default TabbedPanelsTab selector rule above. It also draws a bottom
++ * border for the tab. The tab button will get its left and right border from
++ * the TabGroup, and its top border from the TabGroup or tab button above it.
++ */
++.VTabbedPanels .TabbedPanelsTab {
++	float: none;
++	margin: 0px;
++	border-top: none;
++	border-left: none;
++	border-right: none;
++}
++
++/* This selector disables the float property that is placed on each tab button
++ * by the default TabbedPanelsTab selector rule above. It also draws a bottom
++ * border for the tab. The tab button will get its left and right border from
++ * the TabGroup, and its top border from the TabGroup or tab button above it.
++ */
++.VTabbedPanels .TabbedPanelsTabSelected {
++	background-color: #003300;
++	border-bottom: solid 1px #999;
++}
++
++/* This selector floats the content panels for the widget so that they
++ * render to the right of the tabbed buttons.
++ */
++.VTabbedPanels .TabbedPanelsContentGroup {
++	clear: none;
++	float: left;
++	padding: 0px;
++	width: 30em;
++	height: 20em;
++}
++.dir-rtl .VTabbedPanels .TabbedPanelsContentGroup {float:right;}
++
++/* Styles for Printing */
++@media print {
++.TabbedPanels {
++	overflow: visible !important;
++}
++.TabbedPanelsContentGroup {
++	display: block !important;
++	overflow: visible !important;
++	height: auto !important;
++}
++.TabbedPanelsContent {
++	overflow: visible !important;
++	display: block !important;
++	clear:both !important;
++}
++.TabbedPanelsTab {
++	 overflow: visible !important;
++	 display: block !important;
++	 clear:both !important;
++}
++}
+diff --git a/mod/tab/backup/moodle1/lib.php b/mod/tab/backup/moodle1/lib.php
+new file mode 100644
+index 0000000..d4450ee
+--- /dev/null
++++ b/mod/tab/backup/moodle1/lib.php
+@@ -0,0 +1,149 @@
++<?php
++
++/**
++ * *************************************************************************
++ * *                         OOHOO - Tab Display                          **
++ * *************************************************************************
++ * @package     mod                                                       **
++ * @subpackage  tab                                                       **
++ * @name        tab                                                       **
++ * @copyright   oohoo.biz                                                 **
++ * @link        http://oohoo.biz                                          **
++ * @author      Patrick Thibaudeau                                        **
++ * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later  **
++ * *************************************************************************
++ * ************************************************************************ */
++defined('MOODLE_INTERNAL') || die();
++
++/**
++ * Tab Display conversion handler
++ */
++class moodle1_mod_tab_handler extends moodle1_mod_handler
++{
++
++    /** @var moodle1_file_manager */
++    protected $fileman = null;
++
++    /** @var int cmid */
++    protected $moduleid = null;
++
++    /**
++     * Declare the paths in moodle.xml we are able to convert
++     *
++     * The method returns list of {@link convert_path} instances.
++     * For each path returned, the corresponding conversion method must be
++     * defined.
++     *
++     * Note that the path /MOODLE_BACKUP/COURSE/MODULES/MOD/CHOICE does not
++     * actually exist in the file. The last element with the module name was
++     * appended by the moodle1_converter class.
++     *
++     * @return array of {@link convert_path} instances
++     */
++    public function get_paths()
++    {
++        return array(
++            new convert_path('tab', '/MOODLE_BACKUP/COURSE/MODULES/MOD/TAB'),
++            new convert_path('tab_contents', '/MOODLE_BACKUP/COURSE/MODULES/MOD/TAB/TABCONTENTS'),
++            new convert_path('tab_content', '/MOODLE_BACKUP/COURSE/MODULES/MOD/TAB/TABCONTENTS/TABCONTENT',
++                    array(
++                        'renamefields' => array(
++                            'format' => 'contentformat',
++                        ),
++                        'newfields' => array(
++                            'externalurl' => NULL,
++                            'contentformat' => 1,
++                        ),
++                    )
++            ),
++        );
++    }
++
++    /**
++     * This is executed every time we have one /MOODLE_BACKUP/COURSE/MODULES/MOD/TAB
++     * data available
++     */
++    public function process_tab($data)
++    {
++
++        // get the course module id and context id
++        $instanceid = $data['id'];
++        $cminfo = $this->get_cminfo($instanceid);
++        $this->moduleid = $cminfo['id'];
++        $contextid = $this->converter->get_contextid(CONTEXT_MODULE, $this->moduleid);
++
++        // get a fresh new file manager for this instance
++        $this->fileman = $this->converter->get_file_manager($contextid, 'mod_tab');
++
++        // convert course files embedded into the intro
++        //$this->fileman->filearea = 'tabcontent';
++        //$this->fileman->itemid   = 0;
++        //$data['tabcontent'] = moodle1_converter::migrate_referenced_files($data['tabcontent'], $this->fileman);
++        // start writing choice.xml
++        $this->open_xml_writer("activities/tab_{$this->moduleid}/tab.xml");
++        $this->xmlwriter->begin_tag('activity', array('id' => $instanceid, 'moduleid' => $this->moduleid,
++            'modulename' => 'tab', 'contextid' => $contextid));
++        $this->xmlwriter->begin_tag('tab', array('id' => $instanceid));
++
++        foreach ($data as $field => $value)
++        {
++            if ($field <> 'id')
++            {
++                $this->xmlwriter->full_tag($field, $value);
++            }
++        }
++
++        return $data;
++    }
++
++    /**
++     * This is executed when the parser reaches the <OPTIONS> opening element
++     */
++    public function on_tab_contents_start()
++    {
++        $this->xmlwriter->begin_tag('tab_contents');
++    }
++
++    /**
++     * This is executed every time we have one /MOODLE_BACKUP/COURSE/MODULES/MOD/CHOICE/OPTIONS/OPTION
++     * data available
++     */
++    public function process_tab_content($data)
++    {
++        $this->write_xml('tab_content', $data, array('/tab_content/id'));
++    }
++
++    /**
++     * This is executed when the parser reaches the closing </OPTIONS> element
++     */
++    public function on_tab_contents_end()
++    {
++        $this->xmlwriter->end_tag('tab_contents');
++    }
++
++    /**
++     * This is executed when we reach the closing </MOD> tag of our 'choice' path
++     */
++    public function on_tab_end()
++    {
++        // finalize tab.xml
++        $this->xmlwriter->end_tag('tab');
++        $this->xmlwriter->end_tag('activity');
++        $this->close_xml_writer();
++
++        // write inforef.xml
++        /*
++          $this->open_xml_writer("activities/tab_{$this->moduleid}/inforef.xml");
++          $this->xmlwriter->begin_tag('inforef');
++          $this->xmlwriter->begin_tag('fileref');
++          foreach ($this->fileman->get_fileids() as $fileid) {
++          $this->write_xml('file', array('id' => $fileid));
++          }
++          $this->xmlwriter->end_tag('fileref');
++          $this->xmlwriter->end_tag('inforef');
++          $this->close_xml_writer();
++         *
++         */
++    }
++
++}
+diff --git a/mod/tab/backup/moodle2/backup_tab_activity_task.class.php b/mod/tab/backup/moodle2/backup_tab_activity_task.class.php
+new file mode 100644
+index 0000000..ca9c73e
+--- /dev/null
++++ b/mod/tab/backup/moodle2/backup_tab_activity_task.class.php
+@@ -0,0 +1,57 @@
++<?php
++
++/**
++ * *************************************************************************
++ * *                         OOHOO - Tab Display                          **
++ * *************************************************************************
++ * @package     mod                                                       **
++ * @subpackage  tab                                                       **
++ * @name        tab                                                       **
++ * @copyright   oohoo.biz                                                 **
++ * @link        http://oohoo.biz                                          **
++ * @author      Patrick Thibaudeau                                        **
++ * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later  **
++ * *************************************************************************
++ * ************************************************************************ */
++
++require_once($CFG->dirroot . '/mod/tab/backup/moodle2/backup_tab_stepslib.php'); // Because it exists (must)
++require_once($CFG->dirroot . '/mod/tab/backup/moodle2/backup_tab_settingslib.php'); // Because it exists (optional)
++
++/**
++ * choice backup task that provides all the settings and steps to perform one
++ * complete backup of the activity
++ */
++class backup_tab_activity_task extends backup_activity_task {
++
++    /**
++     * Define (add) particular settings this activity can have
++     */
++    protected function define_my_settings() {
++        // No particular settings for this activity
++    }
++
++    /**
++     * Define (add) particular steps this activity can have
++     */
++    protected function define_my_steps() {
++        $this->add_step(new backup_tab_activity_structure_step('tab_structure', 'tab.xml'));
++    }
++
++    /**
++     * Encodes URLs to the index.php and view.php scripts
++     *
++     * @param string $content some HTML text that eventually contains URLs to the activity instance scripts
++     * @return string the content with the URLs encoded
++     */
++    static public function encode_content_links($content) {
++        global $CFG;
++
++        $base = preg_quote($CFG->wwwroot,"/");
++
++        // Link to page view by moduleid
++        $search="/(".$base."\/mod\/tab\/view.php\?id\=)([0-9]+)/";
++        $content= preg_replace($search, '$@TABVIEWBYID*$2@$', $content);
++
++        return $content;
++    }
++}
+\ No newline at end of file
+diff --git a/mod/tab/backup/moodle2/backup_tab_settingslib.php b/mod/tab/backup/moodle2/backup_tab_settingslib.php
+new file mode 100644
+index 0000000..0c8206f
+--- /dev/null
++++ b/mod/tab/backup/moodle2/backup_tab_settingslib.php
+@@ -0,0 +1,18 @@
++<?php
++
++/**
++ * *************************************************************************
++ * *                         OOHOO - Tab Display                          **
++ * *************************************************************************
++ * @package     mod                                                       **
++ * @subpackage  tab                                                       **
++ * @name        tab                                                       **
++ * @copyright   oohoo.biz                                                 **
++ * @link        http://oohoo.biz                                          **
++ * @author      Patrick Thibaudeau                                        **
++ * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later  **
++ * *************************************************************************
++ * ************************************************************************ */
++// This activity has not particular settings but the inherited from the generic
++// backup_activity_task so here there isn't any class definition, like the ones
++// existing in /backup/moodle2/backup_settingslib.php (activities section)
+\ No newline at end of file
+diff --git a/mod/tab/backup/moodle2/backup_tab_stepslib.php b/mod/tab/backup/moodle2/backup_tab_stepslib.php
+new file mode 100644
+index 0000000..aa60aca
+--- /dev/null
++++ b/mod/tab/backup/moodle2/backup_tab_stepslib.php
+@@ -0,0 +1,58 @@
++<?php
++
++/**
++ * *************************************************************************
++ * *                         OOHOO - Tab Display                          **
++ * *************************************************************************
++ * @package     mod                                                       **
++ * @subpackage  tab                                                       **
++ * @name        tab                                                       **
++ * @copyright   oohoo.biz                                                 **
++ * @link        http://oohoo.biz                                          **
++ * @author      Patrick Thibaudeau                                        **
++ * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later  **
++ * *************************************************************************
++ * ************************************************************************ */
++
++/**
++ * Define all the backup steps that will be used by the backup_choice_activity_task
++ */
++class backup_tab_activity_structure_step extends backup_activity_structure_step
++{
++
++    protected function define_structure()
++    {
++
++        // To know if we are including userinfo
++        $userinfo = $this->get_setting_value('userinfo');
++
++        // Define each element separated
++        $tab = new backup_nested_element('tab', array('id'), array('name', 'intro', 
++                    'css', 'menucss', 'displaymenu', 'menuname', 'taborder', 'legacyfiles', 'legacyfileslast', 'timemodified', 'introformat'));
++
++        $tab_contents = new backup_nested_element('tab_contents');
++
++        $tab_content = new backup_nested_element('tab_content', array('id'), array('tabname',
++                    'tabcontent', 'tabcontentorder', 'externalurl', 'contentformat', 'timemodified'));
++
++        // Build the tree
++        $tab->add_child($tab_contents);
++        $tab_contents->add_child($tab_content);
++        // Define sources
++        $tab->set_source_table('tab', array('id' => backup::VAR_ACTIVITYID));
++
++        $tab_content->set_source_sql(
++                'SELECT * FROM {tab_content}
++                        WHERE tabid = ?', array(backup::VAR_PARENTID));
++
++        // Define id annotations
++        //$tab_content->annotate_ids('tabid', 'tabid');
++        // Define file annotations
++        $tab->annotate_files('mod_tab', 'intro', null);
++        $tab_content->annotate_files('mod_tab', 'content', 'id');
++
++        // Return the root element (tab), wrapped into standard activity structure
++        return $this->prepare_activity_structure($tab);
++    }
++
++}
+diff --git a/mod/tab/backup/moodle2/restore_tab_activity_task.class.php b/mod/tab/backup/moodle2/restore_tab_activity_task.class.php
+new file mode 100644
+index 0000000..311fe97
+--- /dev/null
++++ b/mod/tab/backup/moodle2/restore_tab_activity_task.class.php
+@@ -0,0 +1,71 @@
++<?php
++
++/**
++ * *************************************************************************
++ * *                         OOHOO - Tab Display                          **
++ * *************************************************************************
++ * @package     mod                                                       **
++ * @subpackage  tab                                                       **
++ * @name        tab                                                       **
++ * @copyright   oohoo.biz                                                 **
++ * @link        http://oohoo.biz                                          **
++ * @author      Patrick Thibaudeau                                        **
++ * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later  **
++ * *************************************************************************
++ * ************************************************************************ */
++defined('MOODLE_INTERNAL') || die();
++
++require_once($CFG->dirroot . '/mod/tab/backup/moodle2/restore_tab_stepslib.php'); // Because it exists (must)
++
++/**
++ * choice restore task that provides all the settings and steps to perform one
++ * complete restore of the activity
++ */
++class restore_tab_activity_task extends restore_activity_task
++{
++
++    /**
++     * Define (add) particular settings this activity can have
++     */
++    protected function define_my_settings()
++    {
++        // No particular settings for this activity
++    }
++
++    /**
++     * Define (add) particular steps this activity can have
++     */
++    protected function define_my_steps()
++    {
++        // Tab only has one structure step
++        $this->add_step(new restore_tab_activity_structure_step('tab_structure', 'tab.xml'));
++    }
++
++    /**
++     * Define the contents in the activity that must be
++     * processed by the link decoder
++     */
++    static public function define_decode_contents()
++    {
++        $contents = array();
++
++        $contents[] = new restore_decode_content('tab', array('intro'), 'tab');
++        $contents[] = new restore_decode_content('tab_content', array('tabcontent'), 'tab_content');
++        
++        return $contents;
++    }
++
++    /**
++     * Define the decoding rules for links belonging
++     * to the activity to be executed by the link decoder
++     */
++    static public function define_decode_rules() {
++        $rules = array();
++
++        $rules[] = new restore_decode_rule('TABVIEWBYID', '/mod/tab/view.php?id=$1', 'course_module');
++
++        return $rules;
++
++    }
++
++}
+diff --git a/mod/tab/backup/moodle2/restore_tab_stepslib.php b/mod/tab/backup/moodle2/restore_tab_stepslib.php
+new file mode 100644
+index 0000000..bbdee19
+--- /dev/null
++++ b/mod/tab/backup/moodle2/restore_tab_stepslib.php
+@@ -0,0 +1,77 @@
++<?php
++
++/**
++ * *************************************************************************
++ * *                         OOHOO - Tab Display                          **
++ * *************************************************************************
++ * @package     mod                                                       **
++ * @subpackage  tab                                                       **
++ * @name        tab                                                       **
++ * @copyright   oohoo.biz                                                 **
++ * @link        http://oohoo.biz                                          **
++ * @author      Patrick Thibaudeau                                        **
++ * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later  **
++ * *************************************************************************
++ * ************************************************************************ */
++/**
++ * Define all the restore steps that will be used by the restore_choice_activity_task
++ */
++
++/**
++ * Structure step to restore one choice activity
++ */
++class restore_tab_activity_structure_step extends restore_activity_structure_step
++{
++
++    protected function define_structure()
++    {
++
++        $paths = array();
++        $userinfo = $this->get_setting_value('userinfo');
++
++        $paths[] = new restore_path_element('tab', '/activity/tab');
++        $paths[] = new restore_path_element('tab_content', '/activity/tab/tab_contents/tab_content');
++
++
++        // Return the paths wrapped into standard activity structure
++        return $this->prepare_activity_structure($paths);
++    }
++
++    protected function process_tab($data)
++    {
++        global $DB;
++
++        $data = (object) $data;
++        $oldid = $data->id;
++        $data->course = $this->get_courseid();
++        $data->timemodified = $this->apply_date_offset($data->timemodified);
++
++        // insert the tab record
++        $newitemid = $DB->insert_record('tab', $data);
++        // immediately after inserting "activity" record, call this
++        $this->apply_activity_instance($newitemid);
++    }
++
++    protected function process_tab_content($data)
++    {
++        global $DB;
++
++        $data = (object) $data;
++        $oldid = $data->id;
++
++        $data->tabid = $this->get_new_parentid('tab');
++        $data->timemodified = $this->apply_date_offset($data->timemodified);
++
++        $newitemid = $DB->insert_record('tab_content', $data);
++        $this->set_mapping('tab_content', $oldid, $newitemid, true); //has related files
++    }
++
++    protected function after_execute()
++    {
++        global $DB;
++        // Add tab related files where itemname = tab_content (taken from $this->set_mapping)
++        $this->add_related_files('mod_tab', 'intro', null);
++        $this->add_related_files('mod_tab', 'content', 'tab_content');
++    }
++
++}
+diff --git a/mod/tab/classes/event/course_module_instance_list_viewed.php b/mod/tab/classes/event/course_module_instance_list_viewed.php
+new file mode 100644
+index 0000000..1c10f61
+--- /dev/null
++++ b/mod/tab/classes/event/course_module_instance_list_viewed.php
+@@ -0,0 +1,18 @@
++<?php
++namespace mod_tab\event;
++
++defined('MOODLE_INTERNAL') || die();
++
++
++/*
++ * To change this license header, choose License Headers in Project Properties.
++ * To change this template file, choose Tools | Templates
++ * and open the template in the editor.
++ */
++
++/**
++ * Description of tab_viewed
++ *
++ * @author patrick
++ */
++class course_module_instance_list_viewed extends \core\event\course_module_instance_list_viewed {}
+diff --git a/mod/tab/classes/event/course_module_viewed.php b/mod/tab/classes/event/course_module_viewed.php
+new file mode 100644
+index 0000000..2e6de0e
+--- /dev/null
++++ b/mod/tab/classes/event/course_module_viewed.php
+@@ -0,0 +1,51 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++/**
++ * The mod_page course module viewed event.
++ *
++ * @package    mod_page
++ * @copyright  2013 Ankit Agarwal
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++namespace mod_tab\event;
++defined('MOODLE_INTERNAL') || die();
++
++/**
++ * The mod_page course module viewed event class.
++ *
++ * @package    mod_page
++ * @since      Moodle 2.6
++ * @copyright  2013 Ankit Agarwal
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++class course_module_viewed extends \core\event\course_module_viewed {
++
++    /**
++     * Init method.
++     */
++    protected function init() {
++        $this->data['crud'] = 'r';
++        $this->data['edulevel'] = self::LEVEL_PARTICIPATING;
++        $this->data['objecttable'] = 'tab';
++    }
++
++    public static function get_objectid_mapping() {
++        return array('db' => 'tab', 'restore' => 'tab');
++    }
++}
++
+diff --git a/mod/tab/db/access.php b/mod/tab/db/access.php
+new file mode 100644
+index 0000000..481d934
+--- /dev/null
++++ b/mod/tab/db/access.php
+@@ -0,0 +1,40 @@
++<?php
++
++/**
++ * *************************************************************************
++ * *                         OOHOO - Tab Display                          **
++ * *************************************************************************
++ * @package     mod                                                       **
++ * @subpackage  tab                                                       **
++ * @name        tab                                                       **
++ * @copyright   oohoo.biz                                                 **
++ * @link        http://oohoo.biz                                          **
++ * @author      Patrick Thibaudeau                                        **
++ * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later  **
++ * *************************************************************************
++ * ************************************************************************ */
++defined('MOODLE_INTERNAL') || die;
++
++$capabilities = array(
++    'mod/tab:view' => array(
++        'captype' => 'read',
++        'contextlevel' => CONTEXT_MODULE,
++        'archetypes' => array(
++            'manager' => CAP_ALLOW,
++            'teacher' => CAP_ALLOW,
++            'editingteacher' => CAP_ALLOW,
++            'student' => CAP_ALLOW,
++            'guest' => CAP_ALLOW,
++            'user' => CAP_ALLOW,
++        )
++    ),
++    'mod/tab:addinstance' => array(
++        'captype' => 'write',
++        'contextlevel' => CONTEXT_MODULE,
++        'archetypes' => array(
++            'teacher' => CAP_ALLOW,
++            'editingteacher' => CAP_ALLOW,
++            'manager' => CAP_ALLOW
++        )
++    ),
++);
+\ No newline at end of file
+diff --git a/mod/tab/db/install.xml b/mod/tab/db/install.xml
+new file mode 100644
+index 0000000..5c32df9
+--- /dev/null
++++ b/mod/tab/db/install.xml
+@@ -0,0 +1,47 @@
++<?xml version="1.0" encoding="UTF-8" ?>
++<XMLDB PATH="mod/tab/db" VERSION="20121212" COMMENT="XMLDB file for Moodle mod/tab"
++    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
++    xsi:noNamespaceSchemaLocation="../../../lib/xmldb/xmldb.xsd"
++>
++  <TABLES>
++    <TABLE NAME="tab" COMMENT="Defines labels" NEXT="tab_content">
++      <FIELDS>
++        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true" NEXT="course"/>
++        <FIELD NAME="course" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" PREVIOUS="id" NEXT="intro"/>
++        <FIELD NAME="intro" TYPE="text" NOTNULL="false" SEQUENCE="false" PREVIOUS="course" NEXT="name"/>
++        <FIELD NAME="name" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false" PREVIOUS="intro" NEXT="css"/>
++        <FIELD NAME="css" TYPE="text" NOTNULL="false" SEQUENCE="false" PREVIOUS="name" NEXT="menucss"/>
++        <FIELD NAME="menucss" TYPE="text" NOTNULL="false" SEQUENCE="false" PREVIOUS="css" NEXT="displaymenu"/>
++        <FIELD NAME="displaymenu" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false" PREVIOUS="menucss" NEXT="menuname"/>
++        <FIELD NAME="menuname" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false" PREVIOUS="displaymenu" NEXT="taborder"/>
++        <FIELD NAME="taborder" TYPE="int" LENGTH="4" NOTNULL="true" DEFAULT="1" SEQUENCE="false" PREVIOUS="menuname" NEXT="legacyfiles"/>
++        <FIELD NAME="legacyfiles" TYPE="int" LENGTH="4" NOTNULL="true" DEFAULT="0" SEQUENCE="false" PREVIOUS="taborder" NEXT="legacyfileslast"/>
++        <FIELD NAME="legacyfileslast" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" PREVIOUS="legacyfiles" NEXT="timemodified"/>
++        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" PREVIOUS="legacyfileslast" NEXT="introformat"/>
++        <FIELD NAME="introformat" TYPE="int" LENGTH="4" NOTNULL="false" SEQUENCE="false" PREVIOUS="timemodified"/>
++      </FIELDS>
++      <KEYS>
++        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
++      </KEYS>
++      <INDEXES>
++        <INDEX NAME="course" UNIQUE="false" FIELDS="course"/>
++      </INDEXES>
++    </TABLE>
++    <TABLE NAME="tab_content" COMMENT="Contents and tabs" PREVIOUS="tab">
++      <FIELDS>
++        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true" NEXT="tabid"/>
++        <FIELD NAME="tabid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" PREVIOUS="id" NEXT="tabname"/>
++        <FIELD NAME="tabname" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false" PREVIOUS="tabid" NEXT="tabcontent"/>
++        <FIELD NAME="tabcontent" TYPE="text" NOTNULL="false" SEQUENCE="false" PREVIOUS="tabname" NEXT="tabcontentorder"/>
++        <FIELD NAME="tabcontentorder" TYPE="int" LENGTH="2" NOTNULL="false" DEFAULT="1" SEQUENCE="false" COMMENT="Determines what order the tabs are displayed" PREVIOUS="tabcontent" NEXT="externalurl"/>
++        <FIELD NAME="externalurl" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false" PREVIOUS="tabcontentorder" NEXT="contentformat"/>
++        <FIELD NAME="contentformat" TYPE="int" LENGTH="4" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="New editor value" PREVIOUS="externalurl" NEXT="timemodified"/>
++        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" PREVIOUS="contentformat"/>
++      </FIELDS>
++      <KEYS>
++        <KEY NAME="primary" TYPE="primary" FIELDS="id" NEXT="tabid"/>
++        <KEY NAME="tabid" TYPE="foreign" FIELDS="tabid" REFTABLE="tab" REFFIELDS="id" PREVIOUS="primary"/>
++      </KEYS>
++    </TABLE>
++  </TABLES>
++</XMLDB>
+\ No newline at end of file
+diff --git a/mod/tab/db/upgrade.php b/mod/tab/db/upgrade.php
+new file mode 100644
+index 0000000..d4d37cc
+--- /dev/null
++++ b/mod/tab/db/upgrade.php
+@@ -0,0 +1,303 @@
++<?php
++/**
++ * *************************************************************************
++ * *                         OOHOO - Tab Display                          **
++ * *************************************************************************
++ * @package     mod                                                       **
++ * @subpackage  tab                                                       **
++ * @name        tab                                                       **
++ * @copyright   oohoo.biz                                                 **
++ * @link        http://oohoo.biz                                          **
++ * @author      Patrick Thibaudeau                                        **
++ * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later  **
++ * *************************************************************************
++ * ************************************************************************ */
++defined('MOODLE_INTERNAL') || die; 
++
++/**
++ * This function is run when the plugin have to be updated
++ * @global stdClass $CFG
++ * @global moodle_database $DB
++ * @param int $oldversion The older version of the plugin installed on the moodle
++ * @return boolean True if the update passed successfully
++ */
++function xmldb_tab_upgrade($oldversion = 0)
++{
++
++    global $CFG, $THEME, $DB;
++
++    $dbman = $DB->get_manager();
++
++    if ($oldversion < 2010120501)
++    {
++        //I changed the menu css. So let's upgrade the code
++        $sql = "UPDATE {tab} SET menucss = ?";
++        $params = array('
++		#tab-menu-wrapper {
++                    float: left;
++                    width: 20%;
++
++		}
++
++                #tabcontent {
++                    margin-left:  20%;
++                    padding: 0 10px;
++
++		}
++
++		.menutable {
++			border: 1px solid #808080;
++		}
++		.menutitle {
++			background:#2647a0 url(../../lib/yui/2.8.1/build/assets/skins/sam/sprite.png) repeat-x left -1400px;
++			color:#fff;
++		}
++		.row {
++			background-color: #CFCFCF;
++		}
++		');
++
++        $DB->execute($sql, $params);
++
++        // tab savepoint reached
++        upgrade_mod_savepoint(true, 2010120501, 'tab');
++    }
++
++    if ($oldversion < 2010120900)
++    {
++        //This version empplies that the view.php file has been modified
++        //No modificsations to the DB have been done
++        // tab savepoint reached
++        upgrade_mod_savepoint(true, 2010120900, 'tab');
++    }
++
++    if ($oldversion < 2010120901)
++    {
++
++        // Define field css to be dropped from tab
++        $table = new xmldb_table('tab');
++        $field = new xmldb_field('css');
++        $field2 = new xmldb_field('menucss');
++
++        // Conditionally launch drop field css
++        if ($dbman->field_exists($table, $field))
++        {
++            $dbman->drop_field($table, $field);
++        }
++        // Conditionally launch drop field css
++        if ($dbman->field_exists($table, $field2))
++        {
++            $dbman->drop_field($table, $field2);
++        }
++        // tab savepoint reached
++        upgrade_mod_savepoint(true, 2010120901, 'tab');
++    }
++
++    if ($oldversion < 2011040200)
++    {
++
++        // Define field pdffile to be added to tab_content
++        $table = new xmldb_table('tab_content');
++        $field = new xmldb_field('pdffile', XMLDB_TYPE_CHAR, '255', null, null, null, null, 'tabcontentorder');
++        $field2 = new xmldb_field('urlembed', XMLDB_TYPE_CHAR, '255', null, null, null, null, 'pdffile');
++
++        // Conditionally launch add field pdffile
++        if (!$dbman->field_exists($table, $field))
++        {
++            $dbman->add_field($table, $field);
++        }
++        if (!$dbman->field_exists($table, $field2))
++        {
++            $dbman->add_field($table, $field2);
++        }
++
++        // tab savepoint reached
++        upgrade_mod_savepoint(true, 2011040200, 'tab');
++    }
++
++    if ($oldversion < 2011040201)
++    {
++
++        // Rename field externalurl on table tab_content to NEWNAMEGOESHERE
++        $table = new xmldb_table('tab_content');
++        $field = new xmldb_field('urlembed', XMLDB_TYPE_CHAR, '255', null, null, null, null, 'pdffile');
++
++        // Launch rename field externalurl
++        $dbman->rename_field($table, $field, 'externalurl');
++
++        // tab savepoint reached
++        upgrade_mod_savepoint(true, 2011040201, 'tab');
++    }
++
++    if ($oldversion < 2011041300)
++    {
++
++        // Rename field externalurl on table tab_content to NEWNAMEGOESHERE
++        //Changes where done in the view.php file
++        // tab savepoint reached
++        upgrade_mod_savepoint(true, 2011041300, 'tab');
++    }
++
++    if ($oldversion < 2011071100)
++    {
++
++        // Define field id to be dropped from tab_content
++        $table = new xmldb_table('tab_content');
++        $field = new xmldb_field('pdffile');
++
++        // Conditionally launch drop field id
++        if ($dbman->field_exists($table, $field))
++        {
++            $dbman->drop_field($table, $field);
++        }
++
++        // tab savepoint reached
++        upgrade_mod_savepoint(true, 2011071100, 'tab');
++    }
++    if ($oldversion < 2011071101)
++    {
++
++        // Changing nullability of field tabcontentorder on table tab_content to null
++        $table = new xmldb_table('tab_content');
++        $field = new xmldb_field('tabcontentorder', XMLDB_TYPE_INTEGER, '2', XMLDB_UNSIGNED, null, null, '1', 'tabcontent');
++
++        // Launch change of nullability for field tabcontentorder
++        $dbman->change_field_notnull($table, $field);
++
++        // tab savepoint reached
++        upgrade_mod_savepoint(true, 2011071101, 'tab');
++    }
++    if ($oldversion < 2011080800)
++    {
++
++        // Fixed two undefined variables
++        // tab savepoint reached
++        upgrade_mod_savepoint(true, 2011080800, 'tab');
++    }
++    if ($oldversion < 2011081000)
++    {
++
++        // Added PDF embedding
++        // tab savepoint reached
++        upgrade_mod_savepoint(true, 2011081000, 'tab');
++    }
++    if ($oldversion < 2011082300)
++    {
++
++        // Define field intro to be added to tab
++        $table = new xmldb_table('tab');
++        $field = new xmldb_field('intro', XMLDB_TYPE_TEXT, 'small', null, null, null, null, 'course');
++        $field2 = new xmldb_field('introformat', XMLDB_TYPE_INTEGER, '4', null, null, null, null, 'timemodified');
++
++        // Conditionally launch add field intro
++        if (!$dbman->field_exists($table, $field))
++        {
++            $dbman->add_field($table, $field);
++        }
++        if (!$dbman->field_exists($table, $field2))
++        {
++            $dbman->add_field($table, $field2);
++        }
++
++        // tab savepoint reached
++        upgrade_mod_savepoint(true, 2011082300, 'tab');
++    }
++
++    if ($oldversion < 2012090600)
++    {
++        // Add acess addinstance for moodle 2.3 compatibility
++        upgrade_mod_savepoint(true, 2012090600, 'tab');
++    }
++
++    if ($oldversion < 2012101700)
++    {
++        // Correction for the recent files
++        upgrade_mod_savepoint(true, 2012101700, 'tab');
++    }
++
++    if ($oldversion < 2012120400)
++    {
++        // Correction for flash files that did not appear in the tabs
++        upgrade_mod_savepoint(true, 2012120400, 'tab');
++    }
++
++    if ($oldversion < 2012121000)
++    {
++        // Correction for flash files that did not appear in the tabs
++        upgrade_mod_savepoint(true, 2012121000, 'tab');
++    }
++
++    if ($oldversion < 2012121200)
++    {
++        // + Add description available
++        // + Add PDF embed in a tab
++        
++        // tab savepoint reached
++        upgrade_mod_savepoint(true, 2012121200, 'tab');
++    }
++    
++    if ($oldversion < 2013010200)
++    {
++        // + Correction in the JS for an old YAHOO Code
++        
++        // tab savepoint reached
++        upgrade_mod_savepoint(true, 2013010200, 'tab');
++    }
++    
++    if ($oldversion < 2013021200)
++    {
++        // + Add the RTL support. Thanks to nadavkav
++        
++        // tab savepoint reached
++        upgrade_mod_savepoint(true, 2013021200, 'tab');
++    }
++    
++    if ($oldversion < 2013021201)
++    {
++        // + Correction on the tab content to allow to put custom HTML like object tag, etc. => change the settype from TYPE_CLEAN to TYPE_RAW
++        
++        // tab savepoint reached
++        upgrade_mod_savepoint(true, 2013021201, 'tab');
++    }
++    
++    if ($oldversion < 2013032800)
++    {
++        // + Changes on the logs
++        
++        // tab savepoint reached
++        upgrade_mod_savepoint(true, 2013032800, 'tab');
++    }
++    
++    if ($oldversion < 2013062500)
++    {
++        // tab savepoint reached
++        upgrade_mod_savepoint(true, 2013062500, 'tab');
++    }
++    
++    if ($oldversion < 2013072200)
++    {
++        //+Patch on backups
++        // tab savepoint reached
++        upgrade_mod_savepoint(true, 2013072200, 'tab');
++    }
++    
++    if ($oldversion < 2013072400)
++    {
++        //+Patch on filters
++        // tab savepoint reached
++        upgrade_mod_savepoint(true, 2013072400, 'tab');
++    }
++    
++    if ($oldversion < 2014040200)
++    {
++        //+ Moodle 2.6 Update
++        // tab savepoint reached
++        upgrade_mod_savepoint(true, 2014040200, 'tab');
++    }
++    if ($oldversion < 2016053102)
++    {
++        //+ Moodle 3.0 Update
++        // tab savepoint reached
++        upgrade_mod_savepoint(true, 2016053102, 'tab');
++    }
++}
+\ No newline at end of file
+diff --git a/mod/tab/ie-style.css b/mod/tab/ie-style.css
+new file mode 100644
+index 0000000..1f06fb5
+--- /dev/null
++++ b/mod/tab/ie-style.css
+@@ -0,0 +1,34 @@
++/**
++ * *************************************************************************
++ * *                         OOHOO - Tab Display                          **
++ * *************************************************************************
++ * @package     mod                                                       **
++ * @subpackage  tab                                                       **
++ * @name        tab                                                       **
++ * @copyright   oohoo.biz                                                 **
++ * @link        http://oohoo.biz                                          **
++ * @author      Patrick Thibaudeau                                        **
++ * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later  **
++ * *************************************************************************
++ * ************************************************************************ */
++
++#tab-menu-wrapper {
++    min-width: 600px;
++    min-height: 950px;
++    max-width: 2000px;
++    position: absolute;
++    margin: 10px;
++    background-color:#FFFFFF;
++}
++#left {
++    position: absolute;
++    top: 10;
++    bottom: 0;
++    left: 0;
++    width: 325px;
++    padding: inherit;
++
++}
++#tabcontent {
++    background-color:#FFFFFF;
++}
+\ No newline at end of file
+diff --git a/mod/tab/index.php b/mod/tab/index.php
+new file mode 100644
+index 0000000..93fe122
+--- /dev/null
++++ b/mod/tab/index.php
+@@ -0,0 +1,114 @@
++<?php
++
++/**
++ * *************************************************************************
++ * *                         OOHOO - Tab Display                          **
++ * *************************************************************************
++ * @package     mod                                                       **
++ * @subpackage  tab                                                       **
++ * @name        tab                                                       **
++ * @copyright   oohoo.biz                                                 **
++ * @link        http://oohoo.biz                                          **
++ * @author      Patrick Thibaudeau                                        **
++ * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later  **
++ * *************************************************************************
++ * ************************************************************************ */
++require('../../config.php');
++
++$id = required_param('id', PARAM_INT); // course id
++
++$course = $DB->get_record('course', array('id' => $id), '*', MUST_EXIST);
++
++require_course_login($course, true);
++$PAGE->set_pagelayout('incourse');
++
++$strpage = get_string('modulename', 'tab');
++$strpages = get_string('modulenameplural', 'tab');
++$strsectionname = get_string('sectionname', 'format_' . $course->format);
++$strname = get_string('name');
++$strintro = get_string('moduleintro');
++$strlastmodified = get_string('lastmodified');
++
++$modinfo = get_fast_modinfo($course);
++
++$PAGE->set_url('/mod/tab/index.php', array('id' => $course->id));
++$PAGE->set_title($course->shortname . ': ' . $strpages);
++$PAGE->set_heading($course->fullname);
++$PAGE->navbar->add($strpages);
++echo $OUTPUT->header();
++
++//log the view information
++$event = \mod_tab\event\course_module_instance_list_viewed::create(array(
++    'objectid' => $PAGE->cm->instance,
++    'context' => $PAGE->context,
++));
++$event->add_record_snapshot('course', $PAGE->course);
++$event->add_record_snapshot($PAGE->cm->modname, $tab);
++$event->trigger();
++
++
++
++if (!$tabs = get_all_instances_in_course('tab', $course))
++{
++    notice(get_string('thereareno', 'moodle', $strpages), "$CFG->wwwroot/course/view.php?id=$course->id");
++    exit;
++}
++
++$usesections = course_format_uses_sections($course->format);
++
++if ($usesections)
++{
++    $sections = $modinfo->get_section_info_all($course->id);
++}
++
++$table = new html_table();
++$table->attributes['class'] = 'generaltable mod_index';
++
++if ($usesections)
++{
++    $table->head = array($strsectionname, $strname, $strintro);
++    $table->align = array('center', 'left', 'left');
++}
++else
++{
++    $table->head = array($strlastmodified, $strname, $strintro);
++    $table->align = array('left', 'left', 'left');
++}
++
++
++$currentsection = '';
++foreach ($tabs as $tab)
++{
++    $cm = $modinfo->cms[$tab->coursemodule];
++    if ($usesections)
++    {
++        $printsection = '';
++        if ($tab->section !== $currentsection)
++        {
++            if ($tab->section)
++            {
++                $printsection = get_section_name($course, $sections[$tab->section]);
++            }
++            if ($currentsection !== '')
++            {
++                $table->data[] = 'hr';
++            }
++            $currentsection = $tab->section;
++        }
++    }
++    else
++    {
++        $printsection = '<span class="smallinfo">' . userdate($tab->timemodified) . "</span>";
++    }
++
++    $class = $tab->visible ? '' : 'class="dimmed"'; // hidden modules are dimmed
++
++    $table->data[] = array(
++        $printsection,
++        "<a $class href=\"view.php?id=$cm->id\">" . format_string($tab->name) . "</a>",
++        format_module_intro('tab', $tab, $cm->id));
++}
++
++echo html_writer::table($table);
++
++echo $OUTPUT->footer();
+diff --git a/mod/tab/js/SpryTabbedPanels.js b/mod/tab/js/SpryTabbedPanels.js
+new file mode 100644
+index 0000000..f7777e5
+--- /dev/null
++++ b/mod/tab/js/SpryTabbedPanels.js
+@@ -0,0 +1,401 @@
++// SpryTabbedPanels.js - version 0.7 - Spry Pre-Release 1.6.1
++//
++// Copyright (c) 2006. Adobe Systems Incorporated.
++// All rights reserved.
++//
++// Redistribution and use in source and binary forms, with or without
++// modification, are permitted provided that the following conditions are met:
++//
++//   * Redistributions of source code must retain the above copyright notice,
++//     this list of conditions and the following disclaimer.
++//   * Redistributions in binary form must reproduce the above copyright notice,
++//     this list of conditions and the following disclaimer in the documentation
++//     and/or other materials provided with the distribution.
++//   * Neither the name of Adobe Systems Incorporated nor the names of its
++//     contributors may be used to endorse or promote products derived from this
++//     software without specific prior written permission.
++//
++// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
++// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
++// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
++// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
++// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
++// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
++// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
++// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
++// POSSIBILITY OF SUCH DAMAGE.
++
++(function() { // BeginSpryComponent
++
++if (typeof Spry == "undefined") window.Spry = {}; if (!Spry.Widget) Spry.Widget = {};
++
++Spry.Widget.TabbedPanels = function(element, opts)
++{
++	this.element = this.getElement(element);
++	this.defaultTab = 0; // Show the first panel by default.
++	this.tabSelectedClass = "TabbedPanelsTabSelected";
++	this.tabHoverClass = "TabbedPanelsTabHover";
++	this.tabFocusedClass = "TabbedPanelsTabFocused";
++	this.panelVisibleClass = "TabbedPanelsContentVisible";
++	this.focusElement = null;
++	this.hasFocus = false;
++	this.currentTabIndex = 0;
++	this.enableKeyboardNavigation = true;
++	this.nextPanelKeyCode = Spry.Widget.TabbedPanels.KEY_RIGHT;
++	this.previousPanelKeyCode = Spry.Widget.TabbedPanels.KEY_LEFT;
++
++	Spry.Widget.TabbedPanels.setOptions(this, opts);
++
++	// If the defaultTab is expressed as a number/index, convert
++	// it to an element.
++
++	if (typeof (this.defaultTab) == "number")
++	{
++		if (this.defaultTab < 0)
++			this.defaultTab = 0;
++		else
++		{
++			var count = this.getTabbedPanelCount();
++			if (this.defaultTab >= count)
++				this.defaultTab = (count > 1) ? (count - 1) : 0;
++		}
++
++		this.defaultTab = this.getTabs()[this.defaultTab];
++	}
++
++	// The defaultTab property is supposed to be the tab element for the tab content
++	// to show by default. The caller is allowed to pass in the element itself or the
++	// element's id, so we need to convert the current value to an element if necessary.
++
++	if (this.defaultTab)
++		this.defaultTab = this.getElement(this.defaultTab);
++
++	this.attachBehaviors();
++};
++
++Spry.Widget.TabbedPanels.prototype.getElement = function(ele)
++{
++	if (ele && typeof ele == "string")
++		return document.getElementById(ele);
++	return ele;
++};
++
++Spry.Widget.TabbedPanels.prototype.getElementChildren = function(element)
++{
++	var children = [];
++	var child = element.firstChild;
++	while (child)
++	{
++		if (child.nodeType == 1 /* Node.ELEMENT_NODE */)
++			children.push(child);
++		child = child.nextSibling;
++	}
++	return children;
++};
++
++Spry.Widget.TabbedPanels.prototype.addClassName = function(ele, className)
++{
++	if (!ele || !className || (ele.className && ele.className.search(new RegExp("\\b" + className + "\\b")) != -1))
++		return;
++	ele.className += (ele.className ? " " : "") + className;
++};
++
++Spry.Widget.TabbedPanels.prototype.removeClassName = function(ele, className)
++{
++	if (!ele || !className || (ele.className && ele.className.search(new RegExp("\\b" + className + "\\b")) == -1))
++		return;
++	ele.className = ele.className.replace(new RegExp("\\s*\\b" + className + "\\b", "g"), "");
++};
++
++Spry.Widget.TabbedPanels.setOptions = function(obj, optionsObj, ignoreUndefinedProps)
++{
++	if (!optionsObj)
++		return;
++	for (var optionName in optionsObj)
++	{
++		if (ignoreUndefinedProps && optionsObj[optionName] == undefined)
++			continue;
++		obj[optionName] = optionsObj[optionName];
++	}
++};
++
++Spry.Widget.TabbedPanels.prototype.getTabGroup = function()
++{
++	if (this.element)
++	{
++		var children = this.getElementChildren(this.element);
++		if (children.length)
++			return children[0];
++	}
++	return null;
++};
++
++Spry.Widget.TabbedPanels.prototype.getTabs = function()
++{
++	var tabs = [];
++	var tg = this.getTabGroup();
++	if (tg)
++		tabs = this.getElementChildren(tg);
++	return tabs;
++};
++
++Spry.Widget.TabbedPanels.prototype.getContentPanelGroup = function()
++{
++	if (this.element)
++	{
++		var children = this.getElementChildren(this.element);
++		if (children.length > 1)
++			return children[1];
++	}
++	return null;
++};
++
++Spry.Widget.TabbedPanels.prototype.getContentPanels = function()
++{
++	var panels = [];
++	var pg = this.getContentPanelGroup();
++	if (pg)
++		panels = this.getElementChildren(pg);
++	return panels;
++};
++
++Spry.Widget.TabbedPanels.prototype.getIndex = function(ele, arr)
++{
++	ele = this.getElement(ele);
++	if (ele && arr && arr.length)
++	{
++		for (var i = 0; i < arr.length; i++)
++		{
++			if (ele == arr[i])
++				return i;
++		}
++	}
++	return -1;
++};
++
++Spry.Widget.TabbedPanels.prototype.getTabIndex = function(ele)
++{
++	var i = this.getIndex(ele, this.getTabs());
++	if (i < 0)
++		i = this.getIndex(ele, this.getContentPanels());
++	return i;
++};
++
++Spry.Widget.TabbedPanels.prototype.getCurrentTabIndex = function()
++{
++	return this.currentTabIndex;
++};
++
++Spry.Widget.TabbedPanels.prototype.getTabbedPanelCount = function(ele)
++{
++	return Math.min(this.getTabs().length, this.getContentPanels().length);
++};
++
++Spry.Widget.TabbedPanels.addEventListener = function(element, eventType, handler, capture)
++{
++	try
++	{
++		if (element.addEventListener)
++			element.addEventListener(eventType, handler, capture);
++		else if (element.attachEvent)
++			element.attachEvent("on" + eventType, handler);
++	}
++	catch (e) {}
++};
++
++Spry.Widget.TabbedPanels.prototype.cancelEvent = function(e)
++{
++	if (e.preventDefault) e.preventDefault();
++	else e.returnValue = false;
++	if (e.stopPropagation) e.stopPropagation();
++	else e.cancelBubble = true;
++
++	return false;
++};
++
++Spry.Widget.TabbedPanels.prototype.onTabClick = function(e, tab)
++{
++	this.showPanel(tab);
++	return this.cancelEvent(e);
++};
++
++Spry.Widget.TabbedPanels.prototype.onTabMouseOver = function(e, tab)
++{
++	this.addClassName(tab, this.tabHoverClass);
++	return false;
++};
++
++Spry.Widget.TabbedPanels.prototype.onTabMouseOut = function(e, tab)
++{
++	this.removeClassName(tab, this.tabHoverClass);
++	return false;
++};
++
++Spry.Widget.TabbedPanels.prototype.onTabFocus = function(e, tab)
++{
++	this.hasFocus = true;
++	this.addClassName(tab, this.tabFocusedClass);
++	return false;
++};
++
++Spry.Widget.TabbedPanels.prototype.onTabBlur = function(e, tab)
++{
++	this.hasFocus = false;
++	this.removeClassName(tab, this.tabFocusedClass);
++	return false;
++};
++
++Spry.Widget.TabbedPanels.KEY_UP = 38;
++Spry.Widget.TabbedPanels.KEY_DOWN = 40;
++Spry.Widget.TabbedPanels.KEY_LEFT = 37;
++Spry.Widget.TabbedPanels.KEY_RIGHT = 39;
++
++
++
++Spry.Widget.TabbedPanels.prototype.onTabKeyDown = function(e, tab)
++{
++	var key = e.keyCode;
++	if (!this.hasFocus || (key != this.previousPanelKeyCode && key != this.nextPanelKeyCode))
++		return true;
++
++	var tabs = this.getTabs();
++	for (var i =0; i < tabs.length; i++)
++		if (tabs[i] == tab)
++		{
++			var el = false;
++			if (key == this.previousPanelKeyCode && i > 0)
++				el = tabs[i-1];
++			else if (key == this.nextPanelKeyCode && i < tabs.length-1)
++				el = tabs[i+1];
++
++			if (el)
++			{
++				this.showPanel(el);
++				el.focus();
++				break;
++			}
++		}
++
++	return this.cancelEvent(e);
++};
++
++Spry.Widget.TabbedPanels.prototype.preorderTraversal = function(root, func)
++{
++	var stopTraversal = false;
++	if (root)
++	{
++		stopTraversal = func(root);
++		if (root.hasChildNodes())
++		{
++			var child = root.firstChild;
++			while (!stopTraversal && child)
++			{
++				stopTraversal = this.preorderTraversal(child, func);
++				try { child = child.nextSibling; } catch (e) { child = null; }
++			}
++		}
++	}
++	return stopTraversal;
++};
++
++Spry.Widget.TabbedPanels.prototype.addPanelEventListeners = function(tab, panel)
++{
++	var self = this;
++	Spry.Widget.TabbedPanels.addEventListener(tab, "click", function(e) { return self.onTabClick(e, tab); }, false);
++	Spry.Widget.TabbedPanels.addEventListener(tab, "mouseover", function(e) { return self.onTabMouseOver(e, tab); }, false);
++	Spry.Widget.TabbedPanels.addEventListener(tab, "mouseout", function(e) { return self.onTabMouseOut(e, tab); }, false);
++
++	if (this.enableKeyboardNavigation)
++	{
++		// XXX: IE doesn't allow the setting of tabindex dynamically. This means we can't
++		// rely on adding the tabindex attribute if it is missing to enable keyboard navigation
++		// by default.
++
++		// Find the first element within the tab container that has a tabindex or the first
++		// anchor tag.
++		
++		var tabIndexEle = null;
++		var tabAnchorEle = null;
++
++		this.preorderTraversal(tab, function(node) {
++			if (node.nodeType == 1 /* NODE.ELEMENT_NODE */)
++			{
++				var tabIndexAttr = tab.attributes.getNamedItem("tabindex");
++				if (tabIndexAttr)
++				{
++					tabIndexEle = node;
++					return true;
++				}
++				if (!tabAnchorEle && node.nodeName.toLowerCase() == "a")
++					tabAnchorEle = node;
++			}
++			return false;
++		});
++
++		if (tabIndexEle)
++			this.focusElement = tabIndexEle;
++		else if (tabAnchorEle)
++			this.focusElement = tabAnchorEle;
++
++		if (this.focusElement)
++		{
++			Spry.Widget.TabbedPanels.addEventListener(this.focusElement, "focus", function(e) { return self.onTabFocus(e, tab); }, false);
++			Spry.Widget.TabbedPanels.addEventListener(this.focusElement, "blur", function(e) { return self.onTabBlur(e, tab); }, false);
++			Spry.Widget.TabbedPanels.addEventListener(this.focusElement, "keydown", function(e) { return self.onTabKeyDown(e, tab); }, false);
++		}
++	}
++};
++
++Spry.Widget.TabbedPanels.prototype.showPanel = function(elementOrIndex)
++{
++	var tpIndex = -1;
++	
++	if (typeof elementOrIndex == "number")
++		tpIndex = elementOrIndex;
++	else // Must be the element for the tab or content panel.
++		tpIndex = this.getTabIndex(elementOrIndex);
++	
++	if (!tpIndex < 0 || tpIndex >= this.getTabbedPanelCount())
++		return;
++
++	var tabs = this.getTabs();
++	var panels = this.getContentPanels();
++
++	var numTabbedPanels = Math.max(tabs.length, panels.length);
++
++	for (var i = 0; i < numTabbedPanels; i++)
++	{
++		if (i != tpIndex)
++		{
++			if (tabs[i])
++				this.removeClassName(tabs[i], this.tabSelectedClass);
++			if (panels[i])
++			{
++				this.removeClassName(panels[i], this.panelVisibleClass);
++				panels[i].style.display = "none";
++			}
++		}
++	}
++
++	this.addClassName(tabs[tpIndex], this.tabSelectedClass);
++	this.addClassName(panels[tpIndex], this.panelVisibleClass);
++	panels[tpIndex].style.display = "block";
++
++	this.currentTabIndex = tpIndex;
++};
++
++Spry.Widget.TabbedPanels.prototype.attachBehaviors = function(element)
++{
++	var tabs = this.getTabs();
++	var panels = this.getContentPanels();
++	var panelCount = this.getTabbedPanelCount();
++
++	for (var i = 0; i < panelCount; i++)
++		this.addPanelEventListeners(tabs[i], panels[i]);
++
++	this.showPanel(this.defaultTab);
++};
++
++})(); // EndSpryComponent
+diff --git a/mod/tab/js/tab.js b/mod/tab/js/tab.js
+new file mode 100644
+index 0000000..ba7f7c7
+--- /dev/null
++++ b/mod/tab/js/tab.js
+@@ -0,0 +1,14 @@
++/**
++ * *************************************************************************
++ * *                         OOHOO - Tab Display                          **
++ * *************************************************************************
++ * @package     mod                                                       **
++ * @subpackage  tab                                                       **
++ * @name        tab                                                       **
++ * @copyright   oohoo.biz                                                 **
++ * @link        http://oohoo.biz                                          **
++ * @author      Patrick Thibaudeau                                        **
++ * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later  **
++ * *************************************************************************
++ * ************************************************************************ */
++var TabbedPanels1 = new Spry.Widget.TabbedPanels("TabbedPanels1");
+diff --git a/mod/tab/lang/en/tab.php b/mod/tab/lang/en/tab.php
+new file mode 100644
+index 0000000..76e24a2
+--- /dev/null
++++ b/mod/tab/lang/en/tab.php
+@@ -0,0 +1,54 @@
++<?php
++
++/**
++ * *************************************************************************
++ * *                         OOHOO - Tab Display                          **
++ * *************************************************************************
++ * @package     mod                                                       **
++ * @subpackage  tab                                                       **
++ * @name        tab                                                       **
++ * @copyright   oohoo.biz                                                 **
++ * @link        http://oohoo.biz                                          **
++ * @author      Patrick Thibaudeau                                        **
++ * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later  **
++ * *************************************************************************
++ * ************************************************************************ */
++$string['ajouter'] = 'Add a new tab display';
++$string['addtab'] = 'Add a new tab';
++$string['changestyle'] = 'Modify stylesheet';
++$string['embed_fail_link_text'] = 'Click here to open link.';
++$string['embed_fail_msg'] = '<p>Unable to embed external link. Your browser may be missing a required plugin or the link type might not be supported for embedding at this time.</p>';
++$string['embed_fail_msg_ie'] = '<p>Unable to embed external link. Internet Explorer does not support embedding external web pages at this time.</p>';
++$string['content'] = 'Tab content';
++$string['content_help'] = 'You can embed a pdf file by following these instructions:
++                            <br><ul>
++                             <li>type the name you would like to use for the link.</li>
++                             <li>Select the text and click on the inser/edit link button.</li>
++                             <li>Click on the browse button at the end of the link url field</li>
++                             <li>Upload your pdf file and then click insert</li>
++                             </ul><br>
++                             DO NOT ADD ANYTHING ELSE IN THE EDITOR.<br>
++                             Save and display. The pdf file will be embedded.';
++$string['css'] = 'Stylesheet';
++$string['displaymenu'] = 'Display tab menu';
++$string['displaymenuagree'] = 'Check if you would like to display menu';
++$string['externalurl'] = 'Embed a Web page';
++$string['format'] = 'Tab formatting';
++$string['menucss'] = 'Modify menu stylesheet';
++$string['menuname'] = 'Menu name';
++$string['modulename'] = 'Tab display';
++$string['modulenameplural'] = 'Tab displays';
++$string['moretabs'] = 'Use more tabs';
++$string['name'] = 'Name';
++$string['noformating'] = 'No formatting';
++$string['order'] = 'The order you would like this tab in';
++$string['pluginname'] = 'Tab display';
++$string['pluginadministration'] = 'Tab Administration';
++$string['tab'] = 'Tab';
++$string['tabadministration'] = 'Tab Administration';
++$string['tabcontent'] = 'Tab content';
++$string['tabname'] = 'Tab name';
++$string['taborder'] = 'Tab display activity order within menu';
++$string['tab:addinstance'] = 'Add a new Tab Display';
++$string['tab:view'] = 'View Tabs';
++$string['updatethis'] = 'Update this tab display';
+\ No newline at end of file
+diff --git a/mod/tab/lang/fr/tab.php b/mod/tab/lang/fr/tab.php
+new file mode 100644
+index 0000000..9a994f3
+--- /dev/null
++++ b/mod/tab/lang/fr/tab.php
+@@ -0,0 +1,41 @@
++<?php
++/**
++ * *************************************************************************
++ * *                         OOHOO - Tab Display                          **
++ * *************************************************************************
++ * @package     mod                                                       **
++ * @subpackage  tab                                                       **
++ * @name        tab                                                       **
++ * @copyright   oohoo.biz                                                 **
++ * @link        http://oohoo.biz                                          **
++ * @author      Patrick Thibaudeau                                        **
++ * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later  **
++ * *************************************************************************
++ * ************************************************************************ */
++$string['ajouter'] = 'Ajouter un onglet'; 
++$string['addtab'] = 'Àjouter un onglet';
++$string['changestyle'] = 'Modifier la feuille de style';
++$string['css'] = 'feuille de style';
++$string['displaymenu'] = 'Utiliser le menu d\'onglet disponibles';
++$string['displaymenuagree'] = 'Cochez si vous désirez utiliser le menu';
++$string['format'] = 'Formattage d\'onglet';
++$string['menucss'] = 'Modifier la feuille de style du menu';
++$string['menuname'] = 'Nom du menu';
++$string['modulename'] = 'Onglet';
++$string['modulenameplural'] = 'Onglets';
++$string['moretabs'] = 'Utiliser plus d\'onglet';
++$string['name'] = 'Nom';
++$string['noformating'] = 'Aucun formatage';
++$string['order'] = 'L\'ordre de cette onglet';
++$string['pluginname'] = 'Onglet';
++$string['tab'] = 'Onglet';
++$string['tabadministration'] = 'Administration des onglets';
++$string['tabcontent'] = 'Content de l\'onglet';
++$string['tabname'] = 'Nom de l\'onglet';
++$string['taborder'] = 'Ordre des onglet dans le menu';
++$string['updatethis'] = 'Update this tab display';
++$string['embed_fail_link_text'] = 'Cliquez ici pour ouvrir le lien.';
++$string['embed_fail_msg'] = '<p>Votre plugin navigateur peut être manquant un plugin requis ou le type de lien ne peut être pris en charge pour ce temps.</p>';
++$string['embed_fail_msg_ie'] = '<p>Unable to embed external link. Internet Explorer does not support embedding external web pages at this time.</p>';
++$string['tab:addinstance'] = 'Ajouter un nouvel affichage par onglets';
++$string['tab:view'] = 'Afficher l\'affichage par onglets';
+\ No newline at end of file
+diff --git a/mod/tab/lang/fr_ca/tab.php b/mod/tab/lang/fr_ca/tab.php
+new file mode 100644
+index 0000000..c383657
+--- /dev/null
++++ b/mod/tab/lang/fr_ca/tab.php
+@@ -0,0 +1,32 @@
++<?php
++/**
++ * *************************************************************************
++ * *                         OOHOO - Tab Display                          **
++ * *************************************************************************
++ * @package     mod                                                       **
++ * @subpackage  tab                                                       **
++ * @name        tab                                                       **
++ * @copyright   oohoo.biz                                                 **
++ * @link        http://oohoo.biz                                          **
++ * @author      Patrick Thibaudeau                                        **
++ * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later  **
++ * *************************************************************************
++ * ************************************************************************ */
++$string['name'] = 'Nom'; 
++$string['modulename'] = 'Onglet';
++$string['ajouter'] = 'Ajouter un onglet';
++$string['modulenameplural'] = 'Onglets';
++$string['tabname'] = 'Nom de l\'onglet';
++$string['taborder'] = 'Ordre des onglet dans le menu';
++$string['tabcontent'] = 'Content de l\'onglet';
++$string['tab'] = 'Onglet';
++$string['moretabs'] = 'Utiliser plus d\'onglet';
++$string['changestyle'] = 'Modifier la feuille de style';
++$string['css'] = 'feuille de style';
++$string['displaymenu'] = 'Utiliser le menu d\'onglet disponibles';
++$string['displaymenuagree'] = 'Cochez si vous désirez utiliser le menu';
++$string['menucss'] = 'Modifier la feuille de style du menu';
++$string['menuname'] = 'Nom du menu';
++$string['embed_fail_link_text'] = 'Cliquez ici pour ouvrir le lien.';
++$string['embed_fail_msg'] = '<p>Votre plugin navigateur peut manquer un plugin requis ou le type de lien ne peut être pris en charge pour ce temps.</p>';
++$string['embed_fail_msg_ie'] = '<p>Unable to embed external link. Internet Explorer does not support embedding external web pages at this time.</p>';
+\ No newline at end of file
+diff --git a/mod/tab/lib.php b/mod/tab/lib.php
+new file mode 100644
+index 0000000..f4b225d
+--- /dev/null
++++ b/mod/tab/lib.php
+@@ -0,0 +1,519 @@
++<?php
++
++/**
++ * *************************************************************************
++ * *                         OOHOO - Tab Display                          **
++ * *************************************************************************
++ * @package     mod                                                       **
++ * @subpackage  tab                                                       **
++ * @name        tab                                                       **
++ * @copyright   oohoo.biz                                                 **
++ * @link        http://oohoo.biz                                          **
++ * @author      Patrick Thibaudeau                                        **
++ * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later  **
++ * *************************************************************************
++ * ************************************************************************ */
++defined('MOODLE_INTERNAL') || die;
++
++/**
++ * List of features supported in Tab display
++ * @uses FEATURE_IDNUMBER
++ * @uses FEATURE_GROUPS
++ * @uses FEATURE_GROUPINGS
++ * @uses FEATURE_GROUPMEMBERSONLY
++ * @uses FEATURE_MOD_INTRO
++ * @uses FEATURE_COMPLETION_TRACKS_VIEWS
++ * @uses FEATURE_GRADE_HAS_GRADE
++ * @uses FEATURE_GRADE_OUTCOMES
++ * @param string $feature FEATURE_xx constant for requested feature
++ * @return bool|null True if module supports feature, false if not, null if doesn't know
++ */
++function tab_supports($feature)
++{
++    switch ($feature)
++    {
++        case FEATURE_IDNUMBER: return false;
++        case FEATURE_GROUPS: return false;
++        case FEATURE_GROUPINGS: return false;
++        case FEATURE_GROUPMEMBERSONLY: return false;
++        case FEATURE_MOD_INTRO: return true;
++        case FEATURE_COMPLETION_TRACKS_VIEWS: return true;
++        case FEATURE_GRADE_HAS_GRADE: return false;
++        case FEATURE_GRADE_OUTCOMES: return false;
++        case FEATURE_MOD_ARCHETYPE: return MOD_ARCHETYPE_RESOURCE;
++        case FEATURE_BACKUP_MOODLE2: return true;
++
++        default: return null;
++    }
++}
++
++/**
++ * Returns all other caps used in module
++ * @return array
++ */
++function tab_get_extra_capabilities()
++{
++    return array('moodle/site:accessallgroups');
++}
++
++/**
++ * This function is used by the reset_course_userdata function in moodlelib.
++ * @param $data the data submitted from the reset course.
++ * @return array status array
++ */
++function tab_reset_userdata($tab)
++{
++    return array();
++}
++
++/**
++ * List of view style log actions
++ * @return array
++ */
++function tab_get_view_actions()
++{
++    return array('view', 'view all');
++}
++
++/**
++ * List of update style log actions
++ * @return array
++ */
++function tab_get_post_actions()
++{
++    return array('update', 'add');
++}
++
++/**
++ * Add tab display instance.
++ * @param stdClass $data
++ * @param stdClass $mform
++ * @return int new page instance id
++ */
++function tab_add_instance($tab)
++{
++    global $CFG, $DB;
++
++    require_once("$CFG->libdir/resourcelib.php");
++
++    $cmid = $tab->coursemodule;
++    $tab->timemodified = time();
++
++
++    //insert tabs and content
++    if ($tab->id = $DB->insert_record("tab", $tab))
++    {
++
++        // we need to use context now, so we need to make sure all needed info is already in db
++        $DB->set_field('course_modules', 'instance', $tab->id, array('id' => $cmid));
++        //Replace get_context_instance by the class for moodle 2.6+
++        if(class_exists('context_module'))
++        {
++            $context = context_module::instance($cmid);
++        }
++        else
++        {
++            $context = get_context_instance(CONTEXT_MODULE, $cmid);
++        }
++        $editoroptions = array('subdirs' => 1, 'maxbytes' => $CFG->maxbytes, 'maxfiles' => -1, 'changeformat' => 1, 'context' => $context, 'noclean' => 1, 'trusttext' => true);
++
++        foreach ($tab->tabname as $key => $value)
++        {
++            $value = trim($value);
++            if (isset($value) && $value <> '')
++            {
++                $option = new stdClass();
++                $option->tabname = $value;
++                $option->tabid = $tab->id;
++
++                if (isset($tab->content[$key]['format']))
++                {
++                    $option->contentformat = $tab->content[$key]['format'];
++                }
++
++                if (isset($tab->tabcontentorder[$key]))
++                {
++                    $option->tabcontentorder = $tab->tabcontentorder[$key];
++                }
++
++                if (isset($tab->content[$key]['externalurl']))
++                {
++                    $option->externalurl = $tab->content[$key]['externalurl'];
++                }
++                $option->timemodified = time();
++                //Must get id number from inserted record to update the editor field (tabcontent)
++                $newtab_content_id = $DB->insert_record("tab_content", $option);
++
++                //tab content is now an array due to the new editor
++                //In order to enter file information from the editor
++                //We must now update the record once it has been created
++
++                if (isset($tab->content[$key]['text']))
++                {
++                    $draftitemid = $tab->content[$key]['itemid'];
++                    if ($draftitemid)
++                    {
++                        $tabcontentupdate = new stdClass();
++                        $tabcontentupdate->id = $newtab_content_id;
++                        $tabcontentupdate->tabcontent = file_save_draft_area_files($draftitemid, $context->id, 'mod_tab', 'content', $newtab_content_id, $editoroptions, $tab->content[$key]['text']);
++                        $DB->update_record('tab_content', $tabcontentupdate);
++                    }
++                }
++            }
++        }
++    }
++    return $tab->id;
++}
++
++/**
++ * Given an stdClass containing all the necessary data,
++ * (defined by the form in mod.html) this function
++ * will update an existing instance with new data.
++ *
++ * @global stdClass $CFG
++ * @global moodle_database $DB
++ * @param stdClass $instance An stdClass from the form in mod.html
++ * @return boolean Success/Fail
++ * */
++function tab_update_instance($tab)
++{
++    global $CFG, $DB;
++
++    require_once("$CFG->libdir/resourcelib.php");
++
++    $cmid = $tab->coursemodule;
++
++    $tab->timemodified = time();
++    $tab->id = $tab->instance;
++
++    foreach ($tab->tabname as $key => $value)
++    {
++
++        // we need to use context now, so we need to make sure all needed info is already in db
++        $DB->set_field('course_modules', 'instance', $tab->id, array('id' => $cmid));
++        //Replace get_context_instance by the class for moodle 2.6+
++        if(class_exists('context_module'))
++        {
++            $context = context_module::instance($cmid);
++        }
++        else
++        {
++            $context = get_context_instance(CONTEXT_MODULE, $cmid);
++        }
++        $editoroptions = array('subdirs' => 1, 'maxbytes' => $CFG->maxbytes, 'maxfiles' => -1, 'changeformat' => 1, 'context' => $context, 'noclean' => 1, 'trusttext' => true);
++
++
++        $value = trim($value);
++        $option = new stdClass();
++        $option->tabname = $value;
++        $option->tabcontentorder = $tab->tabcontentorder[$key];
++        $option->externalurl = $tab->externalurl[$key];
++        //tab content is now an array due to the new editor
++        $draftitemid = $tab->content[$key]['itemid'];
++
++        if ($draftitemid)
++        {
++            $option->tabcontent = file_save_draft_area_files($draftitemid, $context->id, 'mod_tab', 'content', $tab->optionid[$key], $editoroptions, $tab->content[$key]['text']);
++        }
++        $option->contentformat = $tab->content[$key]['format'];
++        $option->tabid = $tab->id;
++        $option->timemodified = time();
++
++        if (isset($tab->optionid[$key]) && !empty($tab->optionid[$key]))
++        {//existing tab record
++            $option->id = $tab->optionid[$key];
++            if (isset($value) && $value <> '')
++            {
++                $DB->update_record("tab_content", $option);
++            }
++            else
++            { //empty old option - needs to be deleted.
++                $DB->delete_records("tab_content", array("id" => $option->id));
++            }
++        }
++        else
++        {
++            if (isset($value) && $value <> '')
++            {
++                $newtab_content_id = $DB->insert_record("tab_content", $option);
++                //tab content is now an array due to the new editor
++                //In order to enter file information from the editor
++                //We must now update the record once it has been created
++
++                if (isset($tab->content[$key]['text']))
++                {
++                    $draftitemid = $tab->content[$key]['itemid'];
++                    if ($draftitemid)
++                    {
++                        $tabcontentupdate = new stdClass();
++                        $tabcontentupdate->id = $newtab_content_id;
++                        $tabcontentupdate->tabcontent = file_save_draft_area_files($draftitemid, $context->id, 'mod_tab', 'content', $newtab_content_id, $editoroptions, $tab->content[$key]['text']);
++                        $DB->update_record('tab_content', $tabcontentupdate);
++                    }
++                }
++            }
++        }
++    }
++    return $DB->update_record("tab", $tab);
++}
++
++/**
++ * Given an ID of an instance of this module,
++ * this function will permanently delete the instance
++ * and any data that depends on it.
++ *
++ * @global moodle_database $DB
++ * @param int $id Id of the module instance
++ * @return boolean Success/Failure
++ * */
++function tab_delete_instance($id)
++{
++    global $DB;
++
++    if (!$tab = $DB->get_record("tab", array("id" => "$id")))
++    {
++        return false;
++    }
++
++    $result = true;
++
++    # Delete any dependent records here #
++
++    if (!$DB->delete_records("tab", array("id" => "$tab->id")))
++    {
++        $result = false;
++    }
++    if (!$DB->delete_records("tab_content", array("tabid" => "$tab->id")))
++    {
++        $result = false;
++    }
++
++    return $result;
++}
++
++/**
++ * Lists all browsable file areas
++ *
++ * @package  mod_tab
++ * @category files
++ * @param stdClass $course course object
++ * @param stdClass $cm course module object
++ * @param stdClass $context context object
++ * @return array
++ */
++function tab_get_file_areas($course, $cm, $context) {
++    $areas = array();
++    $areas['content'] = get_string('content', 'tab');
++    return $areas;
++}
++
++/**
++ * File browsing support for languagelab module content area.
++ *
++ * @package  mod_tab
++ * @category files
++ * @param stdClass $browser file browser instance
++ * @param stdClass $areas file areas
++ * @param stdClass $course course object
++ * @param stdClass $cm course module object
++ * @param stdClass $context context object
++ * @param string $filearea file area
++ * @param int $itemid item ID
++ * @param string $filepath file path
++ * @param string $filename file name
++ * @return file_info instance or null if not found
++ */
++function tab_get_file_info($browser, $areas, $course, $cm, $context, $filearea, $itemid, $filepath, $filename) {
++    global $CFG;
++
++    if (!has_capability('moodle/course:managefiles', $context)) {
++        // students can not peak here!
++        return null;
++    }
++
++    $fs = get_file_storage();
++
++    if ($filearea === 'content') {
++        $filepath = is_null($filepath) ? '/' : $filepath;
++        $filename = is_null($filename) ? '.' : $filename;
++
++        $urlbase = $CFG->wwwroot.'/pluginfile.php';
++        if (!$storedfile = $fs->get_file($context->id, 'mod_tab', 'content', $itemid, $filepath, $filename)) {
++            if ($filepath === '/' and $filename === '.') {
++                $storedfile = new virtual_root_file($context->id, 'mod_tab', 'content', $itemid);
++            } else {
++                // not found
++                return null;
++            }
++        }
++        require_once("$CFG->dirroot/mod/tab/locallib.php");
++        return new tab_content_file_info($browser, $context, $storedfile, $urlbase, $areas[$filearea], true, true, true, false);
++    }
++
++    // note: page_intro handled in file_browser automatically
++
++    return null;
++}
++
++/**
++ * Serves the tab images or files. Implements needed access control ;-)
++ *
++ * @global stdClass $CFG
++ * @global moodle_database $DB
++ * @param stdClass $course
++ * @param stdClass $cm
++ * @param stdClass $context
++ * @param string $filearea
++ * @param array $args
++ * @param bool $forcedownload
++ * @return bool false if file not found, does not return if found - justsend the file
++ */
++function tab_pluginfile($course, $cm, $context, $filearea, $args, $forcedownload)
++{
++    global $CFG, $DB;
++
++    //The following code is for security
++    require_course_login($course, true, $cm);
++
++    if ($context->contextlevel != CONTEXT_MODULE)
++    {
++        return false;
++    }
++
++    $fileareas = array('mod_tab', 'content');
++    if (!in_array($filearea, $fileareas))
++    {
++        return false;
++    }
++    //id of the content row
++    $tabcontentid = (int) array_shift($args);
++
++    //Security - Check if exists
++    if (!$tabcontent = $DB->get_record('tab_content', array('id' => $tabcontentid)))
++    {
++        return false;
++    }
++
++    if (!$tab = $DB->get_record('tab', array('id' => $cm->instance)))
++    {
++        return false;
++    }
++
++    //Now gather file information
++    $fs = get_file_storage();
++    $relativepath = implode('/', $args);
++    $fullpath = "/$context->id/mod_tab/$filearea/$tabcontentid/$relativepath";
++
++    if (!$file = $fs->get_file_by_hash(sha1($fullpath)) or $file->is_directory())
++    {
++        return false;
++    }
++
++    // finally send the file
++    send_stored_file($file, 0, 0, $forcedownload);
++}
++
++/**
++ * Return a small object with summary information about what a
++ * user has done with a given particular instance of this module
++ * Used for user activity reports.
++ * $return->time = the time they did it
++ * $return->info = a short text description
++ *
++ * @global moodle_database $DB
++ * @return null
++ * @todo Finish documenting this function
++ * */
++function tab_user_outline($course, $user, $mod, $tab)
++{
++    global $DB;
++
++    if ($logs = $DB->get_records('log', array('userid' => $user->id, 'module' => 'tab',
++        'action' => 'view', 'info' => $tab->id. ' - '.$tab->name), 'time ASC'))
++    {
++
++        $numviews = count($logs);
++        $lastlog = array_pop($logs);
++
++        $result = new stdClass();
++        $result->info = get_string('numviews', '', $numviews);
++        $result->time = $lastlog->time;
++
++        return $result;
++    }
++    return NULL;
++}
++
++/**
++ * Print a detailed representation of what a user has done with
++ * a given particular instance of this module, for user activity reports.
++ *
++ * @global stdClass $CFG
++ * @global moodle_database $DB
++ * @return boolean
++ * @todo Finish documenting this function
++ * */
++function tab_user_complete($course, $user, $mod, $tab)
++{
++    global $CFG, $DB;
++
++    if ($logs = $DB->get_records('log', array('userid' => $user->id, 'module' => 'tab',
++        'action' => 'view', 'info' => $tab->id. ' - '.$tab->name), 'time ASC'))
++    {
++        $numviews = count($logs);
++        $lastlog = array_pop($logs);
++
++        $strmostrecently = get_string('mostrecently');
++        $strnumviews = get_string('numviews', '', $numviews);
++
++        echo "$strnumviews - $strmostrecently " . userdate($lastlog->time);
++    }
++    else
++    {
++        print_string('neverseen', 'tab');
++    }
++}
++
++/**
++ * Given a course and a time, this module should find recent activity
++ * that has occurred in tab activities and print it out.
++ * Return true if there was output, or false is there was none.
++ *
++ * @global $CFG
++ * @return boolean
++ * @todo Finish documenting this function
++ * */
++function tab_print_recent_activity($course, $viewfullnames, $timestart)
++{
++    global $CFG;
++
++    return false;  //  True if anything was printed, otherwise false
++}
++
++/**
++ * Given a course_module object, this function returns any
++ * "extra" information that may be needed when printing
++ * this activity in a course listing.
++ *
++ * See {@link get_array_of_activities()} in course/lib.php
++ *
++ * @global stdClass $CFG
++ * @global moodle_database $DB
++ * @param stdClass $coursemodule
++ * @return stdClass info
++ */
++function tab_get_coursemodule_info($coursemodule)
++{
++    global $CFG, $DB;
++    require_once("$CFG->libdir/resourcelib.php");
++
++    if (!$tab = $DB->get_record('tab', array('id' => $coursemodule->instance), 'id, name'))
++    {
++        return NULL;
++    }
++
++    $info = new stdClass();
++    $info->name = $tab->name;
++
++    return $info;
++}
+\ No newline at end of file
+diff --git a/mod/tab/locallib.php b/mod/tab/locallib.php
+new file mode 100644
+index 0000000..d58dd76
+--- /dev/null
++++ b/mod/tab/locallib.php
+@@ -0,0 +1,145 @@
++<?php
++
++/**
++ * *************************************************************************
++ * *                         OOHOO - Tab Display                          **
++ * *************************************************************************
++ * @package     mod                                                       **
++ * @subpackage  tab                                                       **
++ * @name        tab                                                       **
++ * @copyright   oohoo.biz                                                 **
++ * @link        http://oohoo.biz                                          **
++ * @author      Patrick Thibaudeau                                        **
++ * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later  **
++ * *************************************************************************
++ * ************************************************************************ */
++defined('MOODLE_INTERNAL') || die;
++
++require_once("$CFG->libdir/filelib.php");
++require_once("$CFG->libdir/resourcelib.php");
++require_once("$CFG->dirroot/mod/tab/lib.php");
++
++/**
++ * File browsing support class
++ */
++class tab_content_file_info extends file_info_stored {
++
++    /**
++     * Returns parent file_info instance
++     * @return file_info|null file_info instance or null for root
++     */
++    public function get_parent() {
++        if ($this->lf->get_filepath() === '/' and $this->lf->get_filename() === '.') {
++            return $this->browser->get_file_info($this->context);
++        }
++        return parent::get_parent();
++    }
++
++    /**
++     * Returns localised visible name.
++     * @return string
++     */
++    public function get_visible_name() {
++        if ($this->lf->get_filepath() === '/' and $this->lf->get_filename() === '.') {
++            return $this->topvisiblename;
++        }
++        return parent::get_visible_name();
++    }
++
++}
++
++/**
++ * Return an array of options for the editor tinyMCE
++ * @global stdClass $CFG
++ * @param type $context The context ID
++ * @return array The array of options for the editor
++ */
++function tab_get_editor_options($context) {
++    global $CFG;
++    return array('subdirs' => 1, 'maxbytes' => $CFG->maxbytes, 'maxfiles' => -1, 'changeformat' => 1, 'context' => $context, 'noclean' => 1, 'trusttext' => 0);
++}
++
++/**
++ * Prepare an URL. Trim, delete useless tags, etc.
++ * @global stdClass $CFG
++ * @global moodle_page $PAGE
++ * @param string $string The URL to prepare
++ * @return string
++ */
++function process_urls($string) {
++    global $CFG, $PAGE;
++    preg_match_all("/<a href=.*?<\/a>/", $string, $matches);
++    foreach ($matches[0] as $mtch) {
++        $mtch_bits = explode('"', $mtch);
++        $string = str_replace($mtch, "{$mtch_bits[1]}", $string);
++    }
++    $path = str_replace('<div class="text_to_html">', '', $string);
++    $path = str_replace('</div>', '', $path);
++    $path = str_replace('<p>', '', $path);
++    $path = str_replace('</p>', '', $path);
++
++
++    $string = $path;
++
++    return $string;
++}
++
++/**
++ * Returns general link or file embedding html.
++ * @global stdClass $CFG
++ * @global moodle_page $PAGE
++ * @param string $fullurl
++ * @param string $title
++ * @param string $clicktoopen
++ * @return string html
++ */
++function tab_embed_general($fullurl, $title, $clicktoopen, $mimetype) {
++    global $CFG, $PAGE;
++
++    $iframe = false;
++    $force_link = false;
++
++    // IE can not embed stuff properly if stored on different server
++    // that is why we use iframe instead, unfortunately this tag does not validate
++    // in xhtml strict mode
++    if ($mimetype === 'text/html' and core_useragent::check_browser_version('MSIE', 5))
++    {
++        if (preg_match('(^https?://[^/]*)', $fullurl, $matches))
++        {
++            //make sure we aren't redirecting to a moodle page
++            if (strpos($CFG->wwwroot, $matches[0]) !== 0)
++            {
++                $force_link = true;
++            }
++            else
++            { //if it is a moodle then embed as iframe
++                $iframe = true;
++            }
++        }
++    }
++
++    $id_suffix = md5($fullurl);
++
++    if ($iframe) {
++        $code = <<<EOT
++<div class="resourcecontent resourcegeneral">
++  <iframe id="resourceobject_$id_suffix" src="$fullurl">
++    $clicktoopen
++  </iframe>
++</div>
++EOT;
++    } else {
++        $code = <<<EOT
++<div class="resourcecontent resourcegeneral">
++  <object id="resourceobject_$id_suffix" data="$fullurl" type="$mimetype">
++    <param name="src" value="$fullurl" />
++    $clicktoopen
++  </object>
++</div>
++EOT;
++    }
++
++    $PAGE->requires->js_init_call('M.mod_tab.init_maximised_embed', array("resourceobject_$id_suffix"), true);
++
++    return $code;
++}
+diff --git a/mod/tab/mod_form.php b/mod/tab/mod_form.php
+new file mode 100644
+index 0000000..16ef36b
+--- /dev/null
++++ b/mod/tab/mod_form.php
+@@ -0,0 +1,194 @@
++<?php
++
++/**
++ * *************************************************************************
++ * *                         OOHOO - Tab Display                          **
++ * *************************************************************************
++ * @package     mod                                                       **
++ * @subpackage  tab                                                       **
++ * @name        tab                                                       **
++ * @copyright   oohoo.biz                                                 **
++ * @link        http://oohoo.biz                                          **
++ * @author      Patrick Thibaudeau                                        **
++ * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later  **
++ * *************************************************************************
++ * ************************************************************************ */
++defined('MOODLE_INTERNAL') || die;
++
++require_once($CFG->dirroot . '/course/moodleform_mod.php');
++require_once($CFG->libdir . '/filelib.php');
++
++/**
++ * Class for the form of the tab
++ */
++class mod_tab_mod_form extends moodleform_mod
++{
++
++    /**
++     * The tab form
++     * @global stdClass $CFG
++     * @global moodle_database $DB 
++     */
++    function definition()
++    {
++        global $CFG, $DB;
++
++        $mform = $this->_form;
++
++        $config = get_config('tab');
++
++        $mform->addElement('header', 'general', get_string('general', 'form'));
++        $mform->addElement('text', 'name', get_string('name', 'tab'), array('size' => '45'));
++        if (!empty($CFG->formatstringstriptags))
++        {
++            $mform->setType('name', PARAM_TEXT);
++        }
++        else
++        {
++            $mform->setType('name', PARAM_CLEANHTML);
++        }
++        $mform->addRule('name', null, 'required', null, 'client');
++
++        //Add Intro
++        $this->standard_intro_elements(false);
++
++        $mform->setDefault('printintro', 0);
++        $mform->setAdvanced('printintro', false);
++
++        //Have to use this option for postgresqgl to work
++        $instance = $this->current->instance;
++        if (empty($instance))
++        {
++            $instance = 0;
++        }
++
++        //following code used to create tabcontent order numbers
++        if (isset($_POST['optionid']))
++        {
++            $repeatnum = count($_POST['optionid']);
++        }
++        else
++        {
++            $repeatnum = 0;
++        }
++        if ($repeatnum == 0)
++        {
++            $repeatnum = $DB->count_records('tab_content', array('tabid' => $instance));
++        }
++        $taborder = 1; //initialize to prevent warnings
++        for ($i = 1; $i <= $repeatnum + 1; $i++)
++        {
++            if ($i == 1)
++            {
++                $taborder = 1;
++            }
++            else
++            {
++                $taborder = $taborder . ',' . $i;
++            }
++        }
++        $context = $this->context;
++
++        $editoroptions = array('subdirs' => 1, 'maxbytes' => $CFG->maxbytes, 'maxfiles' => -1, 'changeformat' => 1, 'context' => $context, 'noclean' => 1, 'trusttext' => 1);
++        $taborderarray = explode(',', $taborder);
++        //-----------------------------for adding tabs---------------------------------------------------------------
++        $repeatarray = array();
++
++        $repeatarray[] = $mform->createElement('header', 'tabs', get_string('tab', 'tab') . ' {no}');
++        $repeatarray[] = $mform->createElement('text', 'tabname', get_string('tabname', 'tab'), array('size' => '65'));
++        $repeatarray[] = $mform->createElement('editor', 'content', get_string('tabcontent', 'tab'), null, $editoroptions);
++        $repeatarray[] = $mform->createElement('url', 'externalurl', get_string('externalurl', 'tab'), array('size' => '60'), array('usefilepicker' => true));
++        $repeatarray[] = $mform->createElement('hidden', 'revision', 1);
++        $repeatarray[] = $mform->createElement('select', 'tabcontentorder', get_string('order', 'tab'), $taborderarray);
++        $repeatarray[] = $mform->createElement('hidden', 'optionid', 0);
++        
++        $mform->setType('tabname', PARAM_TEXT);
++        $mform->setType('content', PARAM_RAW);
++        $mform->setType('externalurl', PARAM_URL);
++        $mform->setType('revision', PARAM_INT);
++        $mform->setType('tabcontentorder', PARAM_INT);
++        $mform->setType('optionid', PARAM_INT);
++        $mform->setType('content', PARAM_RAW);
++                
++        if ($this->_instance)
++        {
++            $repeatno = $DB->count_records('tab_content', array('tabid' => $instance));
++            $repeatno += 1;
++        }
++        else
++        {
++            $repeatno = 1;
++        }
++
++        $repeateloptions = array();
++        if (!isset($repeateloptions['tabcontentorder']))
++        {
++            $repeateloptions['tabcontentorder']['default'] = $i - 2;
++        }
++
++        $repeateloptions['content']['helpbutton'] = array('content', 'tab');
++
++
++        $this->repeat_elements($repeatarray, $repeatno, $repeateloptions, 'option_repeats', 'option_add_fields', 1, get_string('addtab', 'tab'));
++        //-----------------------------------------------------------------------------------------------------------------------------------------------
++        //*********************************************************************************
++        //*********************Display menu checkbox and name******************************
++        //*********************************************************************************
++        $mform->addElement('header', 'menu', get_string('displaymenu', 'tab'));
++        $mform->addElement('advcheckbox', 'displaymenu', get_string('displaymenuagree', 'tab'), null, array('group' => 1), array('0', '1'));
++        $mform->setType('displaymenu', PARAM_INT);
++        $mform->addElement('text', 'taborder', get_string('taborder', 'tab'), array('size' => '15'));
++        $mform->addElement('text', 'menuname', get_string('menuname', 'tab'), array('size' => '45'));
++
++        $mform->setType('taborder', PARAM_INT);
++        $mform->setType('menuname', PARAM_TEXT);
++        
++        //*********************************************************************************
++        //*********************************************************************************
++
++        $mform->setAdvanced('printintro', true);
++
++        $features = array('groups' => false, 'groupings' => false, 'groupmembersonly' => true,
++            'outcomes' => false, 'gradecat' => false, 'idnumber' => false);
++        $this->standard_coursemodule_elements($features);
++
++        //-------------------------------------------------------------------------------
++        // buttons
++        $this->add_action_buttons();
++    }
++
++    /**
++     * The preprocessing data from the form
++     * @global stdClass $CFG
++     * @global moodle_database $DB
++     * @param type $default_values 
++     */
++    function data_preprocessing(&$default_values)
++    {
++        global $CFG, $DB;
++        if ($this->current->instance)
++        {
++            $options = $DB->get_records('tab_content', array('tabid' => $this->current->instance), 'tabcontentorder');
++            // print_object($options)
++            $tabids = array_keys($options);
++            $options = array_values($options);
++            $context = $this->context;
++            $editoroptions = array('subdirs' => 1, 'maxbytes' => $CFG->maxbytes, 'maxfiles' => -1, 'changeformat' => 1, 'context' => $context, 'noclean' => 1, 'trusttext' => 1);
++            foreach (array_keys($options) as $key)
++            {
++                $default_values['tabname[' . $key . ']'] = $options[$key]->tabname;
++
++                $draftitemid = file_get_submitted_draft_itemid('content[' . $key . ']');
++                $default_values['content[' . $key . ']']['format'] = $options[$key]->contentformat;
++                $default_values['content[' . $key . ']']['text'] = file_prepare_draft_area($draftitemid, $this->context->id, 'mod_tab', 'content', $options[$key]->id, $editoroptions, $options[$key]->tabcontent);
++                $default_values['content[' . $key . ']']['itemid'] = $draftitemid;
++
++                //$default_values['format['.$key.']'] = $options[$key]->format;
++                $default_values['externalurl[' . $key . ']'] = $options[$key]->externalurl;
++                $default_values['tabcontentorder[' . $key . ']'] = $options[$key]->tabcontentorder;
++                $default_values['optionid[' . $key . ']'] = $tabids[$key];
++            }
++        }
++    }
++
++}
+diff --git a/mod/tab/module.js b/mod/tab/module.js
+new file mode 100644
+index 0000000..d9a3146
+--- /dev/null
++++ b/mod/tab/module.js
+@@ -0,0 +1,60 @@
++/**
++ * *************************************************************************
++ * *                         OOHOO - Tab Display                          **
++ * *************************************************************************
++ * @package     mod                                                       **
++ * @subpackage  tab                                                       **
++ * @name        tab                                                       **
++ * @copyright   oohoo.biz                                                 **
++ * @link        http://oohoo.biz                                          **
++ * @author      Patrick Thibaudeau                                        **
++ * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later  **
++ * *************************************************************************
++ * ************************************************************************ */
++M.mod_tab = {};
++
++/** Useful for full embedding of various stuff */
++M.mod_tab.init_maximised_embed = function(Y, id) {
++    var obj = Y.one('#'+id);
++    if (!obj) {
++        return;
++    }
++
++
++    var get_htmlelement_size = function(el, prop) {
++        if (Y.Lang.isString(el)) {
++            el = Y.one('#' + el);
++        }
++        var val = el.getStyle(prop);
++        if (val == 'auto') {
++            val = el.getComputedStyle(prop);
++        }
++        return parseInt(val);
++    };
++
++    var resize_object = function() {
++        obj.setStyle('width', '0px');
++        obj.setStyle('height', '0px');
++        var newwidth = get_htmlelement_size(Y.one(".TabbedPanelsContentVisible"), 'width') - 15;
++
++        if (newwidth > 600) {
++            obj.setStyle('width', newwidth  + 'px');
++        } else {
++            obj.setStyle('width', '600px');
++        }
++
++        var headerheight = get_htmlelement_size('page-header', 'height');
++        var footerheight = get_htmlelement_size('page-footer', 'height');
++        var newheight = parseInt(Y.one("body").get("winHeight")) - footerheight - headerheight - 20;
++        if (newheight < 400) {
++            newheight = 400;
++        }
++        obj.setStyle('height', newheight+'px');
++    };
++
++    resize_object();
++    // fix layout if window resized too
++    window.onresize = function() {
++        resize_object();
++    };
++};
+\ No newline at end of file
+diff --git a/mod/tab/pix/icon.png b/mod/tab/pix/icon.png
+new file mode 100644
+index 0000000000000000000000000000000000000000..a8fda0195ce60e1ded623283747e9341bcb41f90
+GIT binary patch
+literal 905
+zcmV;419tq0P)<h;3K|Lk000e1NJLTq000;O000;W1^@s6;CDUv0000PbVXQnQ*UN;
+zcVTj606}DLVr3vnZDD6+Qe|Oed2z{QJOBU#D@jB_RCwC7RzFW#Q4~K9-XBE4sYIe3
+z3@UN5iKSsLjUT|lr5~ViuwTH%sgrY8)34yvP7cPJu;8YU5Tj`$MB@O0{CV&8{0{Fv
+zkV>hE9&+A;d;b6KJ?CN&)6~?|^v=%C*K9WX!SlQjJx<Nt-Q6#RLgD+~-rl#lxw*9K
+zx?~teprDkZP$)#TTCKXZwe|V%@bHHS*4NiRwcBk~uh-Sx-JNPQ8V?w2_xJZIpU>C#
+z_xB6zNU?Lp$^6Aw2OS+9opLb8oS2xPZnqmhIXNMALg8>&SQ8r&G6mn>-bP}vSnB5H
+zMt&pP;R>*BnkIERo#{v<;+h*98}DalXS2m(QIsKsp*GL~I0@ovU>Gi!%Ym*Apmm`K
+zy1u@SY;JCTG`6?5f97(zY_r)U$8p366=*|k1a7rj;>fbBfOQpv0T^ycihU~fXT}qW
+z#3>8fa5z}<AhEH*IyTE)w&{-2MIaC-X`P>+|2Fvq#g><sU(*XvDwX<Wazx|m>I#@~
+zbg!2Mvf~dS8_811S3r_Zrv(<kfPLemLyC0_mMd0`@}XH+SO|icT&4%SU;qr^Px(=d
+z9u5*n`GEm}#=G5O8$T&c7Vn{k32#(DGcz;7|4VR=YF6H?jFjuQIk@oL6jT6+UV^0Q
+z@TF8L(Z$6DSK^Y7{G-`$XA;jV=@azL@$qqhw>}-Qc#JZcOg{kN;Z7#*1yLT=2YQfc
+zL+rsjcH|A%KnKA!B0&W(bZkeG*ZCMqKZ4}s;kh`Ly>-j6^?~jyh+|J|@s>S6A5^Q=
+zF`JDMVbjvmk|e}4iO$Z>9zw(vjYiR6{weY+Ko4M$4bS&sh#bfDdq7Dg&1OTg3?SkJ
+z5gc#w=aW>BOeTe&Z~)1&Em~cDJ3>mm=ES}Ym-yTy5a9x;R4QW|&bDn@TwD}LFqSck
+zhHWM%Cux3uz8?U0Fb3V_<)uH1{<Q~=Y#@#z?uKC-=)~jkhXJsT2?>4*A=9<Bweb+~
+zJsUbWIB4U-L1y}f8obevnSWCmEXOScHniSjy1Zuc9iN2c75=$EJ|-Eoae}$dTpKx4
+f`UH9Bj{pMzs@FgKuGi*m00000NkvXXu0mjfBhjnK
+
+literal 0
+HcmV?d00001
+
+diff --git a/mod/tab/pix/icon2.png b/mod/tab/pix/icon2.png
+new file mode 100644
+index 0000000000000000000000000000000000000000..5e2bce570d348c2d107243389c6792234fe82629
+GIT binary patch
+literal 19938
+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
+
+literal 0
+HcmV?d00001
+
+diff --git a/mod/tab/styles.css b/mod/tab/styles.css
+new file mode 100644
+index 0000000..e4c776c
+--- /dev/null
++++ b/mod/tab/styles.css
+@@ -0,0 +1,62 @@
++/**
++ * *************************************************************************
++ * *                         OOHOO - Tab Display                          **
++ * *************************************************************************
++ * @package     mod                                                       **
++ * @subpackage  tab                                                       **
++ * @name        tab                                                       **
++ * @copyright   oohoo.biz                                                 **
++ * @link        http://oohoo.biz                                          **
++ * @author      Patrick Thibaudeau                                        **
++ * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later  **
++ * *************************************************************************
++ * ************************************************************************ */
++
++/* Left menu */
++#tab-menu-wrapper {
++    float: left;
++    width: 15%;
++
++}
++
++#tabcontent {
++    margin-left:  0%;
++    padding: 0 10px;
++
++}
++
++ul.menutable {
++	border: 1px solid #CCC;
++	width:100%;
++	margin-top: 0px;
++	-moz-border-radius-bottomleft: 8px;
++	-moz-border-radius-topleft: 8px;
++	-webkit-border-top-left-radius: 8px;
++	-webkit-border-bottom-left-radius: 8px;
++	border-top-left-radius: 8px;
++	border-bottom-left-radius: 8px;
++}
++
++ul.menutable li {
++	list-style-type: none;
++	padding: 4px;
++}
++
++ul.menutable li.menutitle {
++        background-color:#007C40 ;
++        color: #fff;
++	-moz-border-radius-topleft: 6px;
++	-webkit-border-top-left-radius: 6px;
++	border-top-left-radius: 6px;
++}
++
++ul.menutable li.row:last-child {
++	-moz-border-radius-bottomleft: 6px;
++	-webkit-border-bottom-left-radius: 6px;
++	border-bottom-left-radius: 6px;
++}
++
++.row {
++        background-color: #EEEEEE;
++}
++
+diff --git a/mod/tab/version.php b/mod/tab/version.php
+new file mode 100644
+index 0000000..6b9ebed
+--- /dev/null
++++ b/mod/tab/version.php
+@@ -0,0 +1,21 @@
++<?php
++
++/**
++ * *************************************************************************
++ * *                         OOHOO - Tab Display                          **
++ * *************************************************************************
++ * @package     mod                                                       **
++ * @subpackage  tab                                                       **
++ * @name        tab                                                       **
++ * @copyright   oohoo.biz                                                 **
++ * @link        http://oohoo.biz                                          **
++ * @author      Patrick Thibaudeau                                        **
++ * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later  **
++ * *************************************************************************
++ * ************************************************************************ */
++$plugin->version = 2016053102;  // The current module version (Date: YYYYMMDDXX)
++$plugin->requires = 2010112400;
++$plugin->maturity = MATURITY_STABLE;
++$plugin->release = '2.3.0 (Build: 2016053100)';
++$plugin->cron = 0;           // Period for cron to check this module (secs)
++$plugin->component = 'mod_tab';
+\ No newline at end of file
+diff --git a/mod/tab/view.php b/mod/tab/view.php
+new file mode 100644
+index 0000000..1839755
+--- /dev/null
++++ b/mod/tab/view.php
+@@ -0,0 +1,256 @@
++<?php
++
++/**
++ * *************************************************************************
++ * *                         OOHOO - Tab Display                          **
++ * *************************************************************************
++ * @package     mod                                                       **
++ * @subpackage  tab                                                       **
++ * @name        tab                                                       **
++ * @copyright   oohoo.biz                                                 **
++ * @link        http://oohoo.biz                                          **
++ * @author      Patrick Thibaudeau                                        **
++ * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later  **
++ * *************************************************************************
++ * ************************************************************************ */
++require("../../config.php");
++require_once("lib.php");
++require_once("locallib.php");
++require_once($CFG->dirroot . '/lib/resourcelib.php');
++require_once($CFG->dirroot . '/lib/completionlib.php');
++require_once($CFG->dirroot . '/mod/tab/classes/event/course_module_viewed.php');
++
++$id = optional_param('id', 0, PARAM_INT); // Course Module ID, or
++$a = optional_param('a', 0, PARAM_INT); // tab ID
++
++if ($id)
++{
++    if (!$cm = get_coursemodule_from_id("tab", $id))
++    {
++        error("Course Module ID was incorrect");
++    }
++
++    if (!$tab = $DB->get_record("tab", array("id" => $cm->instance)))
++    {
++        error("Course module is incorrect");
++    }
++}
++else
++{
++    if (!$tab = $DB->get_record("tab", array("id" => $a)))
++    {
++        error("Course module is incorrect");
++    }
++
++    if (!$cm = get_coursemodule_from_instance("tab", $tab->id, $course->id))
++    {
++        error("Course Module ID was incorrect");
++    }
++}
++
++$course = $DB->get_record('course', array('id' => $cm->course), '*', MUST_EXIST);
++
++require_course_login($course, true, $cm);
++//Replace get_context_instance by the class for moodle 2.6+
++if(class_exists('context_module'))
++{
++    $context = context_module::instance($cm->id);
++    $coursecontext = context_course::instance($course->id);
++}
++else
++{
++    $context = get_context_instance(CONTEXT_MODULE, $cm->id);
++    $coursecontext = get_context_instance(CONTEXT_COURSE, $course->id);
++}
++
++require_capability('mod/tab:view', $context);
++
++// Update 'viewed' state if required by completion system
++$completion = new completion_info($course);
++$completion->set_module_viewed($cm);
++
++// Print the page header
++
++$PAGE->set_url('/mod/tab/view.php', array('id' => $cm->id));
++$PAGE->set_title($tab->name);
++$PAGE->set_heading(format_string($course->fullname));
++$PAGE->set_activity_record($tab);
++
++if ($PAGE->user_allowed_editing())
++{
++    $buttons = '<table><tr><td><form method="get" action="' . $CFG->wwwroot . '/course/mod.php"><div>' .
++            '<input type="hidden" name="update" value="' . $cm->id . '" />' .
++            '<input type="submit" value="' . get_string('updatethis', 'tab') . '" /></div></form></td></tr></table>';
++    $PAGE->set_button($buttons);
++}
++//Gather javascripts and css
++$PAGE->requires->js('/mod/tab/js/SpryTabbedPanels.js', true);
++$PAGE->requires->js('/mod/tab/js/tab.js');
++$PAGE->requires->css('/mod/tab/SpryTabbedPanels.css');
++$PAGE->requires->css('/mod/tab/styles.css');
++
++//log the view information
++$event = \mod_tab\event\course_module_viewed::create(array(
++    'objectid' => $PAGE->cm->instance,
++    'context' => $PAGE->context,
++));
++$event->add_record_snapshot('course', $PAGE->course);
++$event->add_record_snapshot($PAGE->cm->modname, $tab);
++$event->trigger();
++
++echo $OUTPUT->header();
++
++//echo $OUTPUT->heading(format_string($tab->name), 2, 'main', 'pageheading');
++
++$strtabs = get_string("modulenameplural", "tab");
++$strtab = get_string("modulename", "tab");
++
++//gather all Tab modules within the course. Needed if display tab menu is selected
++//$results = get_coursemodules_in_course('tab', $course->id);
++//Must get more information in order to display menu options properly.
++//Therefore I cannot use get_coursemodules_in_course
++$results = $DB->get_records_sql('SELECT {course_modules}.id as id,{course_modules}.visible as visible, {tab}.name as name, {tab}.taborder as taborder,
++                                        {tab}.menuname as menuname FROM ({modules} INNER JOIN {course_modules} ON {modules}.id = {course_modules}.module)
++                                        INNER JOIN {tab} ON {course_modules}.instance = {tab}.id WHERE ((({modules}.name)=\'tab\') AND (({course_modules}.course)=' . $course->id . '))
++                                        ORDER BY taborder;');
++
++
++$tabdisplay = '';
++
++//Add the description if exists
++if (trim(strip_tags($tab->intro)))
++{
++    $tabdisplay .= $OUTPUT->box_start('mod_tab_introbox', 'tabintro');
++    $tabdisplay .= format_module_intro('tab', $tab, $cm->id);
++    $tabdisplay .= $OUTPUT->box_end();
++}
++
++if ($tab->displaymenu == 1)
++{
++
++    $tabdisplay .= "<style>
++                        #tabcontent {
++                        margin-left:  17%;
++                        padding: 0 10px;
++
++                    }</style>";
++    $tabdisplay .= '<div id="tab-menu-wrapper">' . "\n";
++    $tabdisplay .= '	<ul class="menutable" width="100%" border="0" cellpadding="4">' . "\n";
++    $tabdisplay .= '	<li class="menutitle">' . $tab->menuname . '</li>' . "\n";
++    $i = 0; ///needed to determine color change on cell
++    foreach ($results as $result)
++    { /// foreach
++        //only print the tabs that have the same menu name
++        if ($result->menuname == $tab->menuname)
++        {
++            //only print visible tabs within the menu
++
++            if ($result->visible == 1 || has_capability('moodle/course:update', $coursecontext))
++            {
++                $tabdisplay .= '	<li';
++                if ($tab->name == $result->name)
++                { //old code for different color = if ($i % 2) {
++                    $tabdisplay .= ' class="row">';
++                }
++                else
++                {
++                    $tabdisplay .= '>';
++                }
++                $tabdisplay .= '<a href="view.php?id=' . $result->id . '" >' . $result->name . '</a>';
++            }
++        }
++        $tabdisplay .= '</li>' . "\n";
++        $i++;
++    }
++    $tabdisplay .= '</ul>' . "\n";
++    $tabdisplay .= '</div>' . "\n";
++}
++//print tab content here
++$tabdisplay .= '<div id="tabcontent" class="box generalbox">' . "\n";
++$tabdisplay .= '<div id="TabbedPanels1" class="TabbedPanels">' . "\n";
++$tabdisplay .= '  <ul class="TabbedPanelsTabGroup">' . "\n";
++
++//-------------------------------Get tabs-----------------------------------------------
++$options = $DB->get_records('tab_content', array('tabid' => $tab->id), 'tabcontentorder');
++$options = array_values($options);
++$i = 0;
++
++foreach (array_keys($options) as $key)
++{
++    $tabdisplay .= '    <li class="TabbedPanelsTab" tabindex="0">' . $options[$key]->tabname . '</li>';
++}
++$tabdisplay .= '  </ul>' . "\n";
++$tabdisplay .= '  <div class="TabbedPanelsContentGroup">' . "\n";
++
++$editoroptions = array('subdirs' => 1, 'maxbytes' => $CFG->maxbytes, 'maxfiles' => -1, 'changeformat' => 1, 'context' => $context, 'noclean' => 1, 'trusttext' => true);
++
++
++//Add content
++foreach (array_keys($options) as $key)
++{
++
++    //New conditions now exist. Must verify if embedding a pdf or url
++    //Content must change accordingly
++    //$pdffile[$key] = $options[$key]->pdffile;
++
++
++    $externalurl[$key] = $options[$key]->externalurl;
++    //Eventually give option for height within the form. Pass this by others, because it could be confusing.
++    $iframeheight[$key] = '800px';
++    
++    if (!empty($externalurl[$key]))
++    {
++        //todo check url
++        if (!preg_match('{https?:\/\/}', $externalurl[$key]))
++        {
++            $externalurl[$key] = 'http://' . $externalurl[$key];
++        }
++        
++        
++    }
++    else
++    {
++        if (empty($options[$key]->format))
++        {
++            $options[$key]->format = 1;
++        }
++        $content[$key] = file_rewrite_pluginfile_urls($options[$key]->tabcontent, 'pluginfile.php', $context->id, 'mod_tab', 'content', $options[$key]->id);
++        $content[$key] = format_text($content[$key], $options[$key]->contentformat, $editoroptions, $context);
++        //PDF
++        $content2 = str_ireplace(array(' ', "\n", "\r", "\t", '&nbsp;'), array(), strip_tags($content[$key], '<a>'));
++        
++        if (stripos($content2, '<a') === 0 && stripos($content2, '</a>') >= strlen($content2) - 4)
++        {
++            $start = strpos($content2, '"')+1;
++            $l = strpos($content2, '"', $start+1) - $start;
++            
++            $href = substr($content2, $start, $l);
++            if(stripos($href, '.pdf') !== false)
++            {
++                $externalurl[$key] = $href;
++            }
++        }
++    }
++    //Enter into proper div
++    //Check for pdf
++    if (!empty($externalurl[$key]) && preg_match('/\bpdf\b/i', $externalurl[$key]))
++    {
++        $html_content = tab_embed_general(process_urls($externalurl[$key]), '', get_string('embed_fail_msg', 'tab') . "<a href='$externalurl[$key]' target='_blank' >" . get_string('embed_fail_link_text', 'tab') . '</a>', 'application/pdf');
++    }
++    elseif (!empty($externalurl[$key]))
++    {
++        $html_content = tab_embed_general(process_urls($externalurl[$key]), '', get_string('embed_fail_msg', 'tab') . "<a href='$externalurl[$key]' target='_blank' >" . get_string('embed_fail_link_text', 'tab') . '</a>', 'text/html');
++    }
++    else
++    {
++        $html_content = $content[$key];
++    }
++    $tabdisplay .= '   <div class="TabbedPanelsContent"><p>' . $html_content . '</p></div>' . "\n";
++}
++$tabdisplay .= '	</div>' . "\n";
++$tabdisplay .= '</div>' . "\n";
++$tabdisplay .= '</div>' . "\n";
++echo $tabdisplay;
++
++echo $OUTPUT->footer();
++
+-- 
+1.8.3.1
+

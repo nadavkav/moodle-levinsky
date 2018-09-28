@@ -1,0 +1,2116 @@
+From b2e472959feaec73d51ecec5bb01a05c54f1d630 Mon Sep 17 00:00:00 2001
+From: Nadav Kavalerchik <nadavkav@gmail.com>
+Date: Wed, 11 Oct 2017 21:23:47 +0300
+Subject: [PATCH 39/95] lib/editor/atto/plugins/styles (new)
+
+---
+ lib/editor/atto/plugins/styles/.travis.yml         |  50 ++
+ lib/editor/atto/plugins/styles/CHANGES.md          |  36 ++
+ lib/editor/atto/plugins/styles/COPYING.txt         | 674 +++++++++++++++++++++
+ lib/editor/atto/plugins/styles/README.md           | 164 +++++
+ .../atto/plugins/styles/lang/en/atto_styles.php    |  86 +++
+ lib/editor/atto/plugins/styles/lib.php             |  59 ++
+ lib/editor/atto/plugins/styles/pix/block.png       | Bin 0 -> 7069 bytes
+ lib/editor/atto/plugins/styles/pix/icon.png        | Bin 0 -> 3384 bytes
+ lib/editor/atto/plugins/styles/pix/inline.png      | Bin 0 -> 6916 bytes
+ lib/editor/atto/plugins/styles/settings.php        |  42 ++
+ lib/editor/atto/plugins/styles/styles.css          |  36 ++
+ .../styles/tests/behat/behat_atto_styles.php       |  56 ++
+ .../atto/plugins/styles/tests/behat/styles.feature |  78 +++
+ lib/editor/atto/plugins/styles/version.php         |  32 +
+ .../moodle-atto_styles-button-debug.js             | Bin 0 -> 5475 bytes
+ .../moodle-atto_styles-button-min.js               | Bin 0 -> 1823 bytes
+ .../moodle-atto_styles-button.js                   | Bin 0 -> 5475 bytes
+ .../atto/plugins/styles/yui/src/button/build.json  |  10 +
+ .../plugins/styles/yui/src/button/js/button.js     | 166 +++++
+ .../plugins/styles/yui/src/button/meta/button.json |   7 +
+ 20 files changed, 1496 insertions(+)
+ create mode 100644 lib/editor/atto/plugins/styles/.travis.yml
+ create mode 100644 lib/editor/atto/plugins/styles/CHANGES.md
+ create mode 100644 lib/editor/atto/plugins/styles/COPYING.txt
+ create mode 100644 lib/editor/atto/plugins/styles/README.md
+ create mode 100644 lib/editor/atto/plugins/styles/lang/en/atto_styles.php
+ create mode 100644 lib/editor/atto/plugins/styles/lib.php
+ create mode 100644 lib/editor/atto/plugins/styles/pix/block.png
+ create mode 100644 lib/editor/atto/plugins/styles/pix/icon.png
+ create mode 100644 lib/editor/atto/plugins/styles/pix/inline.png
+ create mode 100644 lib/editor/atto/plugins/styles/settings.php
+ create mode 100644 lib/editor/atto/plugins/styles/styles.css
+ create mode 100644 lib/editor/atto/plugins/styles/tests/behat/behat_atto_styles.php
+ create mode 100644 lib/editor/atto/plugins/styles/tests/behat/styles.feature
+ create mode 100644 lib/editor/atto/plugins/styles/version.php
+ create mode 100644 lib/editor/atto/plugins/styles/yui/build/moodle-atto_styles-button/moodle-atto_styles-button-debug.js
+ create mode 100644 lib/editor/atto/plugins/styles/yui/build/moodle-atto_styles-button/moodle-atto_styles-button-min.js
+ create mode 100644 lib/editor/atto/plugins/styles/yui/build/moodle-atto_styles-button/moodle-atto_styles-button.js
+ create mode 100644 lib/editor/atto/plugins/styles/yui/src/button/build.json
+ create mode 100644 lib/editor/atto/plugins/styles/yui/src/button/js/button.js
+ create mode 100644 lib/editor/atto/plugins/styles/yui/src/button/meta/button.json
+
+diff --git a/lib/editor/atto/plugins/styles/.travis.yml b/lib/editor/atto/plugins/styles/.travis.yml
+new file mode 100644
+index 0000000..3876fc0
+--- /dev/null
++++ b/lib/editor/atto/plugins/styles/.travis.yml
+@@ -0,0 +1,50 @@
++language: php
++
++sudo: false
++
++addons:
++  firefox: "47.0.1"
++  postgresql: "9.3"
++  apt:
++    packages:
++      - oracle-java8-installer
++      - oracle-java8-set-default
++
++cache:
++  directories:
++    - $HOME/.composer/cache
++    - $HOME/.npm
++
++php:
++ - 5.6
++ - 7.0
++ - 7.1
++
++env:
++ global:
++  - MOODLE_BRANCH=MOODLE_32_STABLE
++ matrix:
++  - DB=pgsql
++  - DB=mysqli
++
++before_install:
++  - phpenv config-rm xdebug.ini
++  - nvm install node
++  - cd ../..
++  - composer create-project -n --no-dev --prefer-dist moodlerooms/moodle-plugin-ci ci ^2
++  - export PATH="$(cd ci/bin; pwd):$(cd ci/vendor/bin; pwd):$PATH"
++
++install:
++  - moodle-plugin-ci install
++
++script:
++  - moodle-plugin-ci phplint
++  - moodle-plugin-ci phpcpd
++  - moodle-plugin-ci phpmd
++  - moodle-plugin-ci codechecker
++  - moodle-plugin-ci validate
++  - moodle-plugin-ci savepoints
++  - moodle-plugin-ci mustache
++  - moodle-plugin-ci grunt
++  - moodle-plugin-ci phpunit
++  - moodle-plugin-ci behat --dump
+diff --git a/lib/editor/atto/plugins/styles/CHANGES.md b/lib/editor/atto/plugins/styles/CHANGES.md
+new file mode 100644
+index 0000000..062d736
+--- /dev/null
++++ b/lib/editor/atto/plugins/styles/CHANGES.md
+@@ -0,0 +1,36 @@
++moodle-atto_styles
++==================
++
++Changes
++-------
++
++### v3.2-r4
++
++* 2017-05-29 - Add Travis CI support
++
++### v3.2-r3
++
++* 2017-05-05 - Improve README.md
++
++### v3.2-r2
++
++* 2017-04-03 - Bugfix: Fix menu item appearance on theme_boost
++
++### v3.2-r1
++
++* 2017-01-13 - Check compatibility for Moodle 3.2, no functionality change
++* 2017-01-12 - Move Changelog from README.md to CHANGES.md
++
++### v3.1-r1
++
++* 2016-07-19 - Check compatibility for Moodle 3.1, no functionality change
++
++### Changes before v3.1
++
++* 2016-05-26 - Adding behat feature testing block and inline styles, no functionality change - Credits to Janek Lasocki-Biczysko
++* 2016-03-03 - Bugfix: Adding 2 classes for inline styling failed on Moodle 3.0.x - Credits to clementpr and Davo Smith
++* 2016-02-10 - Change plugin version and release scheme to the scheme promoted by moodle.org, no functionality change
++* 2016-01-01 - Check compatibility for Moodle 3.0, no functionality change
++* 2015-08-18 - Check compatibility for Moodle 2.9, no functionality change
++* 2015-05-22 - Include bootstrap classes into configuration example - Credits to David Mudrák
++* 2015-05-21 - Initial version
+diff --git a/lib/editor/atto/plugins/styles/COPYING.txt b/lib/editor/atto/plugins/styles/COPYING.txt
+new file mode 100644
+index 0000000..94a9ed0
+--- /dev/null
++++ b/lib/editor/atto/plugins/styles/COPYING.txt
+@@ -0,0 +1,674 @@
++                    GNU GENERAL PUBLIC LICENSE
++                       Version 3, 29 June 2007
++
++ Copyright (C) 2007 Free Software Foundation, Inc. <http://fsf.org/>
++ Everyone is permitted to copy and distribute verbatim copies
++ of this license document, but changing it is not allowed.
++
++                            Preamble
++
++  The GNU General Public License is a free, copyleft license for
++software and other kinds of works.
++
++  The licenses for most software and other practical works are designed
++to take away your freedom to share and change the works.  By contrast,
++the GNU General Public License is intended to guarantee your freedom to
++share and change all versions of a program--to make sure it remains free
++software for all its users.  We, the Free Software Foundation, use the
++GNU General Public License for most of our software; it applies also to
++any other work released this way by its authors.  You can apply it to
++your programs, too.
++
++  When we speak of free software, we are referring to freedom, not
++price.  Our General Public Licenses are designed to make sure that you
++have the freedom to distribute copies of free software (and charge for
++them if you wish), that you receive source code or can get it if you
++want it, that you can change the software or use pieces of it in new
++free programs, and that you know you can do these things.
++
++  To protect your rights, we need to prevent others from denying you
++these rights or asking you to surrender the rights.  Therefore, you have
++certain responsibilities if you distribute copies of the software, or if
++you modify it: responsibilities to respect the freedom of others.
++
++  For example, if you distribute copies of such a program, whether
++gratis or for a fee, you must pass on to the recipients the same
++freedoms that you received.  You must make sure that they, too, receive
++or can get the source code.  And you must show them these terms so they
++know their rights.
++
++  Developers that use the GNU GPL protect your rights with two steps:
++(1) assert copyright on the software, and (2) offer you this License
++giving you legal permission to copy, distribute and/or modify it.
++
++  For the developers' and authors' protection, the GPL clearly explains
++that there is no warranty for this free software.  For both users' and
++authors' sake, the GPL requires that modified versions be marked as
++changed, so that their problems will not be attributed erroneously to
++authors of previous versions.
++
++  Some devices are designed to deny users access to install or run
++modified versions of the software inside them, although the manufacturer
++can do so.  This is fundamentally incompatible with the aim of
++protecting users' freedom to change the software.  The systematic
++pattern of such abuse occurs in the area of products for individuals to
++use, which is precisely where it is most unacceptable.  Therefore, we
++have designed this version of the GPL to prohibit the practice for those
++products.  If such problems arise substantially in other domains, we
++stand ready to extend this provision to those domains in future versions
++of the GPL, as needed to protect the freedom of users.
++
++  Finally, every program is threatened constantly by software patents.
++States should not allow patents to restrict development and use of
++software on general-purpose computers, but in those that do, we wish to
++avoid the special danger that patents applied to a free program could
++make it effectively proprietary.  To prevent this, the GPL assures that
++patents cannot be used to render the program non-free.
++
++  The precise terms and conditions for copying, distribution and
++modification follow.
++
++                       TERMS AND CONDITIONS
++
++  0. Definitions.
++
++  "This License" refers to version 3 of the GNU General Public License.
++
++  "Copyright" also means copyright-like laws that apply to other kinds of
++works, such as semiconductor masks.
++
++  "The Program" refers to any copyrightable work licensed under this
++License.  Each licensee is addressed as "you".  "Licensees" and
++"recipients" may be individuals or organizations.
++
++  To "modify" a work means to copy from or adapt all or part of the work
++in a fashion requiring copyright permission, other than the making of an
++exact copy.  The resulting work is called a "modified version" of the
++earlier work or a work "based on" the earlier work.
++
++  A "covered work" means either the unmodified Program or a work based
++on the Program.
++
++  To "propagate" a work means to do anything with it that, without
++permission, would make you directly or secondarily liable for
++infringement under applicable copyright law, except executing it on a
++computer or modifying a private copy.  Propagation includes copying,
++distribution (with or without modification), making available to the
++public, and in some countries other activities as well.
++
++  To "convey" a work means any kind of propagation that enables other
++parties to make or receive copies.  Mere interaction with a user through
++a computer network, with no transfer of a copy, is not conveying.
++
++  An interactive user interface displays "Appropriate Legal Notices"
++to the extent that it includes a convenient and prominently visible
++feature that (1) displays an appropriate copyright notice, and (2)
++tells the user that there is no warranty for the work (except to the
++extent that warranties are provided), that licensees may convey the
++work under this License, and how to view a copy of this License.  If
++the interface presents a list of user commands or options, such as a
++menu, a prominent item in the list meets this criterion.
++
++  1. Source Code.
++
++  The "source code" for a work means the preferred form of the work
++for making modifications to it.  "Object code" means any non-source
++form of a work.
++
++  A "Standard Interface" means an interface that either is an official
++standard defined by a recognized standards body, or, in the case of
++interfaces specified for a particular programming language, one that
++is widely used among developers working in that language.
++
++  The "System Libraries" of an executable work include anything, other
++than the work as a whole, that (a) is included in the normal form of
++packaging a Major Component, but which is not part of that Major
++Component, and (b) serves only to enable use of the work with that
++Major Component, or to implement a Standard Interface for which an
++implementation is available to the public in source code form.  A
++"Major Component", in this context, means a major essential component
++(kernel, window system, and so on) of the specific operating system
++(if any) on which the executable work runs, or a compiler used to
++produce the work, or an object code interpreter used to run it.
++
++  The "Corresponding Source" for a work in object code form means all
++the source code needed to generate, install, and (for an executable
++work) run the object code and to modify the work, including scripts to
++control those activities.  However, it does not include the work's
++System Libraries, or general-purpose tools or generally available free
++programs which are used unmodified in performing those activities but
++which are not part of the work.  For example, Corresponding Source
++includes interface definition files associated with source files for
++the work, and the source code for shared libraries and dynamically
++linked subprograms that the work is specifically designed to require,
++such as by intimate data communication or control flow between those
++subprograms and other parts of the work.
++
++  The Corresponding Source need not include anything that users
++can regenerate automatically from other parts of the Corresponding
++Source.
++
++  The Corresponding Source for a work in source code form is that
++same work.
++
++  2. Basic Permissions.
++
++  All rights granted under this License are granted for the term of
++copyright on the Program, and are irrevocable provided the stated
++conditions are met.  This License explicitly affirms your unlimited
++permission to run the unmodified Program.  The output from running a
++covered work is covered by this License only if the output, given its
++content, constitutes a covered work.  This License acknowledges your
++rights of fair use or other equivalent, as provided by copyright law.
++
++  You may make, run and propagate covered works that you do not
++convey, without conditions so long as your license otherwise remains
++in force.  You may convey covered works to others for the sole purpose
++of having them make modifications exclusively for you, or provide you
++with facilities for running those works, provided that you comply with
++the terms of this License in conveying all material for which you do
++not control copyright.  Those thus making or running the covered works
++for you must do so exclusively on your behalf, under your direction
++and control, on terms that prohibit them from making any copies of
++your copyrighted material outside their relationship with you.
++
++  Conveying under any other circumstances is permitted solely under
++the conditions stated below.  Sublicensing is not allowed; section 10
++makes it unnecessary.
++
++  3. Protecting Users' Legal Rights From Anti-Circumvention Law.
++
++  No covered work shall be deemed part of an effective technological
++measure under any applicable law fulfilling obligations under article
++11 of the WIPO copyright treaty adopted on 20 December 1996, or
++similar laws prohibiting or restricting circumvention of such
++measures.
++
++  When you convey a covered work, you waive any legal power to forbid
++circumvention of technological measures to the extent such circumvention
++is effected by exercising rights under this License with respect to
++the covered work, and you disclaim any intention to limit operation or
++modification of the work as a means of enforcing, against the work's
++users, your or third parties' legal rights to forbid circumvention of
++technological measures.
++
++  4. Conveying Verbatim Copies.
++
++  You may convey verbatim copies of the Program's source code as you
++receive it, in any medium, provided that you conspicuously and
++appropriately publish on each copy an appropriate copyright notice;
++keep intact all notices stating that this License and any
++non-permissive terms added in accord with section 7 apply to the code;
++keep intact all notices of the absence of any warranty; and give all
++recipients a copy of this License along with the Program.
++
++  You may charge any price or no price for each copy that you convey,
++and you may offer support or warranty protection for a fee.
++
++  5. Conveying Modified Source Versions.
++
++  You may convey a work based on the Program, or the modifications to
++produce it from the Program, in the form of source code under the
++terms of section 4, provided that you also meet all of these conditions:
++
++    a) The work must carry prominent notices stating that you modified
++    it, and giving a relevant date.
++
++    b) The work must carry prominent notices stating that it is
++    released under this License and any conditions added under section
++    7.  This requirement modifies the requirement in section 4 to
++    "keep intact all notices".
++
++    c) You must license the entire work, as a whole, under this
++    License to anyone who comes into possession of a copy.  This
++    License will therefore apply, along with any applicable section 7
++    additional terms, to the whole of the work, and all its parts,
++    regardless of how they are packaged.  This License gives no
++    permission to license the work in any other way, but it does not
++    invalidate such permission if you have separately received it.
++
++    d) If the work has interactive user interfaces, each must display
++    Appropriate Legal Notices; however, if the Program has interactive
++    interfaces that do not display Appropriate Legal Notices, your
++    work need not make them do so.
++
++  A compilation of a covered work with other separate and independent
++works, which are not by their nature extensions of the covered work,
++and which are not combined with it such as to form a larger program,
++in or on a volume of a storage or distribution medium, is called an
++"aggregate" if the compilation and its resulting copyright are not
++used to limit the access or legal rights of the compilation's users
++beyond what the individual works permit.  Inclusion of a covered work
++in an aggregate does not cause this License to apply to the other
++parts of the aggregate.
++
++  6. Conveying Non-Source Forms.
++
++  You may convey a covered work in object code form under the terms
++of sections 4 and 5, provided that you also convey the
++machine-readable Corresponding Source under the terms of this License,
++in one of these ways:
++
++    a) Convey the object code in, or embodied in, a physical product
++    (including a physical distribution medium), accompanied by the
++    Corresponding Source fixed on a durable physical medium
++    customarily used for software interchange.
++
++    b) Convey the object code in, or embodied in, a physical product
++    (including a physical distribution medium), accompanied by a
++    written offer, valid for at least three years and valid for as
++    long as you offer spare parts or customer support for that product
++    model, to give anyone who possesses the object code either (1) a
++    copy of the Corresponding Source for all the software in the
++    product that is covered by this License, on a durable physical
++    medium customarily used for software interchange, for a price no
++    more than your reasonable cost of physically performing this
++    conveying of source, or (2) access to copy the
++    Corresponding Source from a network server at no charge.
++
++    c) Convey individual copies of the object code with a copy of the
++    written offer to provide the Corresponding Source.  This
++    alternative is allowed only occasionally and noncommercially, and
++    only if you received the object code with such an offer, in accord
++    with subsection 6b.
++
++    d) Convey the object code by offering access from a designated
++    place (gratis or for a charge), and offer equivalent access to the
++    Corresponding Source in the same way through the same place at no
++    further charge.  You need not require recipients to copy the
++    Corresponding Source along with the object code.  If the place to
++    copy the object code is a network server, the Corresponding Source
++    may be on a different server (operated by you or a third party)
++    that supports equivalent copying facilities, provided you maintain
++    clear directions next to the object code saying where to find the
++    Corresponding Source.  Regardless of what server hosts the
++    Corresponding Source, you remain obligated to ensure that it is
++    available for as long as needed to satisfy these requirements.
++
++    e) Convey the object code using peer-to-peer transmission, provided
++    you inform other peers where the object code and Corresponding
++    Source of the work are being offered to the general public at no
++    charge under subsection 6d.
++
++  A separable portion of the object code, whose source code is excluded
++from the Corresponding Source as a System Library, need not be
++included in conveying the object code work.
++
++  A "User Product" is either (1) a "consumer product", which means any
++tangible personal property which is normally used for personal, family,
++or household purposes, or (2) anything designed or sold for incorporation
++into a dwelling.  In determining whether a product is a consumer product,
++doubtful cases shall be resolved in favor of coverage.  For a particular
++product received by a particular user, "normally used" refers to a
++typical or common use of that class of product, regardless of the status
++of the particular user or of the way in which the particular user
++actually uses, or expects or is expected to use, the product.  A product
++is a consumer product regardless of whether the product has substantial
++commercial, industrial or non-consumer uses, unless such uses represent
++the only significant mode of use of the product.
++
++  "Installation Information" for a User Product means any methods,
++procedures, authorization keys, or other information required to install
++and execute modified versions of a covered work in that User Product from
++a modified version of its Corresponding Source.  The information must
++suffice to ensure that the continued functioning of the modified object
++code is in no case prevented or interfered with solely because
++modification has been made.
++
++  If you convey an object code work under this section in, or with, or
++specifically for use in, a User Product, and the conveying occurs as
++part of a transaction in which the right of possession and use of the
++User Product is transferred to the recipient in perpetuity or for a
++fixed term (regardless of how the transaction is characterized), the
++Corresponding Source conveyed under this section must be accompanied
++by the Installation Information.  But this requirement does not apply
++if neither you nor any third party retains the ability to install
++modified object code on the User Product (for example, the work has
++been installed in ROM).
++
++  The requirement to provide Installation Information does not include a
++requirement to continue to provide support service, warranty, or updates
++for a work that has been modified or installed by the recipient, or for
++the User Product in which it has been modified or installed.  Access to a
++network may be denied when the modification itself materially and
++adversely affects the operation of the network or violates the rules and
++protocols for communication across the network.
++
++  Corresponding Source conveyed, and Installation Information provided,
++in accord with this section must be in a format that is publicly
++documented (and with an implementation available to the public in
++source code form), and must require no special password or key for
++unpacking, reading or copying.
++
++  7. Additional Terms.
++
++  "Additional permissions" are terms that supplement the terms of this
++License by making exceptions from one or more of its conditions.
++Additional permissions that are applicable to the entire Program shall
++be treated as though they were included in this License, to the extent
++that they are valid under applicable law.  If additional permissions
++apply only to part of the Program, that part may be used separately
++under those permissions, but the entire Program remains governed by
++this License without regard to the additional permissions.
++
++  When you convey a copy of a covered work, you may at your option
++remove any additional permissions from that copy, or from any part of
++it.  (Additional permissions may be written to require their own
++removal in certain cases when you modify the work.)  You may place
++additional permissions on material, added by you to a covered work,
++for which you have or can give appropriate copyright permission.
++
++  Notwithstanding any other provision of this License, for material you
++add to a covered work, you may (if authorized by the copyright holders of
++that material) supplement the terms of this License with terms:
++
++    a) Disclaiming warranty or limiting liability differently from the
++    terms of sections 15 and 16 of this License; or
++
++    b) Requiring preservation of specified reasonable legal notices or
++    author attributions in that material or in the Appropriate Legal
++    Notices displayed by works containing it; or
++
++    c) Prohibiting misrepresentation of the origin of that material, or
++    requiring that modified versions of such material be marked in
++    reasonable ways as different from the original version; or
++
++    d) Limiting the use for publicity purposes of names of licensors or
++    authors of the material; or
++
++    e) Declining to grant rights under trademark law for use of some
++    trade names, trademarks, or service marks; or
++
++    f) Requiring indemnification of licensors and authors of that
++    material by anyone who conveys the material (or modified versions of
++    it) with contractual assumptions of liability to the recipient, for
++    any liability that these contractual assumptions directly impose on
++    those licensors and authors.
++
++  All other non-permissive additional terms are considered "further
++restrictions" within the meaning of section 10.  If the Program as you
++received it, or any part of it, contains a notice stating that it is
++governed by this License along with a term that is a further
++restriction, you may remove that term.  If a license document contains
++a further restriction but permits relicensing or conveying under this
++License, you may add to a covered work material governed by the terms
++of that license document, provided that the further restriction does
++not survive such relicensing or conveying.
++
++  If you add terms to a covered work in accord with this section, you
++must place, in the relevant source files, a statement of the
++additional terms that apply to those files, or a notice indicating
++where to find the applicable terms.
++
++  Additional terms, permissive or non-permissive, may be stated in the
++form of a separately written license, or stated as exceptions;
++the above requirements apply either way.
++
++  8. Termination.
++
++  You may not propagate or modify a covered work except as expressly
++provided under this License.  Any attempt otherwise to propagate or
++modify it is void, and will automatically terminate your rights under
++this License (including any patent licenses granted under the third
++paragraph of section 11).
++
++  However, if you cease all violation of this License, then your
++license from a particular copyright holder is reinstated (a)
++provisionally, unless and until the copyright holder explicitly and
++finally terminates your license, and (b) permanently, if the copyright
++holder fails to notify you of the violation by some reasonable means
++prior to 60 days after the cessation.
++
++  Moreover, your license from a particular copyright holder is
++reinstated permanently if the copyright holder notifies you of the
++violation by some reasonable means, this is the first time you have
++received notice of violation of this License (for any work) from that
++copyright holder, and you cure the violation prior to 30 days after
++your receipt of the notice.
++
++  Termination of your rights under this section does not terminate the
++licenses of parties who have received copies or rights from you under
++this License.  If your rights have been terminated and not permanently
++reinstated, you do not qualify to receive new licenses for the same
++material under section 10.
++
++  9. Acceptance Not Required for Having Copies.
++
++  You are not required to accept this License in order to receive or
++run a copy of the Program.  Ancillary propagation of a covered work
++occurring solely as a consequence of using peer-to-peer transmission
++to receive a copy likewise does not require acceptance.  However,
++nothing other than this License grants you permission to propagate or
++modify any covered work.  These actions infringe copyright if you do
++not accept this License.  Therefore, by modifying or propagating a
++covered work, you indicate your acceptance of this License to do so.
++
++  10. Automatic Licensing of Downstream Recipients.
++
++  Each time you convey a covered work, the recipient automatically
++receives a license from the original licensors, to run, modify and
++propagate that work, subject to this License.  You are not responsible
++for enforcing compliance by third parties with this License.
++
++  An "entity transaction" is a transaction transferring control of an
++organization, or substantially all assets of one, or subdividing an
++organization, or merging organizations.  If propagation of a covered
++work results from an entity transaction, each party to that
++transaction who receives a copy of the work also receives whatever
++licenses to the work the party's predecessor in interest had or could
++give under the previous paragraph, plus a right to possession of the
++Corresponding Source of the work from the predecessor in interest, if
++the predecessor has it or can get it with reasonable efforts.
++
++  You may not impose any further restrictions on the exercise of the
++rights granted or affirmed under this License.  For example, you may
++not impose a license fee, royalty, or other charge for exercise of
++rights granted under this License, and you may not initiate litigation
++(including a cross-claim or counterclaim in a lawsuit) alleging that
++any patent claim is infringed by making, using, selling, offering for
++sale, or importing the Program or any portion of it.
++
++  11. Patents.
++
++  A "contributor" is a copyright holder who authorizes use under this
++License of the Program or a work on which the Program is based.  The
++work thus licensed is called the contributor's "contributor version".
++
++  A contributor's "essential patent claims" are all patent claims
++owned or controlled by the contributor, whether already acquired or
++hereafter acquired, that would be infringed by some manner, permitted
++by this License, of making, using, or selling its contributor version,
++but do not include claims that would be infringed only as a
++consequence of further modification of the contributor version.  For
++purposes of this definition, "control" includes the right to grant
++patent sublicenses in a manner consistent with the requirements of
++this License.
++
++  Each contributor grants you a non-exclusive, worldwide, royalty-free
++patent license under the contributor's essential patent claims, to
++make, use, sell, offer for sale, import and otherwise run, modify and
++propagate the contents of its contributor version.
++
++  In the following three paragraphs, a "patent license" is any express
++agreement or commitment, however denominated, not to enforce a patent
++(such as an express permission to practice a patent or covenant not to
++sue for patent infringement).  To "grant" such a patent license to a
++party means to make such an agreement or commitment not to enforce a
++patent against the party.
++
++  If you convey a covered work, knowingly relying on a patent license,
++and the Corresponding Source of the work is not available for anyone
++to copy, free of charge and under the terms of this License, through a
++publicly available network server or other readily accessible means,
++then you must either (1) cause the Corresponding Source to be so
++available, or (2) arrange to deprive yourself of the benefit of the
++patent license for this particular work, or (3) arrange, in a manner
++consistent with the requirements of this License, to extend the patent
++license to downstream recipients.  "Knowingly relying" means you have
++actual knowledge that, but for the patent license, your conveying the
++covered work in a country, or your recipient's use of the covered work
++in a country, would infringe one or more identifiable patents in that
++country that you have reason to believe are valid.
++
++  If, pursuant to or in connection with a single transaction or
++arrangement, you convey, or propagate by procuring conveyance of, a
++covered work, and grant a patent license to some of the parties
++receiving the covered work authorizing them to use, propagate, modify
++or convey a specific copy of the covered work, then the patent license
++you grant is automatically extended to all recipients of the covered
++work and works based on it.
++
++  A patent license is "discriminatory" if it does not include within
++the scope of its coverage, prohibits the exercise of, or is
++conditioned on the non-exercise of one or more of the rights that are
++specifically granted under this License.  You may not convey a covered
++work if you are a party to an arrangement with a third party that is
++in the business of distributing software, under which you make payment
++to the third party based on the extent of your activity of conveying
++the work, and under which the third party grants, to any of the
++parties who would receive the covered work from you, a discriminatory
++patent license (a) in connection with copies of the covered work
++conveyed by you (or copies made from those copies), or (b) primarily
++for and in connection with specific products or compilations that
++contain the covered work, unless you entered into that arrangement,
++or that patent license was granted, prior to 28 March 2007.
++
++  Nothing in this License shall be construed as excluding or limiting
++any implied license or other defenses to infringement that may
++otherwise be available to you under applicable patent law.
++
++  12. No Surrender of Others' Freedom.
++
++  If conditions are imposed on you (whether by court order, agreement or
++otherwise) that contradict the conditions of this License, they do not
++excuse you from the conditions of this License.  If you cannot convey a
++covered work so as to satisfy simultaneously your obligations under this
++License and any other pertinent obligations, then as a consequence you may
++not convey it at all.  For example, if you agree to terms that obligate you
++to collect a royalty for further conveying from those to whom you convey
++the Program, the only way you could satisfy both those terms and this
++License would be to refrain entirely from conveying the Program.
++
++  13. Use with the GNU Affero General Public License.
++
++  Notwithstanding any other provision of this License, you have
++permission to link or combine any covered work with a work licensed
++under version 3 of the GNU Affero General Public License into a single
++combined work, and to convey the resulting work.  The terms of this
++License will continue to apply to the part which is the covered work,
++but the special requirements of the GNU Affero General Public License,
++section 13, concerning interaction through a network will apply to the
++combination as such.
++
++  14. Revised Versions of this License.
++
++  The Free Software Foundation may publish revised and/or new versions of
++the GNU General Public License from time to time.  Such new versions will
++be similar in spirit to the present version, but may differ in detail to
++address new problems or concerns.
++
++  Each version is given a distinguishing version number.  If the
++Program specifies that a certain numbered version of the GNU General
++Public License "or any later version" applies to it, you have the
++option of following the terms and conditions either of that numbered
++version or of any later version published by the Free Software
++Foundation.  If the Program does not specify a version number of the
++GNU General Public License, you may choose any version ever published
++by the Free Software Foundation.
++
++  If the Program specifies that a proxy can decide which future
++versions of the GNU General Public License can be used, that proxy's
++public statement of acceptance of a version permanently authorizes you
++to choose that version for the Program.
++
++  Later license versions may give you additional or different
++permissions.  However, no additional obligations are imposed on any
++author or copyright holder as a result of your choosing to follow a
++later version.
++
++  15. Disclaimer of Warranty.
++
++  THERE IS NO WARRANTY FOR THE PROGRAM, TO THE EXTENT PERMITTED BY
++APPLICABLE LAW.  EXCEPT WHEN OTHERWISE STATED IN WRITING THE COPYRIGHT
++HOLDERS AND/OR OTHER PARTIES PROVIDE THE PROGRAM "AS IS" WITHOUT WARRANTY
++OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING, BUT NOT LIMITED TO,
++THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
++PURPOSE.  THE ENTIRE RISK AS TO THE QUALITY AND PERFORMANCE OF THE PROGRAM
++IS WITH YOU.  SHOULD THE PROGRAM PROVE DEFECTIVE, YOU ASSUME THE COST OF
++ALL NECESSARY SERVICING, REPAIR OR CORRECTION.
++
++  16. Limitation of Liability.
++
++  IN NO EVENT UNLESS REQUIRED BY APPLICABLE LAW OR AGREED TO IN WRITING
++WILL ANY COPYRIGHT HOLDER, OR ANY OTHER PARTY WHO MODIFIES AND/OR CONVEYS
++THE PROGRAM AS PERMITTED ABOVE, BE LIABLE TO YOU FOR DAMAGES, INCLUDING ANY
++GENERAL, SPECIAL, INCIDENTAL OR CONSEQUENTIAL DAMAGES ARISING OUT OF THE
++USE OR INABILITY TO USE THE PROGRAM (INCLUDING BUT NOT LIMITED TO LOSS OF
++DATA OR DATA BEING RENDERED INACCURATE OR LOSSES SUSTAINED BY YOU OR THIRD
++PARTIES OR A FAILURE OF THE PROGRAM TO OPERATE WITH ANY OTHER PROGRAMS),
++EVEN IF SUCH HOLDER OR OTHER PARTY HAS BEEN ADVISED OF THE POSSIBILITY OF
++SUCH DAMAGES.
++
++  17. Interpretation of Sections 15 and 16.
++
++  If the disclaimer of warranty and limitation of liability provided
++above cannot be given local legal effect according to their terms,
++reviewing courts shall apply local law that most closely approximates
++an absolute waiver of all civil liability in connection with the
++Program, unless a warranty or assumption of liability accompanies a
++copy of the Program in return for a fee.
++
++                     END OF TERMS AND CONDITIONS
++
++            How to Apply These Terms to Your New Programs
++
++  If you develop a new program, and you want it to be of the greatest
++possible use to the public, the best way to achieve this is to make it
++free software which everyone can redistribute and change under these terms.
++
++  To do so, attach the following notices to the program.  It is safest
++to attach them to the start of each source file to most effectively
++state the exclusion of warranty; and each file should have at least
++the "copyright" line and a pointer to where the full notice is found.
++
++    <one line to give the program's name and a brief idea of what it does.>
++    Copyright (C) <year>  <name of author>
++
++    This program is free software: you can redistribute it and/or modify
++    it under the terms of the GNU General Public License as published by
++    the Free Software Foundation, either version 3 of the License, or
++    (at your option) any later version.
++
++    This program is distributed in the hope that it will be useful,
++    but WITHOUT ANY WARRANTY; without even the implied warranty of
++    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++    GNU General Public License for more details.
++
++    You should have received a copy of the GNU General Public License
++    along with this program.  If not, see <http://www.gnu.org/licenses/>.
++
++Also add information on how to contact you by electronic and paper mail.
++
++  If the program does terminal interaction, make it output a short
++notice like this when it starts in an interactive mode:
++
++    <program>  Copyright (C) <year>  <name of author>
++    This program comes with ABSOLUTELY NO WARRANTY; for details type `show w'.
++    This is free software, and you are welcome to redistribute it
++    under certain conditions; type `show c' for details.
++
++The hypothetical commands `show w' and `show c' should show the appropriate
++parts of the General Public License.  Of course, your program's commands
++might be different; for a GUI interface, you would use an "about box".
++
++  You should also get your employer (if you work as a programmer) or school,
++if any, to sign a "copyright disclaimer" for the program, if necessary.
++For more information on this, and how to apply and follow the GNU GPL, see
++<http://www.gnu.org/licenses/>.
++
++  The GNU General Public License does not permit incorporating your program
++into proprietary programs.  If your program is a subroutine library, you
++may consider it more useful to permit linking proprietary applications with
++the library.  If this is what you want to do, use the GNU Lesser General
++Public License instead of this License.  But first, please read
++<http://www.gnu.org/philosophy/why-not-lgpl.html>.
+diff --git a/lib/editor/atto/plugins/styles/README.md b/lib/editor/atto/plugins/styles/README.md
+new file mode 100644
+index 0000000..c1a1ac1
+--- /dev/null
++++ b/lib/editor/atto/plugins/styles/README.md
+@@ -0,0 +1,164 @@
++moodle-atto_styles
++==================
++
++[![Build Status](https://travis-ci.org/moodleuulm/moodle-atto_styles.svg?branch=master)](https://travis-ci.org/moodleuulm/moodle-atto_styles)
++
++Moodle Atto plugin which lets the administrator provide custom CSS classes which can afterwards be applied by users to block and inline text in Atto
++
++
++Requirements
++------------
++
++This plugin requires Moodle 3.2+
++
++
++Motivation for this plugin
++--------------------------
++
++The purpose of this Atto plugin is to let users apply custom CSS classes to block and inline text.
++
++
++Installation
++------------
++
++Install the plugin like any other plugin to folder
++/lib/editor/atto/plugins/styles
++
++See http://docs.moodle.org/en/Installing_plugins for details on installing Moodle plugins
++
++
++Usage & Settings
++----------------
++
++After installing the plugin, it does not do anything to Moodle yet.
++
++To configure the plugin and its behaviour, you will have to do three configuration steps to take advantage of this plugin:
++
++### 1. Configure CSS classes
++
++The CSS class definitions which are applied to text within Atto can't be made within this plugin. You will have to add your CSS class definitions to your theme (See https://docs.moodle.org/en/Theme_settings#Particular_theme_settings for details) or Moodle additional HTML settings (See https://docs.moodle.org/en/Header_and_footer for details).
++
++### 2. Configure styles widget
++
++atto_styles will have to know which CSS classes you want to provide in the Atto styles widget and how they should be called in the widget.
++
++Please visit Site administration -> Plugins -> Text editors -> Atto HTML editor -> Styles settings.
++
++There, simply follow the instructions and configure the widget according to your needs.
++
++### 3. Add styles widget to Atto toolbar
++
++atto_styles has to be added to the Atto toolbar before it can be used by users.
++
++Please visit Site administration -> Plugins -> Text editors -> Atto HTML editor -> Atto toolbar settings.
++
++There, please add the "styles" keyword to one of the lines in the "editor_atto | toolbar" setting according to your needs.
++
++If you are using a default Atto toolbar, we propose to change "style1 = title, bold, italic" to "style1 = title, styles, bold, italic"
++
++
++Multilangugae filter support
++---------------------------
++
++Within the styles configuration, a title can support the Moodle multilang filter (if enabled), but additonal double-quotes will need to be escaped with a backslash.
++
++For example:
++```
++"title": <span class=\"multilang\" lang=\"en\">Blue box</span><span class=\"multilang\" lang=\"de\">Blaue Box</span>"
++```
++
++
++Theme support
++-------------
++
++This plugin should work with all Bootstrap based Moodle themes.
++It has been developed on and tested with Moodle Core's Clean and Boost themes.
++
++
++Plugin repositories
++-------------------
++
++This plugin is published and regularly updated in the Moodle plugins repository:
++http://moodle.org/plugins/view/atto_styles
++
++The latest development version can be found on Github:
++https://github.com/moodleuulm/moodle-atto_styles
++
++
++Bug and problem reports / Support requests
++------------------------------------------
++
++This plugin is carefully developed and thoroughly tested, but bugs and problems can always appear.
++
++Please report bugs and problems on Github:
++https://github.com/moodleuulm/moodle-atto_styles/issues
++
++We will do our best to solve your problems, but please note that due to limited resources we can't always provide per-case support.
++
++
++Feature proposals
++-----------------
++
++Due to limited resources, the functionality of this plugin is primarily implemented for our own local needs and published as-is to the community. We are aware that members of the community will have other needs and would love to see them solved by this plugin.
++
++Please issue feature proposals on Github:
++https://github.com/moodleuulm/moodle-atto_styles/issues
++
++Please create pull requests on Github:
++https://github.com/moodleuulm/moodle-atto_styles/pulls
++
++We are always interested to read about your feature proposals or even get a pull request from you, but please accept that we can handle your issues only as feature _proposals_ and not as feature _requests_.
++
++
++Moodle release support
++----------------------
++
++Due to limited resources, this plugin is only maintained for the most recent major release of Moodle. However, previous versions of this plugin which work in legacy major releases of Moodle are still available as-is without any further updates in the Moodle Plugins repository.
++
++There may be several weeks after a new major release of Moodle has been published until we can do a compatibility check and fix problems if necessary. If you encounter problems with a new major release of Moodle - or can confirm that this plugin still works with a new major relase - please let us know on Github.
++
++If you are running a legacy version of Moodle, but want or need to run the latest version of this plugin, you can get the latest version of the plugin, remove the line starting with $plugin->requires from version.php and use this latest plugin version then on your legacy Moodle. However, please note that you will run this setup completely at your own risk. We can't support this approach in any way and there is a undeniable risk for erratic behavior.
++
++
++Translating this plugin
++-----------------------
++
++This Moodle plugin is shipped with an english language pack only. All translations into other languages must be managed through AMOS (https://lang.moodle.org) by what they will become part of Moodle's official language pack.
++
++As the plugin creator, we manage the translation into german for our own local needs on AMOS. Please contribute your translation into all other languages in AMOS where they will be reviewed by the official language pack maintainers for Moodle.
++
++
++Right-to-left support
++---------------------
++
++This plugin has not been tested with Moodle's support for right-to-left (RTL) languages.
++If you want to use this plugin with a RTL language and it doesn't work as-is, you are free to send us a pull request on Github with modifications.
++
++
++PHP7 Support
++------------
++
++Since Moodle 3.0, Moodle core basically supports PHP7.
++Please note that PHP7 support is on our roadmap for this plugin, but it has not yet been thoroughly tested for PHP7 support and we are still running it in production on PHP5.
++If you encounter any success or failure with this plugin and PHP7, please let us know.
++
++
++Copyright
++---------
++
++Andrew Davidson
++Synergy Learning UK
++www.synergy-learning.com
++
++on behalf of
++
++Ulm University
++kiz - Media Department
++Team Web & Teaching Support
++Alexander Bias
++
++
++Credits
++-------
++
++This Atto plugin was inspired by the custom styles functionality which was present in TinyMCE.
+diff --git a/lib/editor/atto/plugins/styles/lang/en/atto_styles.php b/lib/editor/atto/plugins/styles/lang/en/atto_styles.php
+new file mode 100644
+index 0000000..5d440b4
+--- /dev/null
++++ b/lib/editor/atto/plugins/styles/lang/en/atto_styles.php
+@@ -0,0 +1,86 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++/**
++ * Atto styles - Language file
++ *
++ * @package    atto_styles
++ * @copyright  2015 Andrew Davidson, Synergy Learning UK <andrew.davidson@synergy-learning.com> on behalf of Alexander Bias, Ulm University <alexander.bias@uni-ulm.de>
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++$string['config'] = 'Styles configuration';
++$string['config_desc'] = 'Configuration for the styles widget for Atto in JSON format.
++<hr />
++For example:<br />
++{<br />
++&nbsp;&nbsp;&nbsp;&nbsp;"title": "Blue box",<br />
++&nbsp;&nbsp;&nbsp;&nbsp;"type": "block",<br />
++&nbsp;&nbsp;&nbsp;&nbsp;"classes": "box blue"<br />
++},{<br />
++&nbsp;&nbsp;&nbsp;&nbsp;"title": "Red text",<br />
++&nbsp;&nbsp;&nbsp;&nbsp;"type": "inline",<br />
++&nbsp;&nbsp;&nbsp;&nbsp;"classes": "red"<br />
++}<br />
++<hr />
++The <em>title</em> attribute defines the name for style within the Atto styles widget.<br />
++<br />
++A title can also support the Moodle multilang filter (if enabled), but additonal double-quotes will need to be escaped with a backslash.<br />
++Please have a look at the plugin’s README file for an example.<br />
++<hr />
++The <em>type</em> attribute can contain one of two values: "block" or "inline".<br />
++<br />
++"block" will create a div tag with the given class(es) and will act as a standard block level element. This will take over the current block level element and may apply to more than just the currently selected text.<br />
++<br />
++"inline" will create a span tag with the given class(es) and will act as a standard inline element. This will only apply to the currently selected text.
++<hr />
++The <em>classes</em> attribute takes the CSS class name which will be applied to the block / inline text.<br />
++<br />
++Multiple classes can be defined for each item, separated by a space. They will all be applied to the block / inline text.<br />
++<br />
++The CSS class definitions can\'t be made within this plugin. You will have to add your CSS class definitions to your theme or Moodle additional HTML settings.
++<hr />
++On Moodle installations with bootstrap-based themes (especially <em>Boost</em>, <em>More</em> and <em>Clean</em>, you can also create styles with bootstrap CSS classes instead of defining your own classes.
++<br /><br />
++For example:<br />
++{<br />
++&nbsp;&nbsp;&nbsp;&nbsp;"title": "Success alert",<br />
++&nbsp;&nbsp;&nbsp;&nbsp;"type": "block",<br />
++&nbsp;&nbsp;&nbsp;&nbsp;"classes": "alert alert-success"<br />
++},{<br />
++&nbsp;&nbsp;&nbsp;&nbsp;"title": "Info badge",<br />
++&nbsp;&nbsp;&nbsp;&nbsp;"type": "inline",<br />
++&nbsp;&nbsp;&nbsp;&nbsp;"classes": "badge badge-info"<br />
++},{<br />
++&nbsp;&nbsp;&nbsp;&nbsp;"title": "Warning badge",<br />
++&nbsp;&nbsp;&nbsp;&nbsp;"type": "inline",<br />
++&nbsp;&nbsp;&nbsp;&nbsp;"classes": "badge badge-warning"<br />
++}<br /><br />
++For more information about bootstrap classes, please visit the following links in the Bootstrap 2.3 documenation (for <em>Clean</em> and <em>More</em>):
++<ul>
++<li><a href="http://getbootstrap.com/2.3.2/components.html#labels-badges">Bootstrap labels and badges</a></li>
++<li><a href="http://getbootstrap.com/2.3.2/components.html#alerts">Bootstrap alerts</a></li>
++<li><a href="http://getbootstrap.com/2.3.2/components.html#misc">Bootstrap helper classes</a></li>
++</ul>
++or in the Bootstrap 4 documenation (for <em>Boost</em>):
++<ul>
++<li><a href="http://v4-alpha.getbootstrap.com/components/badge/">Bootstrap badges</a></li>
++<li><a href="http://v4-alpha.getbootstrap.com/components/alerts/">Bootstrap alerts</a></li>
++<li><a href="http://v4-alpha.getbootstrap.com/utilities/">Bootstrap utilities</a></li>
++</ul>';
++$string['nostyle'] = 'No style';
++$string['pluginname'] = 'Styles';
++$string['settings'] = 'Styles settings';
+diff --git a/lib/editor/atto/plugins/styles/lib.php b/lib/editor/atto/plugins/styles/lib.php
+new file mode 100644
+index 0000000..82fd70a
+--- /dev/null
++++ b/lib/editor/atto/plugins/styles/lib.php
+@@ -0,0 +1,59 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++/**
++ * Atto styles - Library
++ *
++ * @package    atto_styles
++ * @copyright  2015 Andrew Davidson, Synergy Learning UK <andrew.davidson@synergy-learning.com>
++               on behalf of Alexander Bias, Ulm University <alexander.bias@uni-ulm.de>
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++defined('MOODLE_INTERNAL') || die();
++
++/**
++ * Set params for this plugin.
++ *
++ * @param string $elementid
++ * @param stdClass $options - the options for the editor, including the context.
++ * @param stdClass $fpoptions - unused.
++ */
++function atto_styles_params_for_js($elementid, $options, $fpoptions) {
++
++    // Format a string with the active filter set.
++    // If it is modified - we assume that some sort of text filter is working in this context.
++    $styles = get_config('atto_styles', 'config');
++    $styles = '['.$styles.']';
++
++    $styles = json_decode($styles);
++
++    foreach ($styles as $key => $style) {
++        $styles[$key]->title = format_text($styles[$key]->title);
++        $styles[$key]->title = strip_tags($styles[$key]->title);
++    }
++
++    $nostyle = new stdClass();
++    $nostyle->title = get_string('nostyle', 'atto_styles');
++    $nostyle->type = 'nostyle';
++    $nostyle->classes = 'nostyle';
++
++    array_unshift($styles, $nostyle);
++
++    $styles = json_encode($styles);
++
++    return array('styles' => $styles);
++}
+diff --git a/lib/editor/atto/plugins/styles/pix/block.png b/lib/editor/atto/plugins/styles/pix/block.png
+new file mode 100644
+index 0000000000000000000000000000000000000000..927f19e01f3e3895982b6bcb5d7fb0214982da13
+GIT binary patch
+literal 7069
+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
+F{{!OKe%1g0
+
+literal 0
+HcmV?d00001
+
+diff --git a/lib/editor/atto/plugins/styles/pix/icon.png b/lib/editor/atto/plugins/styles/pix/icon.png
+new file mode 100644
+index 0000000000000000000000000000000000000000..4add4275bcca75a1199cfd75d39424b7eacf37dd
+GIT binary patch
+literal 3384
+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
+O0000<MNUMnLSTZ^3`phx
+
+literal 0
+HcmV?d00001
+
+diff --git a/lib/editor/atto/plugins/styles/pix/inline.png b/lib/editor/atto/plugins/styles/pix/inline.png
+new file mode 100644
+index 0000000000000000000000000000000000000000..f41297a2b844f2c714b7453c899c9d8aa6e03a87
+GIT binary patch
+literal 6916
+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
+JO5QT;e*oCwGUfmP
+
+literal 0
+HcmV?d00001
+
+diff --git a/lib/editor/atto/plugins/styles/settings.php b/lib/editor/atto/plugins/styles/settings.php
+new file mode 100644
+index 0000000..9ed6ac8
+--- /dev/null
++++ b/lib/editor/atto/plugins/styles/settings.php
+@@ -0,0 +1,42 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++/**
++ * Atto styles - Settings file
++ *
++ * @package    atto_styles
++ * @copyright  2015 Andrew Davidson, Synergy Learning UK <andrew.davidson@synergy-learning.com>
++               on behalf of Alexander Bias, Ulm University <alexander.bias@uni-ulm.de>
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++defined('MOODLE_INTERNAL') || die();
++
++$ADMIN->add('editoratto', new admin_category('atto_styles', new lang_string('pluginname', 'atto_styles')));
++
++$settings = new admin_settingpage('atto_styles_settings', new lang_string('settings', 'atto_styles'));
++
++if ($ADMIN->fulltree) {
++    $name = new lang_string('config', 'atto_styles');
++    $desc = new lang_string('config_desc', 'atto_styles');
++    $default = '';
++
++    $setting = new admin_setting_configtextarea('atto_styles/config',
++                                              $name,
++                                              $desc,
++                                              $default);
++    $settings->add($setting);
++}
+diff --git a/lib/editor/atto/plugins/styles/styles.css b/lib/editor/atto/plugins/styles/styles.css
+new file mode 100644
+index 0000000..2fd0552
+--- /dev/null
++++ b/lib/editor/atto/plugins/styles/styles.css
+@@ -0,0 +1,36 @@
++/* Prevent the menu from wrapping the menu items */
++.editor_atto_menu .atto_styles_button .dropdown-menu > li {
++    white-space: nowrap;
++}
++
++/* Position menu item icons */
++.editor_atto_menu .atto_styles_button .dropdown-menu > li > a i {
++    display: inline-block;
++    height: 15px;
++    margin-right: 10px;
++    vertical-align: sub;
++    width: 15px;
++}
++.editor_atto_menu .atto_styles_button .dropdown-menu > li > a i.inlineelement:before {
++    content: url([[pix:atto_styles|inline]]);
++}
++.editor_atto_menu .atto_styles_button .dropdown-menu > li > a i.blockelement:before {
++    content: url([[pix:atto_styles|block]]);
++}
++
++/* Override Atto core paddings for menu items to prevent the disabled inline menu items from showing a hand cursor */
++/* Additionally remove text underline from menu items in this widget because Boost adds underlines to menu items by default
++   but for disabled menu items this is counterproductive */
++.editor_atto_menu .atto_styles_button .dropdown-menu > li > a {
++    padding: 0;
++    text-decoration: none;
++}
++.editor_atto_menu .atto_styles_button .dropdown-menu > li > a span {
++    padding: 3px 14px;
++}
++
++/* Disabled inline style menu item visually */
++.editor_atto_menu .disableinline .atto_styles_button .inlinestyle {
++    color: #ccc;
++    cursor: default;
++}
+diff --git a/lib/editor/atto/plugins/styles/tests/behat/behat_atto_styles.php b/lib/editor/atto/plugins/styles/tests/behat/behat_atto_styles.php
+new file mode 100644
+index 0000000..17f5389
+--- /dev/null
++++ b/lib/editor/atto/plugins/styles/tests/behat/behat_atto_styles.php
+@@ -0,0 +1,56 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++/**
++ * Steps definitions related to atto styles
++ *
++ * @package    atto_styles
++ * @category   test
++ * @copyright  2016 Janek Lasocki-Biczysko <j.lasocki-biczysko@intrallect.com>
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++// NOTE: no MOODLE_INTERNAL test here, this file may be required by behat before including /config.php.
++
++require_once(__DIR__ . '/../../../../../../../lib/behat/behat_base.php');
++
++use Behat\Behat\Context\Step\Given as Given,
++    Behat\Gherkin\Node\PyStringNode as PyStringNode;
++
++/**
++ * Atto styles related step definitions.
++ *
++ * @package    atto_styles
++ * @category   test
++ * @copyright  2016 Janek Lasocki-Biczysko <j.lasocki-biczysko@intrallect.com>
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++class behat_atto_styles extends behat_base {
++
++    /**
++     * Sets the specified value to the field.
++     *
++     * @Given /^the config value "([^"]*)" of "([^"]*)" is set as admin to multiline$/
++     * @param string $name
++     * @param string $component
++     * @param PyStringNode $value
++     * @return void
++     */
++    public function the_config_value_is_set_as_admin_to_multiline($name, $component, PyStringNode $value) {
++        set_config($name, (string) $value, $component);
++    }
++
++}
+diff --git a/lib/editor/atto/plugins/styles/tests/behat/styles.feature b/lib/editor/atto/plugins/styles/tests/behat/styles.feature
+new file mode 100644
+index 0000000..03b6ad8
+--- /dev/null
++++ b/lib/editor/atto/plugins/styles/tests/behat/styles.feature
+@@ -0,0 +1,78 @@
++@editor @editor_atto @atto @atto_styles
++Feature: Atto styles
++  To add and use block and inline styles with one and two classes each
++
++  Background:
++    Given I log in as "admin"
++    And the config value "config" of "atto_styles" is set as admin to multiline
++      """
++      {
++          "title": "Hero unit box",
++          "type": "block",
++          "classes": "hero-unit"
++      },{
++          "title": "Muted Well",
++          "type": "block",
++          "classes": "well text-muted"
++      },{
++          "title": "Float Left",
++          "type": "inline",
++          "classes": "pull-left"
++      },{
++          "title": "Warning text",
++          "type": "inline",
++          "classes": "label label-warning"
++      }
++      """
++    And the config value "toolbar" of "editor_atto" is set as admin to multiline
++      """
++      collapse = collapse
++      style1 = title, styles, bold, italic
++      list = unorderedlist, orderedlist
++      links = link
++      files = image, media, managefiles
++      style2 = underline, strike, subscript, superscript
++      align = align
++      indent = indent
++      insert = equation, charmap, table, clear
++      undo = undo
++      accessibility = accessibilitychecker, accessibilityhelper
++      other = html
++      """
++    And I log out
++
++  @javascript
++  Scenario Outline: Test inline styles with one and two classes
++    Given I log in as "admin"
++    And I open my profile in edit mode
++    And I set the field "Description" to <text>
++    And I select the text in the "Description" Atto editor
++    And I click on "Show more buttons" "button"
++    When I click on "Styles" "button"
++    And I click on <style> "link"
++    And I click on "HTML" "button"
++    Then the field "Description" matches value <html>
++
++    Examples:
++      | text            | style           | html                                                 |
++      | "float"         | "Float Left"    | "<span class=\"pull-left\">float</span>"             |
++      | "warning"       | "Warning text"  | "<span class=\"label label-warning\">warning</span>" |
++
++
++  @javascript
++  Scenario Outline: Test block styles with one and two classes
++    Given I log in as "admin"
++    And I open my profile in edit mode
++    And I set the field "Description" to <text>
++    # No need to select the text in the Atto editor when testing block styles,
++    # as they'll apply to everything if nothing is selected.
++    And I click on "Show more buttons" "button"
++    When I click on "Styles" "button"
++    And I click on <style> "link"
++    And I click on "HTML" "button"
++    Then the field "Description" matches value <html>
++
++    Examples:
++      | text            | style           | html                                                 |
++      | "i'm a hero"    | "Hero unit box" | "<div class=\"hero-unit\">i'm a hero</div>"          |
++      | "help"          | "Muted Well"    | "<div class=\"well text-muted\">help</div>"          |
+diff --git a/lib/editor/atto/plugins/styles/version.php b/lib/editor/atto/plugins/styles/version.php
+new file mode 100644
+index 0000000..9f0ebc5
+--- /dev/null
++++ b/lib/editor/atto/plugins/styles/version.php
+@@ -0,0 +1,32 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++/**
++ * Atto styles - Version file
++ *
++ * @package    atto_styles
++ * @copyright  2015 Andrew Davidson, Synergy Learning UK <andrew.davidson@synergy-learning.com>
++               on behalf of Alexander Bias, Ulm University <alexander.bias@uni-ulm.de>
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++defined('MOODLE_INTERNAL') || die();
++
++$plugin->component = 'atto_styles';
++$plugin->version = 2017063000;
++$plugin->release = 'v3.2-r4';
++$plugin->requires = 2016120500;
++$plugin->maturity = MATURITY_STABLE;
+diff --git a/lib/editor/atto/plugins/styles/yui/build/moodle-atto_styles-button/moodle-atto_styles-button-debug.js b/lib/editor/atto/plugins/styles/yui/build/moodle-atto_styles-button/moodle-atto_styles-button-debug.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..e69735429e5e6aca6cc6e65d80030cc98d755272
+GIT binary patch
+literal 5475
+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
+P$_t4j_ljfxiTVEnPCO1E
+
+literal 0
+HcmV?d00001
+
+diff --git a/lib/editor/atto/plugins/styles/yui/build/moodle-atto_styles-button/moodle-atto_styles-button-min.js b/lib/editor/atto/plugins/styles/yui/build/moodle-atto_styles-button/moodle-atto_styles-button-min.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..164a6f377e6922fd2f896a21269d2c6fb0f3494f
+GIT binary patch
+literal 1823
+zcmc&#QBUJI5PrX30e)B#)p+4GsbLG+2Tp=rQFf(MRUtQ-wid44vnN0=%74GHQy|wn
+zX&<i-Rbo#*&-cwY<3E1f2vye^+c;MnI8})5G2qTXI9)XKVi{jHwnFV}1|0MDS@|O?
+z*&vXWAgtOz*s2OLb}NQ^xwuL&62z4XASw?EDe4Uz#I1l@qw|mPGx0S&e>craTRxlf
+zR$Gl)8T}Xd;ysf-4V1XnL975X*5}Of66NpHZ+Bv=e1Ht|GUn?gA!!~c(TVqJCqPx}
+z3<u2eR!cV47vs<Rg7HAl#KzJi2;6N!O3AECXRymm%agG_s*DO0xL*bX8?eX{!U-Xq
+zB!q(~c5#vyACL><s;5K1wD=3S6w{|OL}c0;ZGnCI^v@jo<zHa-LGPg4i)|CuS&Q(B
+zMHuN3<*m`ch>bt*#i^7r3spT${3;YPHfAw~<QlQ0Tv7<ayvw`34z4fQV_3VF2j}Qp
+ze+#xLQyC9e<$JZ0@0^IIWigb;g;ZF}J=dk}Vb?0$E4zXz5v>sFEa$%8p~^I2hN3s!
+zbu1kDLHgc0m9t2tyK=8A=k`(y4;%LkDJ)~P4r*awuWVlE*f0OR*YQMz_6Ov$R?`6m
+zi~o$r|7*9|I!h-OmJc#2-aO1##x0b&LD*b7yVR?qeG|Iqm8#Z>XKd4sYl;hnCz1K%
+zVB@1%KH4^_#RGS|;i}Zj3}<KaXzlUd#1|}Yy?oKOb}vzzUdh<{xmdcY33slBa_KzT
+z%a^*;QpZLkDsh8)XqjnY>G6R~a4h9{PIOV*2FfsijRG`OplKwKX>J>1@|aH`h`ss~
+zM6XF58WqV#)Y%If9Zy~70UK|-Vfv{ZV)8X58QW06D^zsMMp>F|l<-F3RcbbVe9qap
+z*3T49_V{19#?iEtX@GtAZVMiFKb2{SGMR2`)Q(6K&1Ec6qDTy_)Nev`Rs_I*3B_@C
+zKF>Qa0a|J}dJzPsX+|Cq<z_H5*EG@Sh*(c0&q_6R!hl`jx>O^oT_ez~Rt9d;P<i)4
+z@BNvZsW}~!47pMM>BqLF!A?!r@xw;^uwp;A$&h7V#UqfOth_rg8%^D~4A-u)c$pzx
+z9^}T<+!M^sa(;}Wa>l4_fI2UZ&%2JdlZS`<Y0;(u77DtjNXeq@=tn8BFF(KDPj9~6
+dePO)y@Mohv#F4eX_69f5={DUxjHXuk+uvE7h5-No
+
+literal 0
+HcmV?d00001
+
+diff --git a/lib/editor/atto/plugins/styles/yui/build/moodle-atto_styles-button/moodle-atto_styles-button.js b/lib/editor/atto/plugins/styles/yui/build/moodle-atto_styles-button/moodle-atto_styles-button.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..e69735429e5e6aca6cc6e65d80030cc98d755272
+GIT binary patch
+literal 5475
+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
+P$_t4j_ljfxiTVEnPCO1E
+
+literal 0
+HcmV?d00001
+
+diff --git a/lib/editor/atto/plugins/styles/yui/src/button/build.json b/lib/editor/atto/plugins/styles/yui/src/button/build.json
+new file mode 100644
+index 0000000..7a6b0b2
+--- /dev/null
++++ b/lib/editor/atto/plugins/styles/yui/src/button/build.json
+@@ -0,0 +1,10 @@
++{
++  "name": "moodle-atto_styles-button",
++  "builds": {
++    "moodle-atto_styles-button": {
++      "jsfiles": [
++        "button.js"
++      ]
++    }
++  }
++}
+diff --git a/lib/editor/atto/plugins/styles/yui/src/button/js/button.js b/lib/editor/atto/plugins/styles/yui/src/button/js/button.js
+new file mode 100644
+index 0000000..b77e999
+--- /dev/null
++++ b/lib/editor/atto/plugins/styles/yui/src/button/js/button.js
+@@ -0,0 +1,166 @@
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++/**
++ * Atto styles - YUI file
++ *
++ * @package    atto_styles
++ * @copyright  2015 Andrew Davidson, Synergy Learning UK <andrew.davidson@synergy-learning.com>
++               on behalf of Alexander Bias, Ulm University <alexander.bias@uni-ulm.de>
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++/**
++ * @module moodle-atto_styles-button
++ */
++
++/**
++ * Atto text editor styles plugin.
++ *
++ * @namespace M.atto_styles
++ * @class button
++ * @extends M.editor_atto.EditorPlugin
++ */
++
++/*global rangy*/
++
++var component = 'atto_styles';
++
++Y.namespace('M.atto_styles').Button = Y.Base.create('button', Y.M.editor_atto.EditorPlugin, [], {
++    initializer: function() {
++        var styles = this.get('styles');
++        styles = JSON.parse(styles);
++        var items = [];
++        var icon, span;
++        Y.Array.each(styles, function(style) {
++            icon = '<i></i>';
++            span = '<span>';
++            if (style.type === 'nostyle') {
++                icon = '<i class="nostyleelement"></i>';
++                span = '<span class="nostyle">';
++            } else if (style.type === 'block') {
++                icon = '<i class="blockelement"></i>';
++                span = '<span class="blockstyle">';
++            } else if (style.type == 'inline') {
++                icon = '<i class="inlineelement"></i>';
++                span = '<span class="inlinestyle">';
++            }
++            items.push({
++                text: span + icon + style.title + '</span>',
++                callbackArgs: ['<' + style.type + '>', style.classes]
++            });
++        });
++
++        // Override the _showToolbarMenu function to disable/enable inline styles, as needed.
++        var showToolbarMenu = this._showToolbarMenu;
++        this._showToolbarMenu = function(e, config) {
++            showToolbarMenu.call(this, e, config);
++
++            var enableInline, menu, menuContent;
++            enableInline = this.hasRangeSelected();
++            menu = this.menus[config.buttonClass];
++            menuContent = menu.get('contentBox');
++            if (enableInline) {
++                menuContent.removeClass('disableinline');
++            } else {
++                menuContent.addClass('disableinline');
++            }
++        };
++
++        this.addToolbarMenu({
++            icon: 'icon',
++            iconComponent: component,
++            buttonClass: 'styles',
++            globalItemConfig: {
++                callback: this._changeStyle
++            },
++            items: items
++        });
++    },
++
++    /**
++     * Change the text to the specified style.
++     *
++     * @method _changeStyle
++     * @param {EventFacade} e
++     * @param {string} style The new style
++     * @private
++     */
++    _changeStyle: function(e, style) {
++        var eID, element, p, pstyle, styles, host, i;
++        if (style[0] === '<nostyle>') {
++            element = window.getSelection().focusNode;
++            for (p = element; p; p = p.parentNode) {
++                if (p.nodeType !== 1) {
++                    continue;
++                }
++                pstyle = window.getComputedStyle(p, null);
++                if (pstyle) {
++                    p.removeAttribute('class');
++                    break;
++                }
++            }
++            return;
++        } else if (style[0] === '<block>') {
++            document.execCommand('formatBlock', false, '<div>');
++            element = window.getSelection().focusNode;
++            for (p = element; p; p = p.parentNode) {
++                if (p.nodeType !== 1) {
++                    continue;
++                }
++                pstyle = window.getComputedStyle(p, null);
++                if (pstyle) {
++                    var displaystyle = pstyle.getPropertyValue('display');
++                    if (displaystyle === 'block') {
++                        eID = p;
++                        break;
++                    }
++                }
++            }
++            eID.setAttribute('class', style[1]);
++        } else {
++            styles = style[1].split(" ");
++            host = this.get('host');
++            for (i = 0; i < styles.length; i += 1) {
++                host.toggleInlineSelectionClass([styles[i]]);
++            }
++        }
++        // Mark as updated.
++        this.markUpdated();
++    },
++
++    hasRangeSelected: function() {
++        var selection, range;
++
++        selection = rangy.getSelection();
++        if (!selection.rangeCount) {
++            return false;
++        }
++        range = selection.getRangeAt(0);
++        return !range.collapsed;
++    }
++}, {
++    ATTRS: {
++        /**
++         * The content of the styles.
++         *
++         * @attribute library
++         * @type object
++         */
++        styles: {
++            value: {}
++        }
++    }
++});
+diff --git a/lib/editor/atto/plugins/styles/yui/src/button/meta/button.json b/lib/editor/atto/plugins/styles/yui/src/button/meta/button.json
+new file mode 100644
+index 0000000..2a7a3b4
+--- /dev/null
++++ b/lib/editor/atto/plugins/styles/yui/src/button/meta/button.json
+@@ -0,0 +1,7 @@
++{
++    "moodle-atto_styles-button": {
++        "requires": [
++            "moodle-editor_atto-plugin"
++        ]
++    }
++}
+-- 
+1.8.3.1
+

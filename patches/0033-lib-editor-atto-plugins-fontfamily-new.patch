@@ -1,0 +1,546 @@
+From 52d6079ac1863cbd008eb5c65b977b67e2cf9a3b Mon Sep 17 00:00:00 2001
+From: Nadav Kavalerchik <nadavkav@gmail.com>
+Date: Wed, 11 Oct 2017 21:20:55 +0300
+Subject: [PATCH 33/95] lib/editor/atto/plugins/fontfamily (new)
+
+---
+ lib/editor/atto/plugins/fontfamily/README.md       |  20 +++++
+ .../plugins/fontfamily/lang/en/atto_fontfamily.php |  28 +++++++
+ lib/editor/atto/plugins/fontfamily/lib.php         |  56 ++++++++++++++
+ lib/editor/atto/plugins/fontfamily/pix/icon.png    | Bin 0 -> 417 bytes
+ lib/editor/atto/plugins/fontfamily/pix/icon.svg    |  63 +++++++++++++++
+ lib/editor/atto/plugins/fontfamily/settings.php    |  42 ++++++++++
+ lib/editor/atto/plugins/fontfamily/styles.css      |   3 +
+ lib/editor/atto/plugins/fontfamily/version.php     |  31 ++++++++
+ .../moodle-atto_fontfamily-button-debug.js         | Bin 0 -> 2461 bytes
+ .../moodle-atto_fontfamily-button-min.js           | Bin 0 -> 678 bytes
+ .../moodle-atto_fontfamily-button.js               | Bin 0 -> 2461 bytes
+ .../plugins/fontfamily/yui/src/button/build.json   |  10 +++
+ .../plugins/fontfamily/yui/src/button/js/button.js |  85 +++++++++++++++++++++
+ .../fontfamily/yui/src/button/meta/editor.js       |   7 ++
+ 14 files changed, 345 insertions(+)
+ create mode 100644 lib/editor/atto/plugins/fontfamily/README.md
+ create mode 100644 lib/editor/atto/plugins/fontfamily/lang/en/atto_fontfamily.php
+ create mode 100644 lib/editor/atto/plugins/fontfamily/lib.php
+ create mode 100644 lib/editor/atto/plugins/fontfamily/pix/icon.png
+ create mode 100644 lib/editor/atto/plugins/fontfamily/pix/icon.svg
+ create mode 100644 lib/editor/atto/plugins/fontfamily/settings.php
+ create mode 100644 lib/editor/atto/plugins/fontfamily/styles.css
+ create mode 100644 lib/editor/atto/plugins/fontfamily/version.php
+ create mode 100644 lib/editor/atto/plugins/fontfamily/yui/build/moodle-atto_fontfamily-button/moodle-atto_fontfamily-button-debug.js
+ create mode 100644 lib/editor/atto/plugins/fontfamily/yui/build/moodle-atto_fontfamily-button/moodle-atto_fontfamily-button-min.js
+ create mode 100644 lib/editor/atto/plugins/fontfamily/yui/build/moodle-atto_fontfamily-button/moodle-atto_fontfamily-button.js
+ create mode 100644 lib/editor/atto/plugins/fontfamily/yui/src/button/build.json
+ create mode 100644 lib/editor/atto/plugins/fontfamily/yui/src/button/js/button.js
+ create mode 100644 lib/editor/atto/plugins/fontfamily/yui/src/button/meta/editor.js
+
+diff --git a/lib/editor/atto/plugins/fontfamily/README.md b/lib/editor/atto/plugins/fontfamily/README.md
+new file mode 100644
+index 0000000..4de59c5
+--- /dev/null
++++ b/lib/editor/atto/plugins/fontfamily/README.md
+@@ -0,0 +1,20 @@
++Font Family plugin for Atto
++=========================
++
++Based on atto_fontsize: Andrew Nicols and Adam Jenkins
++
++https://github.com/andrewnicols/moodle-atto_fontsize
++
++Requirements
++============
++
++- Moodle 2.7
++- Moodle 2.8
++
++Installation
++============
++
++* Place in lib/editor/atto/plugins
++* Upgrade your Moodle
++* Navigate to Site administration -> Plugins -> Text editors -> Atto HTML editor -> Atto toolbar settings
++* Add the 'fontfamily' plugin in your location of choice
+diff --git a/lib/editor/atto/plugins/fontfamily/lang/en/atto_fontfamily.php b/lib/editor/atto/plugins/fontfamily/lang/en/atto_fontfamily.php
+new file mode 100644
+index 0000000..60ead1d
+--- /dev/null
++++ b/lib/editor/atto/plugins/fontfamily/lang/en/atto_fontfamily.php
+@@ -0,0 +1,28 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++/**
++ * Strings for component 'atto_fontfamily', language 'en'.
++ *
++ * @package    atto_fontfamily
++ * @copyright  2015 Pau Ferrer Ocaña
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++$string['pluginname'] = 'Font family';
++$string['settings'] = 'Font family settings';
++$string['fontselectlist'] = 'Available fonts list';
++
+diff --git a/lib/editor/atto/plugins/fontfamily/lib.php b/lib/editor/atto/plugins/fontfamily/lib.php
+new file mode 100644
+index 0000000..9ba7889
+--- /dev/null
++++ b/lib/editor/atto/plugins/fontfamily/lib.php
+@@ -0,0 +1,56 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++/**
++ * Atto text editor integration version file.
++ *
++ * @package    atto_fontfamily
++ * @copyright  2015 Pau Ferrer OCaña
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++defined('MOODLE_INTERNAL') || die();
++
++/**
++ * Set params for this plugin
++ */
++function atto_fontfamily_params_for_js() {
++
++    $fonts = get_config('atto_fontfamily', 'fontselectlist');
++    $fonts = str_replace("\r", ';', $fonts);
++    $fonts = str_replace("\n", ';', $fonts);
++    $possiblefonts = explode(";", $fonts);
++    if (empty($possiblefonts)) {
++        $avalaiblefonts = array('Arial=Arial, Helvetica, sans-serif',
++            'Times=Times New Roman, Times, serif',
++            'Courier=Courier New, Courier, mono',
++            'Georgia=Georgia, Times New Roman, Times, serif',
++            'Verdana=Verdana, Geneva, sans-serif',
++            'Trebuchet=Trebuchet MS, Helvetica, sans-serif');
++    } else {
++        $avalaiblefonts = array();
++        foreach ($possiblefonts as $font) {
++            if (!empty($font)) {
++                $fonttype = explode('=', $font, 2);
++                if (isset($fonttype[1])) {
++                    $avalaiblefonts[] = $fonttype[0].'='.$fonttype[1];
++                } else {
++                    $avalaiblefonts[] = $fonttype[0].'='.$fonttype[0];
++                }
++            }
++        }
++    }
++    return array('avalaiblefonts' => $avalaiblefonts);
++}
+\ No newline at end of file
+diff --git a/lib/editor/atto/plugins/fontfamily/pix/icon.png b/lib/editor/atto/plugins/fontfamily/pix/icon.png
+new file mode 100644
+index 0000000000000000000000000000000000000000..0d23fde8288ee6fad5f9eb0b65d5cafd1397eba5
+GIT binary patch
+literal 417
+zcmeAS@N?(olHy`uVBq!ia0vp^0wB!61|;P_|4#%`EX7WqAsj$Z!;#Vf<Z~8yL>2?p
+zUk71ECym(^Ktah8*NBqf{Irtt#G+J&^73-M%)IR4<ivthz5Jr|+3#$m7#JAkJY5_^
+zEP9UyZuDYy6q!?bA}oq^c0zLUQ+|%Hrc^G+H7*<{?lmp77Z7Cq&HdzEl;Yk9?Xqbb
+zH*~l5)+?~6Sc}c7h!YYNnVa=(Z(^Dp_aAc$rOJ8lk4S_s%aC*8xEsk<tgMtd{R!L2
+zxJZSUVh-XAU5g^*_}Wb;m3vOwQ)5)&e!qIZov!Bj&yOV@i=K4$>}TL(IIwTu2j0wC
+z*HqrBdKSH%b9-8eNukq9qtp45iq5U|Vq!3veU`D|V1>O><g{3Zj1b=Bo`YwuG30n!
+znQpFr|M%${w%SR*pEl0?s$x6w4v*rTQ07%^=kNWVy=ukfmm%)*jK=2okKC7-aZ{<G
+zHEgx%$LwV0NzWNBty-YbwNzs9<dUHE*QMW<RsU1(t(RZ_PBH1Ch1#^az~E%?boFyt
+I=akR{0J=$_Q~&?~
+
+literal 0
+HcmV?d00001
+
+diff --git a/lib/editor/atto/plugins/fontfamily/pix/icon.svg b/lib/editor/atto/plugins/fontfamily/pix/icon.svg
+new file mode 100644
+index 0000000..352e6fb
+--- /dev/null
++++ b/lib/editor/atto/plugins/fontfamily/pix/icon.svg
+@@ -0,0 +1,63 @@
++<?xml version="1.0" encoding="UTF-8" standalone="no"?>
++<!-- Generator: Adobe Illustrator 15.1.0, SVG Export Plug-In  -->
++
++<svg
++   xmlns:dc="http://purl.org/dc/elements/1.1/"
++   xmlns:cc="http://creativecommons.org/ns#"
++   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
++   xmlns:svg="http://www.w3.org/2000/svg"
++   xmlns="http://www.w3.org/2000/svg"
++   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
++   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
++   version="1.1"
++   x="0px"
++   y="0px"
++   width="16px"
++   height="16px"
++   viewBox="-2 -1.6 16 16"
++   style="overflow:visible;enable-background:new -2 -1.6 16 16;"
++   xml:space="preserve"
++   preserveAspectRatio="xMinYMid meet"
++   id="svg2"
++   inkscape:version="0.91 r13725"
++   sodipodi:docname="icon.svg"
++   inkscape:export-filename="/home/crazy/git/departament/agora/html/moodle2/lib/editor/atto/plugins/fontfamily/pix/icon.png"
++   inkscape:export-xdpi="90"
++   inkscape:export-ydpi="90"><metadata
++     id="metadata10"><rdf:RDF><cc:Work
++         rdf:about=""><dc:format>image/svg+xml</dc:format><dc:type
++           rdf:resource="http://purl.org/dc/dcmitype/StillImage" /></cc:Work></rdf:RDF></metadata><sodipodi:namedview
++     pagecolor="#ffffff"
++     bordercolor="#666666"
++     borderopacity="1"
++     objecttolerance="10"
++     gridtolerance="10"
++     guidetolerance="10"
++     inkscape:pageopacity="0"
++     inkscape:pageshadow="2"
++     inkscape:window-width="1248"
++     inkscape:window-height="801"
++     id="namedview8"
++     showgrid="false"
++     inkscape:zoom="14.75"
++     inkscape:cx="7.0508475"
++     inkscape:cy="8.6779661"
++     inkscape:window-x="227"
++     inkscape:window-y="131"
++     inkscape:window-maximized="0"
++     inkscape:current-layer="svg2" /><defs
++     id="defs4" /><g
++     id="g4186"
++     transform="translate(0.01970792,0.744553)"><g
++       transform="matrix(1.1907296,0,0,1.1907296,-1.0776139,-1.8827081)"
++       style="font-style:normal;font-weight:normal;font-size:11.97679138px;line-height:125%;font-family:Sans;letter-spacing:0px;word-spacing:0px;fill:#999999;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
++       id="flowRoot3338"><path
++         d="m 10.208887,3.989989 q -0.2690101,0 -0.4912357,-0.3742748 -0.2339217,-0.3742747 -0.409363,-0.4678434 -0.1169608,-0.05848 -0.2690099,-0.05848 -0.6900691,0 -0.6900691,1.0643438 l 0,1.3918341 1.4737068,0 0,0.3859708 -1.4620107,0 0,3.7661395 q 0,0.7017654 0.2222256,0.8655104 0.1871374,0.175441 0.9005986,0.198833 l 0,0.175442 -3.1228548,0 0,-0.175442 q 0.7017652,-0.03509 0.8655103,-0.280706 0.128657,-0.187137 0.128657,-0.7836374 l 0,-3.7661395 -0.9707751,0 0,-0.3859708 0.9707751,0 Q 7.4018264,3.2531356 8.7585723,2.8554687 9.0743666,2.7619 9.4720335,2.7619 q 0.8304225,0 1.1462165,0.4210591 0.09357,0.1520491 0.09357,0.3157943 0,0.3391864 -0.304099,0.4561473 -0.105264,0.035088 -0.198833,0.035088 z"
++         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Rachana;-inkscape-font-specification:Rachana;fill:#999999;fill-opacity:1"
++         id="path4197" /></g><g
++       transform="matrix(1.531494,0,0,1.5049046,8.0200554,4.6087573)"
++       style="font-style:normal;font-weight:normal;font-size:10px;line-height:125%;font-family:Sans;letter-spacing:0px;word-spacing:0px;overflow:visible;fill:#999999;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
++       id="flowRoot3338-1"><path
++         d="m -5.0517578,-2.9495006 4.18945311,0 0,0.8300781 -3.20312501,0 0,2.14843755 2.890625,0 0,0.83007812 -2.890625,0 0,3.48144533 -0.9863281,0 0,-7.2900391 z"
++         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:'DejaVu Sans';-inkscape-font-specification:'DejaVu Sans'"
++         id="path4200" /></g></g></svg>
+\ No newline at end of file
+diff --git a/lib/editor/atto/plugins/fontfamily/settings.php b/lib/editor/atto/plugins/fontfamily/settings.php
+new file mode 100644
+index 0000000..a0a67e7
+--- /dev/null
++++ b/lib/editor/atto/plugins/fontfamily/settings.php
+@@ -0,0 +1,42 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++/**
++ * Settings that allow configuration of the list of tex examples in the equation editor.
++ *
++ * @package    atto_fontfamily
++ * @copyright  2015 Pau Ferrer Ocaña
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++defined('MOODLE_INTERNAL') || die();
++
++$ADMIN->add('editoratto', new admin_category('atto_fontfamily', new lang_string('pluginname', 'atto_fontfamily')));
++
++$settings = new admin_settingpage('atto_fontfamily_settings', new lang_string('settings', 'atto_fontfamily'));
++if ($ADMIN->fulltree) {
++    $default = 'Arial=Arial, Helvetica, sans-serif;
++Times=Times New Roman, Times, serif;
++Courier=Courier New, Courier, mono;
++Georgia=Georgia, Times New Roman, Times, serif;
++Verdana=Verdana, Geneva, sans-serif;
++Trebuchet=Trebuchet MS, Helvetica, sans-serif;';
++    $setting = new admin_setting_configtextarea('atto_fontfamily/fontselectlist',
++                                                get_string('fontselectlist', 'atto_fontfamily'),
++                                                "",
++                                                $default);
++    $settings->add($setting);
++}
+diff --git a/lib/editor/atto/plugins/fontfamily/styles.css b/lib/editor/atto/plugins/fontfamily/styles.css
+new file mode 100644
+index 0000000..f171a17
+--- /dev/null
++++ b/lib/editor/atto/plugins/fontfamily/styles.css
+@@ -0,0 +1,3 @@
++.atto_fontfamily_button .dropdown-menu a {
++  line-height: normal;
++}
+diff --git a/lib/editor/atto/plugins/fontfamily/version.php b/lib/editor/atto/plugins/fontfamily/version.php
+new file mode 100644
+index 0000000..407d9a1
+--- /dev/null
++++ b/lib/editor/atto/plugins/fontfamily/version.php
+@@ -0,0 +1,31 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++/**
++ * Atto text editor integration version file.
++ *
++ * @package    atto_fontfamily
++ * @copyright  2015 Pau Ferrer OCaña
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++defined('MOODLE_INTERNAL') || die();
++
++$plugin->version   = 2015051500;        // The current plugin version (Date: YYYYMMDDXX).
++$plugin->requires  = 2014050800;        // Requires this Moodle version.
++$plugin->component = 'atto_fontfamily';   // Full name of the plugin (used for diagnostics).
++$plugin->maturity = MATURITY_STABLE;
++$plugin->release = '2.8 (Build 2015042701)';
+diff --git a/lib/editor/atto/plugins/fontfamily/yui/build/moodle-atto_fontfamily-button/moodle-atto_fontfamily-button-debug.js b/lib/editor/atto/plugins/fontfamily/yui/build/moodle-atto_fontfamily-button/moodle-atto_fontfamily-button-debug.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..4f5187776ac10445b46d94a571ad2a53b3ac3b25
+GIT binary patch
+literal 2461
+zcmai0+iu%95Pi>A4EkcH>&WR|UYxp!64<Sa#4&7V3!^9sS{g}2X;L65d%dYYYQJHB
+zY-cFn;%-~LSRy%R&fE??dmKa}O`DB{F{#1};l25s8SOK%kZOG~uV_IxT98#b@zQ8$
+z&RQ^x?|bL)bavKm!?chNGN};gw-nZc$>2Vq!37lFmz{RIMvsim+hoIL+Y@YS5y6?v
+zuY|=8tW5=p&|oo@&Ra<g2-<_tY1>#>m{ewKMxeDyr)a?!2p;Xiv1k5xJA8z<sL=`q
+zqiU{X0(UY&?GOZU<P}$73iE)&7JcS0*>ZrsAz;DLwg4sVTUerX9Q|)QA6vi{7|Udu
+z!ZULVrewQwqPqqqh}O<D`X=y0d?`pBm=~s`SPBB8=vGoGm?KmUvr4tt4J89U45sfM
+z9;XlwXYe5&kK^HVc14GMVQ3eZSVPH0sU!tSS+zp@H4$fo``-BW9ht;8gS)|WM)aXS
+zm=1fB3G^Sv5W^@QPY1V;ckviTkK@t9q!$59C_R)12KYg8vrr$4kfIk-xn0OJDybuO
+zDuqHUkxHAOToN|{i7A=cPs+xAg)%x1VQzbeXbm#Z#<#!`z1Q1TTdh`6uB*^%RC%tt
+zYrl!8S6`mNOSmpY@<rqb^qe$%*k(dj=7k6N_43spFcKB?(ON3xLn8kDM}$*bU<Uag
+zw~V1M^X<G;QQ;S=PTJ@WmefDC?hD4b5stDzZMA3O<ljhRL#}^^Sf>_OFqDZ=u4WUb
+zVgc__f05b|K%1kg!=kyUXa;{c#?LHb8f+Syzo=zW>50{0>Y-FsE_FobndP+>3v`q>
+zg!^dEv=)f4pD5uR_a;e2SRho?siWgH_Gh+=dcn^qVAC-oKa2Lz&Biy_jq~UxU_uvW
+z5$7sOEYeIh8?`TzrCIcSA1(O!sl_VAWs+KYDHNsGcJ^Y{WD(<CewL!nfg^XGL@mnE
+zHydIpl#p{OCyAnKoL|*&Y#=jehE?cxyFrUGsi~e{zlL18NTJSs5q2++J+ZMxUs-*%
+z_r5vcG7;&K^sGw}9FEMQm_~UWp-76_@j;fu_o<IvM1D=G(hZ~{N2)+!b)Q8NqG69w
+zS-GNl$O&)o!+p|$#%t;V4bD?{cVBSm7j+kO8t_YiXHOqreWI_%)r&XJRxiWq>o!BY
+zX|(o%*A9R*U#U6GW^8ju6(aC0*!Pci>N<T+3ZZkHFs)~>8>-e0p5ON$p}chMO^qR+
+z_8xV05_GQ2T&Mx%<ksj+=AENP*+K3Y|CGk_2xy!&<&u9+(!fi%W>FfAn$vwUYp18V
+zV4b>C_L1#E-n8mygFG<dmv9@h6qJ^;3w7y$Re)|lS7IVFzA)-_8vbCm{ekNR(gl;k
+zx5*BgYDt%#dUW^rzDPuh8`zfOu*;XZ&Nn;1Q*x?F-j2BJeU(-&Y0kIbBos{L*z?f{
+zBgsEa^>ObXrnfN8lZ?>Cv=DxR3d4VxfmSrAp<hnQ&Sd)GpHC;C)(pt`F0b@<wqa3W
+uM)7nyo*Z|^bFnzy;p3zv75%|^+8j{B8zFLYGH&Dg&)#@4co<&ueEtV1<K~e7
+
+literal 0
+HcmV?d00001
+
+diff --git a/lib/editor/atto/plugins/fontfamily/yui/build/moodle-atto_fontfamily-button/moodle-atto_fontfamily-button-min.js b/lib/editor/atto/plugins/fontfamily/yui/build/moodle-atto_fontfamily-button/moodle-atto_fontfamily-button-min.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..2dbdee24e81425fb4d56f62a829207498457f510
+GIT binary patch
+literal 678
+zcmZuv!EW0y4889w3SD9&iq>A0x@cN-Kn_`pCL1sWL7>>QElj2Yi7uL{`S(g5(sspk
+z5QqozJ(7>Ve$0ics*H8kRt6@D$Zl(kRI5&#!(`V-02!})EJ<6;fKwhopz6TyRS6ke
+zh)+c<7dJy$0pdn^5Tye}G4n(QVj-Z?WZgEEin}3xFnyzuuQxns)TEWsf56E%<vcto
+zcSZ%Z+KUD#W9ms6rFRBW!=B|+U1wAjMUNHK8lif5Az=U;Y9o4{JD}d-G|^zO-b_Kv
+zoKpt@s%$g*Fyl!Igx?z-m5NA?V&D5V3k1(3N0)JWJo9ugP_U#w`MWVW8q@k>GagOZ
+zRSM5HV|Mv9C0{XKDr0u4{5^AxmnrQHk;7EmvQ^l?GO-@>W6lRO`m?e&7P<vspM}QQ
+zoicNR?$%<h8yQZ#|6$>}v?y8n*%05_Zf_BgB>U_e*OAjpjMDsLEAJi*?!Oz*T2ImK
+z+PY5B5)2GCGDj1aKMawDw3=_jElG;JM;>OY)#Flzf6bH8T+@RL$M~W=yZ(9ixSZdA
+JzmA*#@(M?*_4NP%
+
+literal 0
+HcmV?d00001
+
+diff --git a/lib/editor/atto/plugins/fontfamily/yui/build/moodle-atto_fontfamily-button/moodle-atto_fontfamily-button.js b/lib/editor/atto/plugins/fontfamily/yui/build/moodle-atto_fontfamily-button/moodle-atto_fontfamily-button.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..4f5187776ac10445b46d94a571ad2a53b3ac3b25
+GIT binary patch
+literal 2461
+zcmai0+iu%95Pi>A4EkcH>&WR|UYxp!64<Sa#4&7V3!^9sS{g}2X;L65d%dYYYQJHB
+zY-cFn;%-~LSRy%R&fE??dmKa}O`DB{F{#1};l25s8SOK%kZOG~uV_IxT98#b@zQ8$
+z&RQ^x?|bL)bavKm!?chNGN};gw-nZc$>2Vq!37lFmz{RIMvsim+hoIL+Y@YS5y6?v
+zuY|=8tW5=p&|oo@&Ra<g2-<_tY1>#>m{ewKMxeDyr)a?!2p;Xiv1k5xJA8z<sL=`q
+zqiU{X0(UY&?GOZU<P}$73iE)&7JcS0*>ZrsAz;DLwg4sVTUerX9Q|)QA6vi{7|Udu
+z!ZULVrewQwqPqqqh}O<D`X=y0d?`pBm=~s`SPBB8=vGoGm?KmUvr4tt4J89U45sfM
+z9;XlwXYe5&kK^HVc14GMVQ3eZSVPH0sU!tSS+zp@H4$fo``-BW9ht;8gS)|WM)aXS
+zm=1fB3G^Sv5W^@QPY1V;ckviTkK@t9q!$59C_R)12KYg8vrr$4kfIk-xn0OJDybuO
+zDuqHUkxHAOToN|{i7A=cPs+xAg)%x1VQzbeXbm#Z#<#!`z1Q1TTdh`6uB*^%RC%tt
+zYrl!8S6`mNOSmpY@<rqb^qe$%*k(dj=7k6N_43spFcKB?(ON3xLn8kDM}$*bU<Uag
+zw~V1M^X<G;QQ;S=PTJ@WmefDC?hD4b5stDzZMA3O<ljhRL#}^^Sf>_OFqDZ=u4WUb
+zVgc__f05b|K%1kg!=kyUXa;{c#?LHb8f+Syzo=zW>50{0>Y-FsE_FobndP+>3v`q>
+zg!^dEv=)f4pD5uR_a;e2SRho?siWgH_Gh+=dcn^qVAC-oKa2Lz&Biy_jq~UxU_uvW
+z5$7sOEYeIh8?`TzrCIcSA1(O!sl_VAWs+KYDHNsGcJ^Y{WD(<CewL!nfg^XGL@mnE
+zHydIpl#p{OCyAnKoL|*&Y#=jehE?cxyFrUGsi~e{zlL18NTJSs5q2++J+ZMxUs-*%
+z_r5vcG7;&K^sGw}9FEMQm_~UWp-76_@j;fu_o<IvM1D=G(hZ~{N2)+!b)Q8NqG69w
+zS-GNl$O&)o!+p|$#%t;V4bD?{cVBSm7j+kO8t_YiXHOqreWI_%)r&XJRxiWq>o!BY
+zX|(o%*A9R*U#U6GW^8ju6(aC0*!Pci>N<T+3ZZkHFs)~>8>-e0p5ON$p}chMO^qR+
+z_8xV05_GQ2T&Mx%<ksj+=AENP*+K3Y|CGk_2xy!&<&u9+(!fi%W>FfAn$vwUYp18V
+zV4b>C_L1#E-n8mygFG<dmv9@h6qJ^;3w7y$Re)|lS7IVFzA)-_8vbCm{ekNR(gl;k
+zx5*BgYDt%#dUW^rzDPuh8`zfOu*;XZ&Nn;1Q*x?F-j2BJeU(-&Y0kIbBos{L*z?f{
+zBgsEa^>ObXrnfN8lZ?>Cv=DxR3d4VxfmSrAp<hnQ&Sd)GpHC;C)(pt`F0b@<wqa3W
+uM)7nyo*Z|^bFnzy;p3zv75%|^+8j{B8zFLYGH&Dg&)#@4co<&ueEtV1<K~e7
+
+literal 0
+HcmV?d00001
+
+diff --git a/lib/editor/atto/plugins/fontfamily/yui/src/button/build.json b/lib/editor/atto/plugins/fontfamily/yui/src/button/build.json
+new file mode 100644
+index 0000000..9a99718
+--- /dev/null
++++ b/lib/editor/atto/plugins/fontfamily/yui/src/button/build.json
+@@ -0,0 +1,10 @@
++{
++    "name": "moodle-atto_fontfamily-button",
++    "builds": {
++        "moodle-atto_fontfamily-button": {
++            "jsfiles": [
++                "button.js"
++            ]
++        }
++    }
++}
+diff --git a/lib/editor/atto/plugins/fontfamily/yui/src/button/js/button.js b/lib/editor/atto/plugins/fontfamily/yui/src/button/js/button.js
+new file mode 100644
+index 0000000..7c7731f
+--- /dev/null
++++ b/lib/editor/atto/plugins/fontfamily/yui/src/button/js/button.js
+@@ -0,0 +1,85 @@
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++/*
++ * @package    atto_fontfamily
++ * @copyright  2015 Pau Ferrer Ocaña
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ * Based on atto_fontsize - 2014 Andrew Nicols 2015 Adam Jenkins
++ */
++
++/**
++ * @module moodle-atto_fontfamily-button
++ */
++
++/**
++ * Atto text editor fontfamily plugin.
++ *
++ * @namespace M.atto_fontfamily
++ * @class button
++ * @extends M.editor_atto.EditorPlugin
++ */
++
++Y.namespace('M.atto_fontfamily').Button = Y.Base.create('button', Y.M.editor_atto.EditorPlugin, [], {
++
++    initializer: function() {
++        var fonts = this.get('avalaiblefonts');
++
++        if (fonts === undefined || fonts.length === 0) {
++            return;
++        }
++
++        var items = [];
++        Y.Array.each(fonts, function(font) {
++            var fonttype = font.split('=');
++
++            items.push({
++                text: '<span style="font-family:' + fonttype[1] + ';">' + fonttype[0] + '</span>',
++                callbackArgs: fonttype[1],
++                callback: this._changeStyle
++            });
++        });
++
++        this.addToolbarMenu({
++            globalItemConfig: {
++                callback: this._changeStyle
++            },
++            icon: 'icon',
++            iconComponent: 'atto_fontfamily',
++            items: items
++        });
++    },
++
++    /**
++     * Change the font family to the specified family.
++     *
++     * @method _changeStyle
++     * @param {EventFacade} e
++     * @param {string} family The new font family
++     * @private
++     */
++
++    _changeStyle: function(e, size) {
++        this.get('host').formatSelectionInlineStyle({
++            fontFamily: size
++        });
++      }
++}, {
++    ATTRS: {
++        avalaiblefonts: {
++            value: {}
++        }
++    }
++});
+diff --git a/lib/editor/atto/plugins/fontfamily/yui/src/button/meta/editor.js b/lib/editor/atto/plugins/fontfamily/yui/src/button/meta/editor.js
+new file mode 100644
+index 0000000..7a38fcf
+--- /dev/null
++++ b/lib/editor/atto/plugins/fontfamily/yui/src/button/meta/editor.js
+@@ -0,0 +1,7 @@
++{
++    "moodle-atto_fontfamily-button": {
++        "requires": [
++            "node"
++        ]
++    }
++}
+-- 
+1.8.3.1
+

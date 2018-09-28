@@ -1,0 +1,29 @@
+From 243129e14cead5d5042a6d4de0d2afc992fea1c8 Mon Sep 17 00:00:00 2001
+From: Nadav Kavalerchik <nadavkav@gmail.com>
+Date: Fri, 28 Sep 2018 16:21:35 +0300
+Subject: [PATCH 91/95] Render the course menu within the course context, the
+ module context and the block context
+
+---
+ theme/boost/classes/output/core_renderer.php | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/theme/boost/classes/output/core_renderer.php b/theme/boost/classes/output/core_renderer.php
+index f2df221..0d431fc 100644
+--- a/theme/boost/classes/output/core_renderer.php
++++ b/theme/boost/classes/output/core_renderer.php
+@@ -511,6 +511,11 @@ class core_renderer extends \core_renderer {
+                 ($currentnode->type == navigation_node::TYPE_COURSE || $currentnode->type == navigation_node::TYPE_SECTION)) {
+             $showcoursemenu = true;
+         }
++        // Render the course menu within the course context, the module context and the block context.
++        if (($context->contextlevel == CONTEXT_COURSE || $context->contextlevel == CONTEXT_MODULE
++             || $context->contextlevel == CONTEXT_BLOCK) && !empty($currentnode)) {
++            $showcoursemenu = true;
++        }
+ 
+         $courseformat = course_get_format($this->page->course);
+         // This is a single activity course format, always show the course menu on the activity main page.
+-- 
+1.8.3.1
+

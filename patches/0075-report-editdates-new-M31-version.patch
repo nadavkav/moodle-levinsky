@@ -1,0 +1,3005 @@
+From 02a31b1ccb1235bca8c9fcbffac0378b655d9037 Mon Sep 17 00:00:00 2001
+From: Nadav Kavalerchik <nadavkav@gmail.com>
+Date: Mon, 16 Oct 2017 10:22:28 +0300
+Subject: [PATCH 75/95] report/editdates (new) M31 version
+
+---
+ report/editdates/README.txt                      |  17 +
+ report/editdates/blocks/example.php              |  67 ++++
+ report/editdates/classes/event/report_viewed.php | 101 ++++++
+ report/editdates/db/access.php                   |  38 ++
+ report/editdates/db/install.php                  |  49 +++
+ report/editdates/form.php                        | 340 +++++++++++++++++
+ report/editdates/index.php                       | 244 +++++++++++++
+ report/editdates/internaldoc/testcase.txt        |  34 ++
+ report/editdates/lang/en/report_editdates.php    |  48 +++
+ report/editdates/lib.php                         | 441 +++++++++++++++++++++++
+ report/editdates/mod/assigndates.php             |  77 ++++
+ report/editdates/mod/assignmentdates.php         |  67 ++++
+ report/editdates/mod/chatdates.php               |  55 +++
+ report/editdates/mod/choicedates.php             |  50 +++
+ report/editdates/mod/datadates.php               |  77 ++++
+ report/editdates/mod/dataplusdates.php           |  65 ++++
+ report/editdates/mod/externalquizdates.php       |  47 +++
+ report/editdates/mod/feedbackdates.php           |  48 +++
+ report/editdates/mod/forumdates.php              |  51 +++
+ report/editdates/mod/forumngdates.php            |  65 ++++
+ report/editdates/mod/glossarydates.php           |  50 +++
+ report/editdates/mod/lessondates.php             |  63 ++++
+ report/editdates/mod/nanogongdates.php           |  47 +++
+ report/editdates/mod/oucollaboratedates.php      |  55 +++
+ report/editdates/mod/ouelluminatedates.php       |  47 +++
+ report/editdates/mod/ouwikidates.php             |  48 +++
+ report/editdates/mod/pcastdates.php              |  50 +++
+ report/editdates/mod/questionnairedates.php      |  70 ++++
+ report/editdates/mod/quizdates.php               |  65 ++++
+ report/editdates/mod/scormdates.php              |  46 +++
+ report/editdates/mod/workshopdates.php           |  95 +++++
+ report/editdates/styles.css                      |   3 +
+ report/editdates/tests/behat/basic.feature       |  68 ++++
+ report/editdates/version.php                     |  34 ++
+ 34 files changed, 2722 insertions(+)
+ create mode 100755 report/editdates/README.txt
+ create mode 100755 report/editdates/blocks/example.php
+ create mode 100755 report/editdates/classes/event/report_viewed.php
+ create mode 100755 report/editdates/db/access.php
+ create mode 100755 report/editdates/db/install.php
+ create mode 100755 report/editdates/form.php
+ create mode 100755 report/editdates/index.php
+ create mode 100755 report/editdates/internaldoc/testcase.txt
+ create mode 100755 report/editdates/lang/en/report_editdates.php
+ create mode 100755 report/editdates/lib.php
+ create mode 100755 report/editdates/mod/assigndates.php
+ create mode 100755 report/editdates/mod/assignmentdates.php
+ create mode 100755 report/editdates/mod/chatdates.php
+ create mode 100755 report/editdates/mod/choicedates.php
+ create mode 100755 report/editdates/mod/datadates.php
+ create mode 100755 report/editdates/mod/dataplusdates.php
+ create mode 100755 report/editdates/mod/externalquizdates.php
+ create mode 100755 report/editdates/mod/feedbackdates.php
+ create mode 100755 report/editdates/mod/forumdates.php
+ create mode 100755 report/editdates/mod/forumngdates.php
+ create mode 100755 report/editdates/mod/glossarydates.php
+ create mode 100755 report/editdates/mod/lessondates.php
+ create mode 100755 report/editdates/mod/nanogongdates.php
+ create mode 100755 report/editdates/mod/oucollaboratedates.php
+ create mode 100755 report/editdates/mod/ouelluminatedates.php
+ create mode 100755 report/editdates/mod/ouwikidates.php
+ create mode 100755 report/editdates/mod/pcastdates.php
+ create mode 100755 report/editdates/mod/questionnairedates.php
+ create mode 100755 report/editdates/mod/quizdates.php
+ create mode 100755 report/editdates/mod/scormdates.php
+ create mode 100755 report/editdates/mod/workshopdates.php
+ create mode 100755 report/editdates/styles.css
+ create mode 100755 report/editdates/tests/behat/basic.feature
+ create mode 100755 report/editdates/version.php
+
+diff --git a/report/editdates/README.txt b/report/editdates/README.txt
+new file mode 100755
+index 0000000..c31e97a
+--- /dev/null
++++ b/report/editdates/README.txt
+@@ -0,0 +1,17 @@
++Edit dates report
++
++This 'report' is actually a tool that lets you edit all the dates for all
++the activities in your course on a single page.
++
++You can install it from the Moodle plugins database
++http://moodle.org/plugins/view.php?plugin=report_editdates
++
++Alternatively, you can install it using git. In the top-level folder of your
++Moodle install, type the command:
++    git clone git://github.com/moodleou/moodle-report_editdates.git report/editdates
++    echo '/report/editdates/' >> .git/info/exclude
++
++Then visit the admin screen to allow the install to complete.
++
++Once the plugin is installed, you can access the functionality by going to
++Reports -> Dates in the Course adminstration block.
+diff --git a/report/editdates/blocks/example.php b/report/editdates/blocks/example.php
+new file mode 100755
+index 0000000..cffda09
+--- /dev/null
++++ b/report/editdates/blocks/example.php
+@@ -0,0 +1,67 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++// This is an example of how to make a block date extractor.
++// If we ever need to edit dates in block, use this as a template.
++
++/**
++ * Example of how you would extract date settings from a block.
++ *
++ * @package   report_editdates
++ * @copyright 2011 The Open University
++ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++defined('MOODLE_INTERNAL') || die;
++
++
++/**
++ * Example {@link report_editdates_block_date_extractor} subclass.
++ *
++ * @copyright 2011 The Open University
++ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++class report_editdates_block_html_date_extractor  extends report_editdates_block_date_extractor {
++
++    /**
++     * Constructor.
++     * @param object $course course settings from the DB.
++     */
++    public function __construct($course) {
++        parent::__construct($course, 'html');
++        parent::load_data();
++    }
++
++    public function get_settings(block_base $block) {
++        // Check if title text is a valid date then return the array.
++        $title = $block->title;
++        if ((string) (int) $title === $title) {
++                return array('title' => new report_editdates_date_setting
++                                             (get_string('availabledate', 'assignment'),
++                                             $block->title,
++                                             self::DATETIME, false, 5)
++                );
++        }
++    }
++
++    public function validate_dates(block_base $block, array $dates) {
++        $errors = array();
++        if ($dates['title'] == 0 ) {
++            $errors['title'] = get_string('datemustnotzero', 'report_editdates');
++        }
++        return $errors;
++    }
++}
+diff --git a/report/editdates/classes/event/report_viewed.php b/report/editdates/classes/event/report_viewed.php
+new file mode 100755
+index 0000000..67ea592
+--- /dev/null
++++ b/report/editdates/classes/event/report_viewed.php
+@@ -0,0 +1,101 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++/**
++ *
++ * @package    report_editdates
++ * @copyright  2014 The Open University
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++namespace report_editdates\event;
++
++defined('MOODLE_INTERNAL') || die();
++
++/**
++ *
++ * @package    report_editdates
++ * @since      Moodle 2.7
++ * @copyright  2014 The Open University
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++class report_viewed extends \core\event\base {
++
++    /**
++     * Init method.
++     *
++     * @return void
++     */
++    protected function init() {
++        $this->data['crud'] = 'r';
++        $this->data['edulevel'] = self::LEVEL_OTHER;
++    }
++
++    /**
++     * Returns description of what happened.
++     *
++     * @return string
++     */
++    public function get_description() {
++        $description = <<<EOF
++The user with id '$this->userid' viewed report edit dates page on course id '$this->courseid'
++EOF;
++
++        return $description;
++    }
++
++    /**
++     * Return localised event name.
++     *
++     * @return string
++     */
++    public static function get_name() {
++        return get_string('event:reportviewed', 'report_editdates');
++    }
++
++    /**
++     * Get URL related to the action
++     *
++     * @return \moodle_url
++     */
++    public function get_url() {
++        $params = array('id' => $this->courseid);
++        if ($this->other['activitytype']) {
++            $params['activitytype'] = $this->other['activitytype'];
++        }
++        return new \moodle_url('/report/editdates/index.php', $params);
++    }
++
++    public static function get_legacy_eventname() {
++        return 'report edit dates';
++    }
++
++    /**
++     * Return the legacy event log data.
++     *
++     * @return array|null
++     */
++    protected function get_legacy_logdata() {
++        return array(
++                $this->courseid,
++                "course",
++                "report edit dates",
++                "report/editdates/index.php?id={$this->courseid}",
++                $this->contextinstanceid
++        );
++    }
++
++}
+diff --git a/report/editdates/db/access.php b/report/editdates/db/access.php
+new file mode 100755
+index 0000000..b8bd723
+--- /dev/null
++++ b/report/editdates/db/access.php
+@@ -0,0 +1,38 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++/**
++ * report_editdates capability definitions.
++ *
++ * @package   report_editdates
++ * @copyright 2011 The Open University
++ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++defined('MOODLE_INTERNAL') || die;
++
++$capabilities = array(
++    'report/editdates:view' => array(
++        'riskbitmask' => RISK_PERSONAL,
++        'captype' => 'read',
++        'contextlevel' => CONTEXT_COURSE,
++        'archetypes' => array(
++            'editingteacher' => CAP_ALLOW,
++            'manager' => CAP_ALLOW
++        ),
++        'clonepermissionsfrom' => 'moodle/site:viewreports',
++    )
++);
+diff --git a/report/editdates/db/install.php b/report/editdates/db/install.php
+new file mode 100755
+index 0000000..7eaf9ed
+--- /dev/null
++++ b/report/editdates/db/install.php
+@@ -0,0 +1,49 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++/**
++ * Post installation and migration code.
++ *
++ * @package   report_editdates
++ * @copyright 2012 The Open University
++ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++defined('MOODLE_INTERNAL') || die;
++
++function xmldb_report_editdates_install() {
++    global $DB;
++
++    // This is a hack to copy the permission from the old place, if they were present.
++    // If this report is installed into a new Moodle, we just do what it says in access.php
++    // and clone the permissions from moodle/site:viewreports, but if we are upgrading
++    // a Moodle that had the old course report plugin installed, then we get rid of the
++    // new cloned capabilities, and transfer the old permissions.
++    if ($DB->record_exists('role_capabilities', array('capability' => 'coursereport/editdates:view'))) {
++        $DB->delete_records('role_capabilities', array('capability' => 'report/editdates:view'));
++        $DB->set_field('role_capabilities', 'capability', 'report/editdates:view',
++                array('capability' => 'coursereport/editdates:view'));
++    }
++
++    // This is a hack which is needed for cleanup of original coursereport_completion stuff.
++    unset_all_config_for_plugin('coursereport_editdates');
++    capabilities_cleanup('coursereport_editdates');
++
++    // Update existing block page patterns.
++    $DB->set_field('block_instances', 'pagetypepattern', 'report-editdates-index',
++            array('pagetypepattern' => 'course-report-editdates-index'));
++}
++
+diff --git a/report/editdates/form.php b/report/editdates/form.php
+new file mode 100755
+index 0000000..78e9dbb
+--- /dev/null
++++ b/report/editdates/form.php
+@@ -0,0 +1,340 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++
++/**
++ * This is form to display the modules for editdates reports
++ *
++ * @package   report_editdates
++ * @copyright 2011 The Open University
++ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++defined('MOODLE_INTERNAL') || die;
++
++require_once($CFG->libdir.'/formslib.php');
++require_once(dirname(__FILE__) . '/lib.php');
++
++
++/**
++ * This is form to display the modules for editdates reports
++ *
++ * @copyright 2011 The Open University
++ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++class report_editdates_form extends moodleform {
++    /**
++     * @see lib/moodleform#definition()
++     */
++    public function definition() {
++        global $CFG, $COURSE, $DB, $PAGE;
++        $mform = $this->_form;
++
++        $modinfo       = $this->_customdata['modinfo'];
++        $course        = $this->_customdata['course'];
++        $activitytype  = $this->_customdata['activitytype'];
++
++        $coursehasavailability = !empty($CFG->enableavailability);
++        $coursehascompletion   = !empty($CFG->enablecompletion) && !empty($course->enablecompletion);
++
++        // Context instance of the course.
++        $coursecontext = context_course::instance($course->id);
++
++        // Store current activity type.
++        $mform->addElement('hidden', 'activitytype', $activitytype);
++        $mform->setType('activitytype', PARAM_PLUGIN);
++
++        // Add action button to the top of the form.
++        $addactionbuttons = false;
++        $this->add_action_buttons();
++
++        // Course start date.
++        $mform->addElement('header', 'coursestartdateheader', get_string('coursestartdateheader', 'report_editdates'));
++        $mform->setExpanded('coursestartdateheader', false);
++        $mform->addElement('date_selector', 'coursestartdate', get_string('startdate'));
++        $mform->addHelpButton('coursestartdate', 'startdate');
++        $mform->setDefault('coursestartdate', $course->startdate);
++
++        // If user is not capable, make it read only.
++        if (!has_capability('moodle/course:update', $coursecontext)) {
++            $mform->hardFreeze('coursestartdate');
++        } else {
++            $addactionbuttons = true;
++        }
++
++        // Var to count the number of elements in the course/sections.
++        // It will be used to decide whether to show save action button
++        // at the bottom of the form page.
++        $elementadded = 0;
++
++        // Default -1 to display header for 0th section.
++        $prevsectionnum = -1;
++
++        // Cycle through all the sections in the course.
++        $cms = $modinfo->get_cms();
++        $sections = $modinfo->get_section_info_all();
++        foreach ($sections as $sectionnum => $section) {
++            $ismodadded = false;
++            $sectionname = '';
++
++            // Skip if section isn't visible to the user.
++            if (!$section->uservisible) {
++                continue;
++            }
++
++            // New section, create header.
++            if ($prevsectionnum != $sectionnum) {
++                $sectionname = get_section_name($course, $section);
++                $headername = 'section' . $sectionnum . 'header';
++                $mform->addElement('header', $headername, $sectionname);
++                $mform->setExpanded($headername, false);
++                $prevsectionnum = $sectionnum;
++            }
++
++            if ($coursehasavailability && $section->availability) {
++                // If there are retricted access date settings.
++                if (strpos($section->availability, '"type":"date"') !== false) {
++                    $editsettingurl = new moodle_url('/course/editsection.php', array('id' => $section->id));
++                    $editsettingurltext = html_writer::tag('a',
++                            get_string('editrestrictedaccess', 'report_editdates'),
++                                    array('href' => $editsettingurl->out(false), 'target' => '_blank'));
++                    $mform->addElement('static', '',
++                            get_string('sectionhasrestrictedaccess',
++                                    'report_editdates', get_section_name($course, $section)),
++                                            $editsettingurltext);
++                }
++            }
++
++            // Cycle through each module in a section.
++            if (isset($modinfo->sections[$sectionnum])) {
++                foreach ($modinfo->sections[$sectionnum] as $cmid) {
++                    $cm = $cms[$cmid];
++
++                    // No need to display/continue if this module is not visible to user.
++                    if (!$cm->uservisible) {
++                        continue;
++                    }
++
++                    // If activity filter is on, then filter module by activity type.
++                    if ($activitytype && $cm->modname != $activitytype) {
++                        continue;
++                    }
++
++                    // Check if the user has capability to edit this module settings.
++                    $modulecontext = context_module::instance($cm->id);
++                    $ismodreadonly = !has_capability('moodle/course:manageactivities', $modulecontext);
++
++                    // Display activity name.
++                    $iconmarkup = html_writer::empty_tag('img', array(
++                            'src' => $cm->get_icon_url(), 'class' => 'activityicon', 'alt' => ''));
++                    $stractivityname = html_writer::tag('strong' , $iconmarkup . $cm->name);
++                    $mform->addElement('static', 'modname' . $cm->id, $stractivityname);
++                    $isdateadded = false;
++
++                    // Call get_settings method for the acitivity/module.
++                    // Get instance of the mod's date exractor class.
++                    $mod = report_editdates_mod_date_extractor::make($cm->modname, $course);
++                    if ($mod && ($cmdatesettings = $mod->get_settings($cm))) {
++                        // Added activity name on the form.
++                        foreach ($cmdatesettings as $cmdatetype => $cmdatesetting) {
++                            $elname = 'date_mod_'.$cm->id.'_'.$cmdatetype;
++                            $mform->addElement($cmdatesetting->type, $elname,
++                                    $cmdatesetting->label, array(
++                                    'optional' => $cmdatesetting->isoptional,
++                                    'step' => $cmdatesetting->getstep));
++                            $mform->setDefault($elname, $cmdatesetting->currentvalue);
++                            if ($ismodreadonly) {
++                                $mform->hardFreeze($elname);
++                            }
++                            $elementadded++;
++
++                            $isdateadded = true;
++                        }
++                    }
++
++                    if ($coursehasavailability && $cm->availability) {
++                        // If there are retricted access date settings.
++                        if (strpos($cm->availability, '"type":"date"') !== false) {
++                            $editsettingurl = new moodle_url('/course/modedit.php', array('update' => $cm->id));
++                            $editsettingurltext = html_writer::tag('a',
++                                    get_string('editrestrictedaccess', 'report_editdates'),
++                                            array('href' => $editsettingurl->out(false), 'target' => '_blank'));
++                            $mform->addElement('static', '',
++                                    get_string('hasrestrictedaccess', 'report_editdates', ($cm->name)),
++                                            $editsettingurltext);
++                        }
++                    }
++
++                    // Completion tracking.
++                    if ($coursehascompletion && $cm->completion) {
++                        $elname = 'date_mod_'.$cm->id.'_completionexpected';
++                        $mform->addElement('date_selector', $elname,
++                                get_string('completionexpected', 'completion'),
++                                array('optional' => true));
++                        $mform->addHelpButton($elname, 'completionexpected', 'completion');
++                        $mform->setDefault($elname, $cm->completionexpected);
++                        if ($ismodreadonly) {
++                            $mform->hardFreeze($elname);
++                        }
++                        $elementadded++;
++
++                        $isdateadded = true;
++                    }
++
++                    if ($isdateadded) {
++                        $ismodadded = true;
++                        $addactionbuttons = true;
++                    } else {
++                        $mform->removeElement('modname' . $cm->id);
++                    }
++                } // End of modules loop.
++
++                if (!$ismodadded && $mform->elementExists($sectionname)) {
++                    $mform->removeElement($sectionname);
++                }
++            }
++        } // End of sections loop.
++
++        // Fetching all the blocks added directly under the course.
++        // That is, parentcontextid = coursecontextid.
++        $courseblocks = $DB->get_records('block_instances', array('parentcontextid' => $coursecontext->id));
++
++        // Check capability of current user.
++        $canmanagesiteblocks = has_capability('moodle/site:manageblocks', $coursecontext);
++
++        $anyblockadded = false;
++        if ($courseblocks) {
++            // Header for blocks.
++            $mform->addElement('header', 'blockdatesection');
++
++            // Iterate though blocks array.
++            foreach ($courseblocks as $blockid => $block) {
++                $blockdatextrator = report_editdates_block_date_extractor::make($block->blockname, $course);
++                if ($blockdatextrator) {
++                    // Create the block instance.
++                    $blockobj = block_instance($block->blockname, $block, $PAGE);
++                    // If get_settings returns a valid array.
++                    if ($blockdatesettings = $blockdatextrator->get_settings($blockobj)) {
++                        $anyblockadded = true;
++                        $addactionbuttons = true;
++                        // Adding block's Title on page.
++                        $mform->addElement('static', 'blocktitle', $blockobj->title);
++                        foreach ($blockdatesettings as $blockdatetype => $blockdatesetting) {
++                            $elname = 'date_block_'.$block->id.'_'.$blockdatetype;
++                            // Add element.
++                            $mform->addElement($blockdatesetting->type, $elname,
++                                    $blockdatesetting->label,
++                                    array('optional' => $blockdatesetting->isoptional,
++                                    'step' => $blockdatesetting->getstep));
++                            $mform->setDefault($elname, $blockdatesetting->currentvalue);
++                            if (!$canmanagesiteblocks || !$blockobj->user_can_edit()) {
++                                $mform->hardFreeze($elname);
++                            }
++                            $elementadded++;
++                        }
++                    }
++                }
++            }
++        }
++        if (!$anyblockadded && $mform->elementExists('blockdatesection')) {
++            $mform->removeElement('blockdatesection');
++        }
++
++        // Adding submit/cancel buttons @ the end of the form.
++        if ($addactionbuttons && $elementadded > 0) {
++            $this->add_action_buttons();
++        } else {
++            // Remove top action button.
++            $mform->removeElement('buttonar');
++        }
++    }
++
++    public function validation($data, $files) {
++        global $CFG;
++        $errors = parent::validation($data, $files);
++
++        $modinfo = $this->_customdata['modinfo'];
++        $course = $this->_customdata['course'];
++        $coursecontext = context_course::instance($course->id);
++
++        $moddatesettings = array();
++        $forceddatesettings = array();
++        foreach ($data as $key => $value) {
++            if ($key == "coursestartdate") {
++                continue;
++            }
++
++            $cmsettings = explode('_', $key);
++            // The array should have 4 keys.
++            if (count($cmsettings) != 4) {
++                continue;
++            }
++
++            // Ignore 0th position, it will be 'date'
++            // 1st position should be the mod type
++            // 2nd will be the id of module
++            // 3rd will be property of module
++            // ensure that the name is proper.
++            if (isset($cmsettings['1']) && isset($cmsettings['2']) && isset($cmsettings['3'])) {
++                // Check if its mod date settings.
++                if ($cmsettings['1'] == 'mod') {
++                    // Check if config date settings are forced
++                    // and this is one of the forced date setting.
++                    if (($CFG->enableavailability || $CFG->enablecompletion )
++                            && in_array($cmsettings['3'], array('completionexpected', 'availablefrom', 'availableuntil'))) {
++                        $forceddatesettings[$cmsettings['2']][$cmsettings['3']] = $value;
++                    } else {
++                        // It is module date setting.
++                        $moddatesettings[$cmsettings['2']][$cmsettings['3']] = $value;
++                    }
++                }
++            }
++        }
++
++        $cms = $modinfo->get_cms();
++
++        // Validating forced date settings.
++        foreach ($forceddatesettings as $modid => $datesettings) {
++            // Course module object.
++            $cm = $cms[$modid];
++            $moderrors = array();
++            if (isset($datesettings['availablefrom']) && isset($datesettings['availableuntil'])
++                    && $datesettings['availablefrom'] != 0 && $datesettings['availableuntil'] != 0
++                    && $datesettings['availablefrom'] > $datesettings['availableuntil'] ) {
++                $errors['date_mod_'.$modid.'_availableuntil'] =
++                    get_string('badavailabledates', 'condition');
++            }
++        }
++
++        // Validating mod date settings.
++        foreach ($moddatesettings as $modid => $datesettings) {
++            // Course module object.
++            $cm = $cms[$modid];
++            $moderrors = array();
++
++            if ($mod = report_editdates_mod_date_extractor::make($cm->modname, $course)) {
++                $moderrors = $mod->validate_dates($cm, $datesettings);
++                if (!empty($moderrors)) {
++                    foreach ($moderrors as $errorfield => $errorstr) {
++                        $errors['date_mod_'.$modid.'_'.$errorfield] = $errorstr;
++                    }
++                }
++            }
++        }
++
++        return $errors;
++    }
++}
+diff --git a/report/editdates/index.php b/report/editdates/index.php
+new file mode 100755
+index 0000000..e44605a
+--- /dev/null
++++ b/report/editdates/index.php
+@@ -0,0 +1,244 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++/**
++ * Display date setting report for a course
++ *
++ * @package   report_editdates
++ * @copyright 2011 The Open University
++ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++
++require_once(dirname(__FILE__) . '/../../config.php');
++require_once(dirname(__FILE__) . '/form.php');
++
++define('REPORT_EDITDATES_ENABLE_FILTER_THRESHOLD', 20);
++
++$id = required_param('id', PARAM_INT);
++$activitytype = optional_param('activitytype', '', PARAM_PLUGIN);
++
++// Should be a valid course id.
++$course = $DB->get_record('course', array('id' => $id), '*', MUST_EXIST);
++
++require_login($course);
++
++// Setup page.
++$urlparams = array('id' => $id);
++if ($activitytype) {
++    $urlparams['activitytype'] = $activitytype;
++}
++$PAGE->set_url('/report/editdates/index.php', $urlparams);
++$PAGE->set_pagelayout('admin');
++
++// Check permissions.
++$coursecontext = context_course::instance($course->id);
++require_capability('report/editdates:view', $coursecontext);
++
++// Fetching all modules in the course.
++$modinfo = get_fast_modinfo($course);
++$cms = $modinfo->get_cms();
++
++// Prepare a list of activity types used in this course, and count the number that
++// might be displayed.
++$activitiesdisplayed = 0;
++$activitytypes = array();
++foreach ($modinfo->get_sections() as $sectionnum => $section) {
++    foreach ($section as $cmid) {
++        $cm = $cms[$cmid];
++
++        // Filter activities to those that are relevant to this report.
++        if (!$cm->uservisible) {
++            continue;
++        }
++
++        if (!report_editdates_cm_has_dates($cm, $course)) {
++            continue;
++        }
++
++        $activitiesdisplayed += 1;
++        $activitytypes[$cm->modname] = get_string('modulename', $cm->modname);
++    }
++}
++core_collator::asort($activitytypes);
++
++if ($activitiesdisplayed <= REPORT_EDITDATES_ENABLE_FILTER_THRESHOLD) {
++    $activitytypes = array('' => get_string('all')) + $activitytypes;
++}
++
++// If activity count is above the threshold, activate the filter controls.
++if (!$activitytype && $activitiesdisplayed > REPORT_EDITDATES_ENABLE_FILTER_THRESHOLD) {
++    reset($activitytypes);
++    redirect(new moodle_url('/report/editdates/index.php',
++            array('id' => $id, 'activitytype' => key($activitytypes))));
++}
++
++// Creating the form.
++$baseurl = new moodle_url('/report/editdates/index.php', array('id' => $id));
++$mform = new report_editdates_form($baseurl, array('modinfo' => $modinfo,
++        'course' => $course, 'activitytype' => $activitytype));
++
++$returnurl = new moodle_url('/course/view.php', array('id' => $id));
++if ($mform->is_cancelled()) {
++    // Redirect to course view page if form is cancelled.
++    redirect($returnurl);
++
++} else if ($data = $mform->get_data()) {
++    // Process submitted data.
++
++    $moddatesettings = array();
++    $blockdatesettings = array();
++    $sectiondatesettings = array();
++    $forceddatesettings = array();
++
++    foreach ($data as $key => $value) {
++        if ($key == "coursestartdate") {
++            $course->startdate = $value;
++        } else {
++            // It is a module. Need to extract date settings for each module.
++            $cmsettings = explode('_', $key);
++            // The array should have 4 keys.
++            if (count($cmsettings) == 4) {
++                // Ignore 0th position, it will be 'date'
++                // 1st position should be the mod type
++                // 2nd will be the id of module
++                // 3rd will be property of module
++                // ensure that the name is proper.
++                if (isset($cmsettings['1']) && isset($cmsettings['2']) && isset($cmsettings['3'])) {
++                    // Check if its mod date settings.
++                    if ($cmsettings['1'] == 'mod') {
++                        // Module context.
++                        $modcontext = context_module::instance($cmsettings['2']);
++                        // User should be capable of updating individual module.
++                        if (has_capability('moodle/course:manageactivities', $modcontext)) {
++                            // Check if config date settings are forced
++                            // and this is one of the forced date setting.
++                            if (($CFG->enablecompletion || $CFG->enableavailability)
++                                    && ($cmsettings['3'] == "completionexpected"
++                                    || $cmsettings['3'] == "availablefrom"
++                                    || $cmsettings['3'] == "availableuntil") ) {
++                                $forceddatesettings[$cmsettings['2']][$cmsettings['3']]=$value;
++                            } else {
++                                // Module date setting.
++                                $moddatesettings[$cmsettings['2']][$cmsettings['3']] = $value;
++                            }
++                        }
++                    } else if ($cmsettings['1'] == 'block') {
++                        // If user is capable of updating blocks in course context.
++                        if (has_capability('moodle/site:manageblocks', $coursecontext)) {
++                            $blockdatesettings[$cmsettings['2']][$cmsettings['3']] = $value;
++                        }
++                    } else if ($cmsettings['1'] == 'section') {
++                        // If user is capable of updating sections in course context.
++                        if (has_capability('moodle/course:update', $coursecontext)) {
++                            $sectiondatesettings[$cmsettings['2']][$cmsettings['3']] = $value;
++                        }
++                    }
++                }
++            }
++        }
++    }
++
++    // Start transaction.
++    $transaction = $DB->start_delegated_transaction();
++    // Allow to update only if user is capable.
++    if (has_capability('moodle/course:update', $coursecontext)) {
++        $DB->set_field('course', 'startdate', $course->startdate, array('id' => $course->id));
++    }
++
++    // Update forced date settings.
++    foreach ($forceddatesettings as $modid => $datesettings) {
++        $cm = new stdClass();
++        $cm->id = $modid;
++        foreach ($datesettings as $datetype => $value) {
++            $cm->$datetype = $value;
++        }
++        // Update object in course_modules class.
++        $DB->update_record('course_modules', $cm, true);
++    }
++
++    // Update section date settings.
++    foreach ($sectiondatesettings as $sectionid => $datesettings) {
++       $sectionsettings = array('availablefrom', 'availableuntil');
++       $section = new stdClass();
++       $section->id = $sectionid;
++       foreach($sectionsettings as $setting) {
++           if (isset($datesettings[$setting])) {
++               $section->{$setting} = $datesettings[$setting];
++           } else {
++               $section->{$setting} = 0;
++           }
++       }
++       $DB->update_record('course_sections', $section, true);
++    }
++
++    // Update mod date settings.
++    foreach ($moddatesettings as $modid => $datesettings) {
++        $cm = $cms[$modid];
++        $mod = report_editdates_mod_date_extractor::make($cm->modname, $course);
++        if ($mod) {
++            $mod->save_dates($cm, $datesettings);
++        }
++    }
++
++    // Update block date settings.
++    $courseblocks = $DB->get_records("block_instances",
++            array('parentcontextid' => $coursecontext->id));
++    foreach ($blockdatesettings as $blockid => $datesettings) {
++        $block = $courseblocks[$blockid];
++
++        $blockobj = block_instance($block->blockname, $block, $PAGE);
++
++        if ($blockobj->user_can_edit()) {
++
++            $blockdatextrator =
++            report_editdates_block_date_extractor::make($block->blockname, $course);
++            if ($blockdatextrator) {
++                $blockdatextrator->save_dates($blockobj, $datesettings);
++            }
++        }
++    }
++
++    // Commit transaction and finish up.
++    $transaction->allow_commit();
++    rebuild_course_cache($course->id);
++    redirect($PAGE->url);
++}
++
++// Prepare activity type menu.
++$select = new single_select($baseurl, 'activitytype', $activitytypes, $activitytype, null, 'activitytypeform');
++$select->set_label(get_string('activitytypefilter', 'report_editdates'));
++$select->set_help_icon('activitytypefilter', 'report_editdates');
++
++// Making log entry.
++$event = \report_editdates\event\report_viewed::create(
++        array('context' => $coursecontext, 'other' => array('activitytype' => $activitytype)));
++$event->trigger();
++
++// Set page title and page heading.
++$PAGE->set_title($course->shortname .': '. get_string('editdates' , 'report_editdates'));
++$PAGE->set_heading($course->fullname);
++
++// Displaying the page.
++echo $OUTPUT->header();
++echo $OUTPUT->heading(format_string($course->fullname));
++
++echo $OUTPUT->heading(get_string('activityfilter', 'report_editdates'));
++echo $OUTPUT->render($select);
++
++$mform->display();
++
++echo $OUTPUT->footer();
+diff --git a/report/editdates/internaldoc/testcase.txt b/report/editdates/internaldoc/testcase.txt
+new file mode 100755
+index 0000000..4c4893b
+--- /dev/null
++++ b/report/editdates/internaldoc/testcase.txt
+@@ -0,0 +1,34 @@
++Initial Setup
++=============
++
++You need one test course with a few activities (fewer than 20), and one test
++course with many activities (more than 20), including at least one of each type.
++
++Start with Activity completion and Conditional availability enabled in the admin menu.
++
++Test script
++===========
++
++1.  In the small course, go to Administration -> Reports -> Dates.
++2.  At the top will be an 'Activity type' selector. This should be set to 'All activities'.
++3.  Then there will be a form with a section at the top for the course start date,
++    and sections below for each course section that contains relevant activities.
++    In each section will be all the date settings for each activity.
++4.  Change some settings here, then go to the standard edit settings page for that
++    activity, and ensure that the changed settings have been saved.
++5.  Change some date settings in the standard activity settings from, go back to
++    the edit dates report, and ensure the updated dates are shown there.
++6.  Now go to the report for the large course. The report will automatically
++    swtich to only show one type of activity, to stop the form from being too big.
++7.  Switch through each activity type, and ensure that the date settings in the
++    report have exactly the same set of date settings as in the standard
++    activity settings form. Specific things to check are:
++    * whether you can set time as well as date for each setting.
++    * the precision, e.g. whether you can set any minutes, or just multiples of 5.
++    * for settings that depend on other settings on the from, e.g. forum rating
++      dates, the setting should only appear in the report if it is enabled in the
++      activity settings.
++    * that the disabled-if dependencies between the settings for each activity are
++      the same as on the editing form.
++8.  Turn off Activity completion and/or Conditional availability and ensure that
++    the corresponding settings disapper in the report.
+diff --git a/report/editdates/lang/en/report_editdates.php b/report/editdates/lang/en/report_editdates.php
+new file mode 100755
+index 0000000..f0534f2
+--- /dev/null
++++ b/report/editdates/lang/en/report_editdates.php
+@@ -0,0 +1,48 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++/**
++ * Strings for component 'report_editdates', language 'en'
++ *
++ * @package   report_editdates
++ * @copyright 2011 The Open University
++ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++defined('MOODLE_INTERNAL') || die;
++
++
++$string['activityfilter'] = 'Activity view filter <small>(changing this filter will not save the remaining form data)</small>';
++$string['activitytypefilter'] = 'Activity type';
++$string['activitytypefilter_help'] = 'Use the filter to select activities to view and modify. Applying the filter will change the form display but will not save any existing changes.';
++$string['applyactivitytypefilter'] = 'Apply activity type filter';
++$string['assesstimefinish'] = 'Time To cannot be less than Time From';
++$string['closedate'] = 'Close date cannot be less than Open Date';
++$string['coursestartdateheader'] = 'Course';
++$string['deadline'] = 'Deadline cannot be less than Available From';
++$string['editdates'] = 'Dates';
++$string['editdates:view'] = 'View edit dates course report';
++$string['editend'] = 'Prevent editing from cannot be less than Allow editing from';
++$string['page-report-editdates-index'] = 'Edit course dates';
++$string['pluginname'] = 'Dates';
++$string['timeclose'] = 'Time Close cannot be less than Time Open';
++$string['timedue'] = 'Time Due cannot be less than Time available';
++$string['timeuntil'] = 'Time From cannot be less than Time Until';
++$string['timeend'] = 'Prevent from cannot be less than Allow From';
++$string['sectionhasrestrictedaccess'] = 'Section {$a} has restricted date access settings';
++$string['hasrestrictedaccess'] = '{$a} has restricted date access settings';
++$string['editrestrictedaccess'] = 'Edit restricted access (opens a new window)';
++$string['event:reportviewed'] = 'Edit dates report viewed';
+diff --git a/report/editdates/lib.php b/report/editdates/lib.php
+new file mode 100755
+index 0000000..aec4cb2
+--- /dev/null
++++ b/report/editdates/lib.php
+@@ -0,0 +1,441 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++/**
++ * Library functions for the edit dates report.
++ *
++ * @package   report_editdates
++ * @copyright 2011 The Open University
++ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++
++/**
++ * Simple class capturing the information needed to add
++ * one date setting to the editing form.
++ *
++ * @copyright 2011 The Open University
++ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++class report_editdates_date_setting {
++    /**
++     * @var string label that should be displayed on the form.
++     */
++    public $label;
++    /**
++     * @var int the current value of this setting. Used to init the form.
++     */
++    public $currentvalue;
++    /**
++     * @var string one of the consts DATE or DATETIME defined below.
++     */
++    public $type;
++    /**
++     * @var bool whether this date can be enabled/disabled.
++     * Option passed when adding the element to the form.
++     */
++    public $isoptional;
++    /**
++     * @var int only relevant for datetime elements.
++     * Option passed when adding the element to the form.
++     */
++    public $getstep;
++    /**
++     * Constructor. A quick way to create an initialise an instance.
++     */
++    public function __construct($label, $currentvalue, $type, $isoptional, $getstep = 5) {
++        $this->label = $label;
++        $this->currentvalue = $currentvalue;
++        $this->type = $type;
++        $this->isoptional = $isoptional;
++        $this->getstep = $getstep;
++    }
++}
++
++
++/**
++ * Base class for objects that handle the dates for a particular
++ * type of activity module.
++ *
++ * @copyright 2011 The Open University
++ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++abstract class report_editdates_mod_date_extractor {
++    const DATE = 'date_selector';
++    const DATETIME = 'date_time_selector';
++    /** @var object the course database row. */
++    protected $course;
++    /**
++     * @var string the type of activity we handle.
++     * E.g. 'quiz' or 'forum'.
++     */
++    protected $type;
++    /** @var array the data for these modules. */
++    protected $mods;
++
++    /** @var array a static array to cache the objects of child classes */
++    private static $moddateextractor = array();
++
++    /**
++     * Constructor.
++     * @param object $course the course database row.
++     * @param unknown_type $type the type of module to handle.
++     */
++    public function __construct($course, $type) {
++        $this->course = $course;
++        $this->type = $type;
++    }
++
++    /**
++     * This static function is used to create and cache objects of mod's date extractor classes
++     * @param String $modname the name of activity/resource e.g 'assignment', 'quiz'
++     */
++    public static function make($modname, $course) {
++        global $CFG;
++        // Check if static array already has an object for this mod extractor class.
++        if (array_key_exists($modname, self::$moddateextractor)) {
++            self::$moddateextractor[$modname];
++        }
++
++        // Create the new object of this mods date exractor file.
++        $filename = $CFG->dirroot . '/report/editdates/mod/' . $modname . 'dates.php';
++        if (file_exists($filename)) {
++            include_once($filename);
++            $classname = 'report_editdates_mod_'.$modname.'_date_extractor';
++            if (class_exists($classname)) {
++                self::$moddateextractor[$modname] = new $classname($course);
++                return self::$moddateextractor[$modname];
++            }
++        }
++        self::$moddateextractor[$modname] = null;
++        return self::$moddateextractor[$modname];
++    }
++
++    /**
++     * Load all the data we will need (in one go for efficiency).
++     */
++    public function load_data() {
++        global $DB;
++        $this->mods = $DB->get_records($this->type,    array('course' => $this->course->id));
++    }
++
++    /**
++     * Get a list of the settings required for this course_module instance.
++     * (See the quiz example below.)
++     * @param cm_info $cm the activity to return the settings for.
++     * @return array The array keys are strings that identif y each setting.
++     * The values are report_editdates_date_setting objects.
++     */
++    abstract public function get_settings(cm_info $cm);
++
++    /**
++     * Validate the submitted dates for this course_module instance.
++     * (See the quiz example below.)
++     * @param cm_info $cm the activity to validate the dates for.
++     * @param array $dates an array with array keys matching those
++     * returned by get_settings(), and the new
++     * dates as values.
++     * @return array Any validation errors. The array keys need to
++     * match the keys returned by get_settings().
++     * Return an empty array if there are no erros.
++     */
++    abstract public function validate_dates(cm_info $cm, array $dates);
++
++    /**
++     * Save the new dates for this course_module instance.
++     * @param cm_info $cm the activity to save the dates for.
++     */
++    public function save_dates(cm_info $cm, array $dates) {
++        global $DB;
++        $updateobj = new stdClass();
++        $updateobj->id = $cm->instance;
++        foreach ($this->get_settings($cm) as $name => $setting) {
++            $updateobj->$name = $dates[$name];
++        }
++        $updateobj->timemodified = time();
++        $DB->update_record($this->type, $updateobj);
++    }
++}
++
++
++/**
++ * Base class for objects that handle the dates for blocks.
++ *
++ * @copyright 2011 The Open University
++ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++abstract class report_editdates_block_date_extractor {
++    const DATE = 'date_selector';
++    const DATETIME = 'date_time_selector';
++    /** @var object the course database row. */
++    protected $course;
++    /**
++     * @var string the type of activity we handle.
++     * E.g. 'quiz' or 'forum'.
++     */
++    protected $type;
++    /** @var array the data for these modules. */
++    protected $blocks;
++
++    /** @var array a static array to cache the objects of child classes */
++    private static $blockdateextractor = array();
++
++    /**
++     * Constructor.
++     * @param object $course the course database row.
++     * @param $type the type of block to handle.
++     */
++    public function __construct($course, $type="block_instance") {
++        $this->course = $course;
++        $this->type = $type;
++    }
++
++    /**
++     * This static function is used to create and cache objects of block's date extractor classes
++     * @param String $blockname the name of the block e.g 'html'
++     */
++    public static function make($blockname, $course) {
++        global $CFG;
++        // Check if static array already has an object for this mod extractor class.
++        if (isset(self::$blockdateextractor[$blockname])) {
++            self::$blockdateextractor[$blockname];
++        }
++        // Create the new object of this mods date exractor file.
++        $filename = $CFG->dirroot . '/report/editdates/blocks/' . $blockname . 'dates.php';
++        if (file_exists($filename)) {
++            include_once($filename);
++            $classname = 'report_editdates_block_'.$blockname.'_date_extractor';
++            if (class_exists($classname)) {
++                self::$blockdateextractor[$blockname] = new $classname($course);
++                return self::$blockdateextractor[$blockname];
++            }
++        }
++        return null;
++    }
++
++    /**
++     * Load all the data we will need (in one go for efficiency).
++     */
++    public function load_data() {
++        global $DB;
++        $coursecontext = context_course::instance($this->course->id);
++        $this->blocks = $DB->get_records("block_instances",
++        array('blockname'=>$this->type, 'parentcontextid' => $coursecontext->id));
++    }
++
++    /**
++     * Get a list of the settings required for this course_module instance.
++     * (See the quiz example below.)
++     * @param cm_info $cm the activity to return the settings for.
++     * @return array The array keys are strings that identif y each setting.
++     * The values are report_editdates_date_setting objects.
++     */
++    abstract public function get_settings(block_base $block);
++
++    /**
++     * Validate the submitted dates for this course_module instance.
++     * (See the quiz example below.)
++     * @param cm_info $cm the activity to validate the dates for.
++     * @param array $dates an array with array keys matching those
++     * returned by get_settings(), and the new
++     * dates as values.
++     * @return array Any validation errors. The array keys need to
++     * match the keys returned by get_settings().
++     * Return an empty array if there are no erros.
++     */
++    abstract public function validate_dates(block_base $block, array $dates);
++
++    /**
++     * Save the new dates for this course_module instance.
++     * @param cm_info $cm the activity to save the dates for.
++     */
++    public function save_dates(block_base $block, array $dates) {
++        global $DB;
++
++        // Set the dates in block's config and update the config field in DB.
++        foreach ($this->get_settings($block) as $name => $setting) {
++            $block->config->$name = $dates[$name];
++        }
++
++        $DB->set_field('block_instances', 'configdata', base64_encode(serialize($block->config)),
++        array('id' => $block->instance->id));
++
++    }
++}
++
++
++/**
++ * This function extends the navigation with the report items
++ *
++ * @param navigation_node $navigation The navigation node to extend
++ * @param stdClass $course The course to object for the report
++ * @param stdClass $context The context of the course
++ */
++function report_editdates_extend_navigation_course($navigation, $course, $context) {
++    global $CFG, $OUTPUT;
++    if (has_capability('report/editdates:view', $context)) {
++        $url = new moodle_url('/report/editdates/index.php', array('id' => $course->id));
++        if ($activitytype = optional_param('activitytype', '', PARAM_PLUGIN)) {
++            $url->param('activitytype', $activitytype);
++        }
++        $navigation->add(get_string( 'editdates', 'report_editdates' ),
++                $url, navigation_node::TYPE_SETTING, null, null, new pix_icon('i/report', ''));
++    }
++}
++
++/**
++ * Return a list of page types
++ * @param string $pagetype current page type
++ * @param stdClass $parentcontext Block's parent context
++ * @param stdClass $currentcontext Current context of block
++ * @return array
++ */
++function report_editdates_page_type_list($pagetype, $parentcontext, $currentcontext) {
++    return array(
++        '*'                      => get_string('page-x', 'pagetype'),
++        'report-*'               => get_string('page-report-x', 'pagetype'),
++        'report-editdates-index' => get_string('page-report-editdates-index',  'report_editdates'),
++    );
++}
++
++/**
++ * Update the dates in all the activities and resources in certain sections of the course.
++ * This API will not handle course cache rebuild.
++ * This should be handled by the calling implementation
++ * @param int $courseid the course id.
++ * @param array $sectionnums the section numbers to update the activity dates in.
++ * @param string $offset a string that could be passed to the first argument
++ *                         of the PHP function strtotime (for example "+7 days").
++ */
++function report_editdates_update_dates_by_section($courseid, array $sectionnums, $offset) {
++    global $DB, $CFG;
++
++    if ($courseid == SITEID) {
++        return false;
++    }
++
++    if (!is_array($sectionnums)) {
++        return false;
++    }
++
++    $course = $DB->get_record('course', array('id' => $courseid), '*', MUST_EXIST);
++    $modinfo = get_fast_modinfo($course);
++
++    $forceddatesettings = array();
++    $moddatesettings = array();
++
++    // Loop through each section in the course.
++    foreach ($sectionnums as $sectionnum => $value) {
++        // Course modules in the section.
++        $cms = $modinfo->get_section_info($sectionnum);
++        foreach ($cms as $key => $cmid) {
++            $cm = $modinfo->get_cm($cmid);
++
++            if (!$cm->has_view()) {
++                continue;
++            }
++
++            if (!$cm->uservisible) {
++                continue;
++            }
++
++            // Config date settings forced and this is one of the forced date setting.
++            if ( ($CFG->enablecompletion || $CFG->enableavailability)
++                    && ($cm->completionexpected != 0 || $cm->availablefrom != 0
++                    || $cm->availableuntil != 0 ) ) {
++                // Competionexpected is set for this module.
++                if ($cm->completionexpected != 0) {
++                    $forceddatesettings[$cm->id]['completionexpected'] =
++                    strtotime($offset, $cm->completionexpected);
++                }
++                if ($cm->availablefrom != 0) {
++                    // Availablefrom is set for this module.
++                    $forceddatesettings[$cm->id]['availablefrom'] =
++                    strtotime($offset, $cm->availablefrom);
++                }
++                if ($cm->availableuntil != 0) {
++                    // Availableuntil is set for this module.
++                    $forceddatesettings[$cm->id]['availableuntil'] =
++                    strtotime($offset, $cm->availableuntil);
++                }
++            } else {
++                // It is module date setting.
++
++                $mod = report_editdates_mod_data_date_extractor::make($cm->modname, $course);
++                if ($mod) {
++                    // Received date settings of the module.
++                    if ($cmdatesettings = $mod->get_settings($cm)) {
++                        // Loop through each setting and add to the array.
++                        foreach ($cmdatesettings as $cmdatetype => $cmdatesetting) {
++                            // Value should be updated only if this mod is enabled.
++                            if ($cmdatesetting->currentvalue != 0 ) {
++                                $moddatesettings[$cm->id][$cmdatetype] =
++                                strtotime($offset, $cmdatesetting->currentvalue);
++                            }
++                        }
++                    }
++                }
++            }
++        } // End of $cms loop for each course module in section.
++    } // End of loop for each section in course.
++
++    $transaction = $DB->start_delegated_transaction();
++    try {
++        // Updating forced settings applied to modules.
++        foreach ($forceddatesettings as $cmid => $cmdatsettings) {
++            $cm = new stdClass();
++            $cm->id = $cmid;
++            foreach ($cmdatsettings as $datetype => $value) {
++                $cm->$datetype = $value;
++            }
++            // Update object in course_modules class.
++            $DB->update_record('course_modules', $cm, true);
++        }
++
++        // Updating mod date settings.
++        foreach ($moddatesettings as $cmid => $datesettings) {
++            $cm = $modinfo->get_cm($cmid);;
++            $modname = $cm->modname;
++
++            $modinstance = report_editdates_mod_data_date_extractor::make($cm->modname, $course);
++            if ($modinstance) {
++                $modinstance->save_dates($cm, $datesettings);
++            }
++        }
++        $transaction->allow_commit();
++
++    } catch (Exception $e) {
++        $transaction->rollback($e);
++    }
++}
++
++/**
++ * Does this cm have any date settings?
++ * @param stdClass $cm the course_module settings.
++ * @param stdClass $course the course settings.
++ * @return bool whether there are any dates to edit for this activity.
++ */
++function report_editdates_cm_has_dates($cm, $course) {
++    global $CFG;
++
++    $coursehasavailability = !empty($CFG->enableavailability);
++    $coursehascompletion   = !empty($CFG->enablecompletion) && !empty($course->enablecompletion);
++    if ($coursehasavailability || $coursehascompletion) {
++        return true;
++    }
++
++    return (bool) report_editdates_mod_date_extractor::make($cm->modname, $course);
++}
+diff --git a/report/editdates/mod/assigndates.php b/report/editdates/mod/assigndates.php
+new file mode 100755
+index 0000000..822a292
+--- /dev/null
++++ b/report/editdates/mod/assigndates.php
+@@ -0,0 +1,77 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++require_once($CFG->dirroot.'/mod/assign/locallib.php');
++
++class report_editdates_mod_assign_date_extractor
++extends report_editdates_mod_date_extractor {
++
++    public function __construct($course) {
++        parent::__construct($course, 'assign');
++        parent::load_data();
++    }
++
++    public function get_settings(cm_info $cm) {
++        $assign = $this->mods[$cm->instance];
++
++        return array(
++                'allowsubmissionsfromdate' => new report_editdates_date_setting(
++                        get_string('allowsubmissionsfromdate', 'assign'),
++                        $assign->allowsubmissionsfromdate,
++                        self::DATETIME, true, 5),
++                'duedate' => new report_editdates_date_setting(
++                        get_string('duedate', 'assign'),
++                        $assign->duedate,
++                        self::DATETIME, true, 5),
++                'cutoffdate' => new report_editdates_date_setting(
++                        get_string('cutoffdate', 'assign'),
++                        $assign->cutoffdate,
++                        self::DATETIME, true, 5),
++                );
++    }
++
++    public function validate_dates(cm_info $cm, array $dates) {
++        $errors = array();
++        if ($dates['allowsubmissionsfromdate'] && $dates['duedate']
++                && $dates['duedate'] < $dates['allowsubmissionsfromdate']) {
++            $errors['duedate'] = get_string('duedatevalidation', 'assign');
++        }
++
++        if ($dates['duedate'] && $dates['cutoffdate'] && $dates['duedate'] > $dates['cutoffdate']) {
++            $errors['cutoffdate'] = get_string('cutoffdatevalidation', 'assign');
++        }
++        return $errors;
++    }
++
++    public function save_dates(cm_info $cm, array $dates) {
++        global $DB, $COURSE;
++
++        $update = new stdClass();
++        $update->id = $cm->instance;
++        $update->duedate = $dates['duedate'];
++        $update->allowsubmissionsfromdate = $dates['allowsubmissionsfromdate'];
++        $update->cutoffdate = $dates['cutoffdate'];
++
++        $result = $DB->update_record('assign', $update);
++
++        $module = new assign(context_module::instance($cm->id), null, null);
++
++        // Update the calendar and grades.
++        $module->update_calendar($cm->id);
++
++        $module->update_gradebook(false, $cm->id);
++    }
++}
+diff --git a/report/editdates/mod/assignmentdates.php b/report/editdates/mod/assignmentdates.php
+new file mode 100755
+index 0000000..b79f427
+--- /dev/null
++++ b/report/editdates/mod/assignmentdates.php
+@@ -0,0 +1,67 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++require_once($CFG->dirroot.'/mod/assignment/lib.php');
++
++class report_editdates_mod_assignment_date_extractor
++extends report_editdates_mod_date_extractor {
++
++    public function __construct($course) {
++        parent::__construct($course, 'assignment');
++        parent::load_data();
++    }
++
++    public function get_settings(cm_info $cm) {
++        $ass = $this->mods[$cm->instance];
++        // Availability and due date settings for an assignment.
++        return array(
++            'timeavailable' => new report_editdates_date_setting(
++                    get_string('availabledate', 'assignment'),
++                    $ass->timeavailable, self::DATETIME, true, 5),
++            'timedue' => new report_editdates_date_setting(
++                    get_string('duedate', 'assignment'),
++                    $ass->timedue, self::DATETIME, true, 5)
++        );
++    }
++
++    public function validate_dates(cm_info $cm, array $dates) {
++        $errors = array();
++        if ($dates['timeavailable'] != 0 && $dates['timedue'] != 0 && $dates['timedue'] < $dates['timeavailable']) {
++            $errors['timedue'] = get_string('timedue', 'report_editdates');
++        }
++        return $errors;
++    }
++
++    public function save_dates(cm_info $cm, array $dates) {
++
++        // Fetch module instance from $mods array.
++        $assignment = $this->mods[$cm->instance];
++
++        $assignment->instance = $cm->instance;
++        $assignment->coursemodule = $cm->id;
++        $assignment->cmidnumber = $cm->id;
++
++        // Updating date values.
++        foreach ($dates as $datetype => $datevalue) {
++            $assignment->$datetype = $datevalue;
++        }
++
++        // Method name to udpate the instance and associated events.
++        $methodname = $cm->modname.'_update_instance';
++        // Calling the method.
++        $methodname($assignment);
++    }
++}
+diff --git a/report/editdates/mod/chatdates.php b/report/editdates/mod/chatdates.php
+new file mode 100755
+index 0000000..8d7be56
+--- /dev/null
++++ b/report/editdates/mod/chatdates.php
+@@ -0,0 +1,55 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++class report_editdates_mod_chat_date_extractor
++                extends report_editdates_mod_date_extractor {
++
++    public function __construct($course) {
++        parent::__construct($course, 'chat');
++        parent::load_data();
++    }
++
++    public function get_settings(cm_info $cm) {
++        $chat = $this->mods[$cm->instance];
++        return array('chattime' => new report_editdates_date_setting(
++                                    get_string('chattime', 'chat'),
++                                    $chat->chattime,
++                                    self::DATETIME, false, 5)
++        );
++    }
++
++    public function validate_dates(cm_info $cm, array $dates) {
++        $errors = array();
++        return $errors;
++    }
++
++    public function save_dates(cm_info $cm, array $dates) {
++
++        // Fetch module instance from $mods array.
++        $chat = $this->mods[$cm->instance];
++
++        $chat->instance = $cm->instance;
++        $chat->coursemodule = $cm->id;
++
++        // Updating date values.
++        foreach ($dates as $datetype => $datevalue) {
++            $chat->$datetype = $datevalue;
++        }
++
++        // Method name to update the instance and associated events.
++        chat_update_instance($chat);
++    }
++}
+diff --git a/report/editdates/mod/choicedates.php b/report/editdates/mod/choicedates.php
+new file mode 100755
+index 0000000..4249a60
+--- /dev/null
++++ b/report/editdates/mod/choicedates.php
+@@ -0,0 +1,50 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++class report_editdates_mod_choice_date_extractor
++            extends report_editdates_mod_date_extractor {
++
++    public function __construct($course) {
++        parent::__construct($course, 'choice');
++        parent::load_data();
++    }
++
++    public function get_settings(cm_info $cm) {
++        $choice = $this->mods[$cm->instance];
++        if ($choice->timeopen != 0 && $choice->timeclose != 0) {
++            return array('timeopen' => new report_editdates_date_setting(
++                                get_string('choiceopen', 'choice'),
++                                $choice->timeopen,
++                                self::DATETIME, false, 5),
++
++                          'timeclose' => new report_editdates_date_setting(
++                                get_string('choiceclose', 'choice'),
++                                $choice->timeclose,
++                                self::DATETIME, false, 5)
++            );
++        }
++        return null;
++    }
++
++    public function validate_dates(cm_info $cm, array $dates) {
++        $errors = array();
++        if (!empty($dates['timeopen']) && !empty($dates['timeclose']) &&
++                            $dates['timeclose'] < $dates['timeopen']) {
++            $errors['timeclose'] = get_string('timeclose', 'report_editdates');
++        }
++        return $errors;
++    }
++}
+diff --git a/report/editdates/mod/datadates.php b/report/editdates/mod/datadates.php
+new file mode 100755
+index 0000000..0825cf4
+--- /dev/null
++++ b/report/editdates/mod/datadates.php
+@@ -0,0 +1,77 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++class report_editdates_mod_data_date_extractor
++        extends report_editdates_mod_date_extractor {
++
++    public function __construct($course) {
++        parent::__construct($course, 'data');
++        parent::load_data();
++    }
++
++    public function get_settings(cm_info $cm) {
++        $data = $this->mods[$cm->instance];
++
++        $datadatesettings = array(
++            'timeavailablefrom' => new report_editdates_date_setting(
++                                    get_string('availablefromdate', 'data'),
++                                    $data->timeavailablefrom,
++                                    self::DATE, true),
++            'timeavailableto' => new report_editdates_date_setting(
++                                    get_string('availabletodate', 'data'),
++                                    $data->timeavailableto,
++                                    self::DATE, true),
++            'timeviewfrom' => new report_editdates_date_setting(
++                                    get_string('viewfromdate', 'data'),
++                                    $data->timeviewfrom,
++                                    self::DATE, true),
++            'timeviewto' => new report_editdates_date_setting(
++                                    get_string('viewtodate', 'data'),
++                                    $data->timeviewto,
++                                    self::DATE, true)
++        );
++        if ($data->assessed && ($data->assesstimestart != 0 || $data->assesstimefinish != 0) ) {
++            $datadatesettings['assesstimestart'] = new report_editdates_date_setting(
++                                    get_string('from'),
++                                    $data->assesstimestart,
++                                    self::DATETIME, false, 5);
++            $datadatesettings['assesstimefinish'] = new report_editdates_date_setting(
++                                    get_string('to'),
++                                    $data->assesstimefinish,
++                                    self::DATETIME, false, 5);
++        }
++        return $datadatesettings;
++    }
++
++    public function validate_dates(cm_info $cm, array $dates) {
++        $errors = array();
++        if ($dates['timeavailablefrom'] != 0 && $dates['timeavailableto'] != 0
++                && $dates['timeavailableto'] < $dates['timeavailablefrom']) {
++            $errors['timeavailableto'] = get_string('assesstimefinish', 'report_editdates');
++        }
++        if ($dates['timeviewfrom'] != 0 && $dates['timeviewto'] != 0
++                && $dates['timeviewto'] < $dates['timeviewfrom']) {
++            $errors['timeviewto'] = get_string('assesstimefinish', 'report_editdates');
++        }
++        if (isset($dates['assesstimestart']) && isset($dates['assesstimefinish']) &&
++                $dates['assesstimestart'] != 0 && $dates['assesstimefinish'] != 0 &&
++                $dates['assesstimefinish'] < $dates['assesstimestart']) {
++
++            $errors['assesstimefinish'] = get_string('assesstimefinish', 'report_editdates');
++        }
++        return $errors;
++    }
++}
+diff --git a/report/editdates/mod/dataplusdates.php b/report/editdates/mod/dataplusdates.php
+new file mode 100755
+index 0000000..2349c20
+--- /dev/null
++++ b/report/editdates/mod/dataplusdates.php
+@@ -0,0 +1,65 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++class report_editdates_mod_dataplus_date_extractor
++        extends report_editdates_mod_date_extractor {
++
++    public function __construct($course) {
++        parent::__construct($course, 'dataplus');
++        parent::load_data();
++    }
++
++    public function get_settings(cm_info $cm) {
++        $data = $this->mods[$cm->instance];
++
++        $datadatesettings = array(
++            'timeavailablefrom' => new report_editdates_date_setting(
++                                    get_string('availablefromdate', 'dataplus'),
++                                    $data->timeavailablefrom,
++                                    self::DATE, true),
++            'timeavailableto' => new report_editdates_date_setting(
++                                    get_string('availabletodate', 'dataplus'),
++                                    $data->timeavailableto,
++                                    self::DATE, true),
++        );
++        if ($data->assessed) {
++            $datadatesettings['assesstimestart'] = new report_editdates_date_setting(
++                                    get_string('from'),
++                                    $data->assesstimestart,
++                                    self::DATETIME, false, 5);
++            $datadatesettings['assesstimefinish'] = new report_editdates_date_setting(
++                                    get_string('to'),
++                                    $data->assesstimefinish,
++                                    self::DATETIME, false, 5);
++        }
++        return $datadatesettings;
++    }
++
++    public function validate_dates(cm_info $cm, array $dates) {
++        $errors = array();
++        if ($dates['timeavailablefrom'] != 0 && $dates['timeavailableto'] != 0
++                && $dates['timeavailableto'] < $dates['timeavailablefrom']) {
++            $errors['timeavailableto'] = get_string('assesstimefinish', 'report_editdates');
++        }
++        if (isset($dates['assesstimestart']) && isset($dates['assesstimefinish']) &&
++                $dates['assesstimestart'] != 0 && $dates['assesstimefinish'] != 0 &&
++                $dates['assesstimefinish'] < $dates['assesstimestart']) {
++
++            $errors['assesstimefinish'] = get_string('assesstimefinish', 'report_editdates');
++        }
++        return $errors;
++    }
++}
+diff --git a/report/editdates/mod/externalquizdates.php b/report/editdates/mod/externalquizdates.php
+new file mode 100755
+index 0000000..bc735a0
+--- /dev/null
++++ b/report/editdates/mod/externalquizdates.php
+@@ -0,0 +1,47 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++class report_editdates_mod_externalquiz_date_extractor
++        extends report_editdates_mod_date_extractor {
++
++    public function __construct($course) {
++        parent::__construct($course, 'externalquiz');
++        parent::load_data();
++    }
++
++    public function get_settings(cm_info $cm) {
++        $extquiz = $this->mods[$cm->instance];
++        return array('timeopen' => new report_editdates_date_setting(
++                                        get_string('quizopen', 'externalquiz'),
++                                        $extquiz->timeopen,
++                                        self::DATETIME, true, 1),
++
++                     'timeclose' => new report_editdates_date_setting(
++                                        get_string('quizclose', 'externalquiz'),
++                                        $extquiz->timeclose,
++                                        self::DATETIME, true, 1)
++        );
++    }
++
++    public function validate_dates(cm_info $cm, array $dates) {
++        $errors = array();
++        if ($dates['timeopen'] != 0 && $dates['timeclose'] != 0 &&
++                $dates['timeclose'] < $dates['timeopen']) {
++            $errors['timeclose'] = get_string('timeclose', 'report_editdates');
++        }
++        return $errors;
++    }
++}
+diff --git a/report/editdates/mod/feedbackdates.php b/report/editdates/mod/feedbackdates.php
+new file mode 100755
+index 0000000..6e62e53
+--- /dev/null
++++ b/report/editdates/mod/feedbackdates.php
+@@ -0,0 +1,48 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++class report_editdates_mod_feedback_date_extractor
++            extends report_editdates_mod_date_extractor {
++
++    public function __construct($course) {
++        parent::__construct($course, 'feedback');
++        parent::load_data();
++    }
++
++    public function get_settings(cm_info $cm) {
++        $feedback = $this->mods[$cm->instance];
++        return array('timeopen' => new report_editdates_date_setting(
++                            get_string('feedbackopen', 'feedback'),
++                            $feedback->timeopen,
++                            self::DATETIME, true, 5),
++
++                      'timeclose' => new report_editdates_date_setting(
++                            get_string('feedbackclose', 'feedback'),
++                            $feedback->timeclose,
++                            self::DATETIME, true, 5)
++        );
++        return null;
++    }
++
++    public function validate_dates(cm_info $cm, array $dates) {
++        $errors = array();
++        if (!empty($dates['timeopen']) && !empty($dates['timeclose']) &&
++                            $dates['timeclose'] < $dates['timeopen']) {
++            $errors['timeclose'] = get_string('timeclose', 'report_editdates');
++        }
++        return $errors;
++    }
++}
+diff --git a/report/editdates/mod/forumdates.php b/report/editdates/mod/forumdates.php
+new file mode 100755
+index 0000000..f4f9f07
+--- /dev/null
++++ b/report/editdates/mod/forumdates.php
+@@ -0,0 +1,51 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++class report_editdates_mod_forum_date_extractor
++        extends report_editdates_mod_date_extractor {
++
++    public function __construct($course) {
++        parent::__construct($course, 'forum');
++        parent::load_data();
++    }
++
++    public function get_settings(cm_info $cm) {
++        $forum = $this->mods[$cm->instance];
++
++        if ($forum->assessed) {
++            return array('assesstimestart' => new report_editdates_date_setting(
++                                                get_string('from'),
++                                                $forum->assesstimestart,
++                                                self::DATETIME, false, 5),
++                         'assesstimefinish' => new report_editdates_date_setting(
++                                                get_string('to'),
++                                                $forum->assesstimefinish,
++                                                self::DATETIME, false, 5)
++            );
++        }
++        return null;
++    }
++
++    public function validate_dates(cm_info $cm, array $dates) {
++        $errors = array();
++        $forum = $this->mods[$cm->instance];
++        if ($forum->assessed && $dates['assesstimestart'] != 0 && $dates['assesstimefinish'] != 0 &&
++                $dates['assesstimefinish'] < $dates['assesstimestart']) {
++            $errors['assesstimefinish'] = get_string('assesstimefinish', 'report_editdates');
++        }
++        return $errors;
++    }
++}
+diff --git a/report/editdates/mod/forumngdates.php b/report/editdates/mod/forumngdates.php
+new file mode 100755
+index 0000000..b74ca06
+--- /dev/null
++++ b/report/editdates/mod/forumngdates.php
+@@ -0,0 +1,65 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++class report_editdates_mod_forumng_date_extractor
++        extends report_editdates_mod_date_extractor {
++
++    public function __construct($course) {
++        parent::__construct($course, 'forumng');
++        parent::load_data();
++    }
++
++    public function get_settings(cm_info $cm) {
++        $forumng = $this->mods[$cm->instance];
++        $forumngdatesettings = array();
++
++        if ($forumng->ratingscale != 0) {
++            $forumngdatesettings['ratingfrom'] = new report_editdates_date_setting(
++                                                    get_string('ratingfrom', 'forumng'),
++                                                    $forumng->ratingfrom,
++                                                    self::DATETIME, true, 5);
++            $forumngdatesettings['ratinguntil'] = new report_editdates_date_setting(
++                                                    get_string('ratinguntil', 'forumng'),
++                                                    $forumng->ratinguntil,
++                                                    self::DATETIME, true, 5);
++        }
++
++        $forumngdatesettings['postingfrom'] = new report_editdates_date_setting(
++                                                    get_string('postingfrom', 'forumng'),
++                                                    $forumng->postingfrom,
++                                                    self::DATETIME, true, 5);
++        $forumngdatesettings['postinguntil'] = new report_editdates_date_setting(
++                                                    get_string('postinguntil', 'forumng'),
++                                                    $forumng->postinguntil,
++                                                    self::DATETIME, true, 5);
++        return $forumngdatesettings;
++    }
++
++    public function validate_dates(cm_info $cm, array $dates) {
++        $errors = array();
++        if (isset($dates['ratingfrom']) && isset($dates['ratinguntil'])
++                && $dates['ratingfrom'] != 0 && $dates['ratinguntil'] != 0
++                && $dates['ratinguntil'] < $dates['ratingfrom']) {
++
++            $errors['ratinguntil'] = get_string('timeuntil', 'report_editdates');
++        }
++        if ($dates['postingfrom'] != 0 && $dates['postinguntil'] != 0
++                && $dates['postinguntil'] < $dates['postingfrom']) {
++            $errors['postinguntil'] = get_string('timeuntil', 'report_editdates');
++        }
++        return $errors;
++    }
++}
+diff --git a/report/editdates/mod/glossarydates.php b/report/editdates/mod/glossarydates.php
+new file mode 100755
+index 0000000..f05ea65
+--- /dev/null
++++ b/report/editdates/mod/glossarydates.php
+@@ -0,0 +1,50 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++class report_editdates_mod_glossary_date_extractor
++extends report_editdates_mod_date_extractor {
++
++    public function __construct($course) {
++        parent::__construct($course, 'glossary');
++        parent::load_data();
++    }
++
++    public function get_settings(cm_info $cm) {
++        $mod = $this->mods[$cm->instance];
++
++        if ($mod->assessed && ( $mod->assesstimestart != 0 || $mod->assesstimefinish != 0) ) {
++            return array('assesstimestart' => new report_editdates_date_setting(
++                                                    get_string('from'),
++                                                    $mod->assesstimestart,
++                                                    self::DATETIME, false, 5),
++                         'assesstimefinish' => new report_editdates_date_setting(
++                                                    get_string('to'),
++                                                    $mod->assesstimefinish,
++                                                    self::DATETIME, false, 5)
++            );
++        }
++        return null;
++    }
++
++    public function validate_dates(cm_info $cm, array $dates) {
++        $errors = array();
++        if ($dates['assesstimestart'] != 0 && $dates['assesstimefinish'] != 0
++                && $dates['assesstimefinish'] < $dates['assesstimestart']) {
++            $errors['assesstimefinish'] = get_string('assesstimefinish', 'report_editdates');
++        }
++        return $errors;
++    }
++}
+diff --git a/report/editdates/mod/lessondates.php b/report/editdates/mod/lessondates.php
+new file mode 100755
+index 0000000..08f0b47
+--- /dev/null
++++ b/report/editdates/mod/lessondates.php
+@@ -0,0 +1,63 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>..
++
++class report_editdates_mod_lesson_date_extractor
++        extends report_editdates_mod_date_extractor {
++
++    public function __construct($course) {
++        parent::__construct($course, 'lesson');
++        parent::load_data();
++    }
++
++    public function get_settings(cm_info $cm) {
++        $mod = $this->mods[$cm->instance];
++
++        return array('available' => new report_editdates_date_setting(
++                                        get_string('available', 'lesson'),
++                                        $mod->available, self::DATETIME, true, 5),
++                      'deadline' => new report_editdates_date_setting(
++                                        get_string('deadline', 'lesson'),
++                                        $mod->deadline, self::DATETIME, true, 5)
++        );
++    }
++
++    public function validate_dates(cm_info $cm, array $dates) {
++        $errors = array();
++        if ($dates['available'] != 0 && $dates['deadline'] != 0
++                && $dates['deadline'] < $dates['available']) {
++            $errors['deadline'] = get_string('deadline', 'report_editdates');
++        }
++        return $errors;
++    }
++
++    public function save_dates(cm_info $cm, array $dates) {
++        global $DB, $COURSE;
++
++        // Fetch module instance from $mods array.
++        $lesson = $this->mods[$cm->instance];
++
++        // Updating date values.
++        foreach ($dates as $datetype => $datevalue) {
++            $lesson->$datetype = $datevalue;
++        }
++
++        $lesson->timemodified = time();
++        // Update DB record.
++        $DB->update_record('lesson', $lesson);
++        // Update associated calender events.
++        lesson_process_post_save($lesson);
++    }
++}
+diff --git a/report/editdates/mod/nanogongdates.php b/report/editdates/mod/nanogongdates.php
+new file mode 100755
+index 0000000..3b60535
+--- /dev/null
++++ b/report/editdates/mod/nanogongdates.php
+@@ -0,0 +1,47 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++class report_editdates_mod_nanogong_date_extractor
++        extends report_editdates_mod_date_extractor {
++
++    public function __construct($course) {
++        parent::__construct($course, 'nanogong');
++        parent::load_data();
++    }
++
++    public function get_settings(cm_info $cm) {
++        $nanogong = $this->mods[$cm->instance];
++        
++        return array('timeavailable' => new report_editdates_date_setting(
++                                            get_string('availabledate', 'mod_nanogong'),
++                                            $nanogong->timeavailable,
++                                            self::DATETIME, true, 5),
++                     'timedue' => new report_editdates_date_setting(
++                                            get_string('duedate', 'mod_nanogong'),
++                                            $nanogong->timedue,
++                                            self::DATETIME, true, 5)
++        );
++    }
++
++    public function validate_dates(cm_info $cm, array $dates) {
++        $errors = array();
++        if ($dates['timeavailable'] != 0 && $dates['timedue'] != 0 &&
++                $dates['timedue'] < $dates['timeavailable']) {
++            $errors['timedue'] = get_string('deadline', 'report_editdates');
++        }
++        return $errors;
++    }
++}
+diff --git a/report/editdates/mod/oucollaboratedates.php b/report/editdates/mod/oucollaboratedates.php
+new file mode 100755
+index 0000000..94255b6
+--- /dev/null
++++ b/report/editdates/mod/oucollaboratedates.php
+@@ -0,0 +1,55 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++class report_editdates_mod_oucollaboratedates_date_extractor
++            extends report_editdates_mod_date_extractor {
++
++    public function __construct($course) {
++        parent::__construct($course, 'oucollaborate');
++        parent::load_data();
++    }
++
++    public function get_settings(cm_info $cm) {
++        $oucollaborate = $this->mods[$cm->instance];
++        return array('timestart' => new report_editdates_date_setting(
++                            get_string('sessionbegins', 'oucollaborate'),
++                            $oucollaborate->timestart,
++                            self::DATETIME, false, 15),
++
++                      'timeend' => new report_editdates_date_setting(
++                            get_string('sessionends', 'oucollaborate'),
++                            $oucollaborate->timeend,
++                            self::DATETIME, false, 15)
++        );
++    }
++
++    public function validate_dates(cm_info $cm, array $dates) {
++        $oucollaborate = $this->mods[$cm->instance];
++        $coursecontext = context_course::instance($this->course->id);
++
++        $errors = array();
++        if ($dates['timeend'] < $dates['timestart']) {
++            $errors['timeend'] = get_string('timeclose', 'report_editdates');
++        }
++
++        if ($oucollaborate->timestart != $dates['timestart'] && $dates['timestart'] < time() &&
++                !has_capability('mod/oucollaborate:modifysessionstart', $coursecontext)) {
++            $errors['timestart'] = get_string('starttimemodified', 'ouelluminate');
++        }
++
++        return $errors;
++    }
++}
+diff --git a/report/editdates/mod/ouelluminatedates.php b/report/editdates/mod/ouelluminatedates.php
+new file mode 100755
+index 0000000..e2bb3ec
+--- /dev/null
++++ b/report/editdates/mod/ouelluminatedates.php
+@@ -0,0 +1,47 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++class report_editdates_mod_ouelluminate_date_extractor
++            extends report_editdates_mod_date_extractor {
++
++    public function __construct($course) {
++        parent::__construct($course, 'ouelluminate');
++        parent::load_data();
++    }
++
++    public function get_settings(cm_info $cm) {
++        $ouelluminate = $this->mods[$cm->instance];
++        return array('timestart' => new report_editdates_date_setting(
++                            get_string('meetingbegins', 'ouelluminate'),
++                            $ouelluminate->timestart,
++                            self::DATETIME, false, 15),
++
++                      'timeend' => new report_editdates_date_setting(
++                            get_string('meetingends', 'ouelluminate'),
++                            $ouelluminate->timeend,
++                            self::DATETIME, false, 15)
++        );
++    }
++
++    public function validate_dates(cm_info $cm, array $dates) {
++        $errors = array();
++        if (!empty($dates['timestart']) && !empty($dates['timeend']) &&
++                            $dates['timeend'] < $dates['timestart']) {
++            $errors['timeend'] = get_string('timeclose', 'report_editdates');
++        }
++        return $errors;
++    }
++}
+diff --git a/report/editdates/mod/ouwikidates.php b/report/editdates/mod/ouwikidates.php
+new file mode 100755
+index 0000000..ab8a83d
+--- /dev/null
++++ b/report/editdates/mod/ouwikidates.php
+@@ -0,0 +1,48 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>..
++
++require_once($CFG->dirroot.'/mod/ouwiki/lib.php');
++
++class report_editdates_mod_ouwiki_date_extractor
++extends report_editdates_mod_date_extractor {
++
++    public function __construct($course) {
++        parent::__construct($course, 'ouwiki');
++        parent::load_data();
++    }
++
++    public function get_settings(cm_info $cm) {
++        $mod = $this->mods[$cm->instance];
++
++        return array('editbegin' => new report_editdates_date_setting(
++                                        get_string('editbegin', 'ouwiki'),
++                                        $mod->editbegin, self::DATETIME, true, 5),
++                     'editend' => new report_editdates_date_setting(
++                                        get_string('editend', 'ouwiki'),
++                                        $mod->editend, self::DATETIME, true, 5)
++        );
++
++    }
++
++    public function validate_dates(cm_info $cm, array $dates) {
++        $errors = array();
++        if ($dates['editbegin'] != 0 && $dates['editend'] != 0
++                && $dates['editend'] < $dates['editbegin']) {
++            $errors['editend'] = get_string('editend', 'report_editdates');
++        }
++        return $errors;
++    }
++}
+diff --git a/report/editdates/mod/pcastdates.php b/report/editdates/mod/pcastdates.php
+new file mode 100755
+index 0000000..de0cd81
+--- /dev/null
++++ b/report/editdates/mod/pcastdates.php
+@@ -0,0 +1,50 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++class report_editdates_mod_pcast_date_extractor
++extends report_editdates_mod_date_extractor {
++
++    public function __construct($course) {
++        parent::__construct($course, 'pcast');
++        parent::load_data();
++    }
++
++    public function get_settings(cm_info $cm) {
++        $mod = $this->mods[$cm->instance];
++
++        if ($mod->assessed && ( $mod->assesstimestart != 0 || $mod->assesstimefinish != 0) ) {
++            return array('assesstimestart' => new report_editdates_date_setting(
++                                                    get_string('from'),
++                                                    $mod->assesstimestart,
++                                                    self::DATETIME, false, 5),
++                         'assesstimefinish' => new report_editdates_date_setting(
++                                                    get_string('to'),
++                                                    $mod->assesstimefinish,
++                                                    self::DATETIME, false, 5)
++            );
++        }
++        return null;
++    }
++
++    public function validate_dates(cm_info $cm, array $dates) {
++        $errors = array();
++        if ($dates['assesstimestart'] != 0 && $dates['assesstimefinish'] != 0
++                && $dates['assesstimefinish'] < $dates['assesstimestart']) {
++            $errors['assesstimefinish'] = get_string('assesstimefinish', 'report_editdates');
++        }
++        return $errors;
++    }
++}
+diff --git a/report/editdates/mod/questionnairedates.php b/report/editdates/mod/questionnairedates.php
+new file mode 100755
+index 0000000..1abf9f6
+--- /dev/null
++++ b/report/editdates/mod/questionnairedates.php
+@@ -0,0 +1,70 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>..
++
++
++require_once($CFG->dirroot.'/mod/questionnaire/lib.php');
++
++class report_editdates_mod_questionnaire_date_extractor
++        extends report_editdates_mod_date_extractor {
++
++    public function __construct($course) {
++        parent::__construct($course, 'questionnaire');
++        parent::load_data();
++    }
++
++    public function get_settings(cm_info $cm) {
++        $mod = $this->mods[$cm->instance];
++        return array('opendate' => new report_editdates_date_setting(
++                                        get_string('opendate', 'questionnaire'),
++                                        $mod->opendate, self::DATETIME, true, 5),
++                    'closedate' => new report_editdates_date_setting(
++                                        get_string('closedate', 'questionnaire'),
++                                        $mod->closedate, self::DATETIME, true, 5),
++        );
++    }
++
++    public function validate_dates(cm_info $cm, array $dates) {
++        $errors = array();
++        if ($dates['opendate'] != 0 && $dates['closedate'] != 0
++                && $dates['closedate'] < $dates['opendate']) {
++            $errors['closedate'] = get_string('closedate', 'report_editdates');
++        }
++        return $errors;
++    }
++
++    public function save_dates(cm_info $cm, array $dates) {
++        global $DB, $COURSE;
++
++        // Fetch module instance from $mods array.
++        $questionnaire = $this->mods[$cm->instance];
++        $questionnaire->instance = $cm->instance;
++        $questionnaire->cmidnumber = $cm->id;
++
++        // Updating date values.
++        foreach ($dates as $datetype => $datevalue) {
++            $questionnaire->$datetype = $datevalue;
++            if ($datevalue != 0) {
++                $property = 'use'.$datetype;
++                $questionnaire->$property = 1;
++            }
++        }
++
++        // Method name to udpate the instance and associated events.
++        $methodname = $cm->modname.'_update_instance';
++        // Calling the method.
++        $methodname($questionnaire);
++    }
++}
+diff --git a/report/editdates/mod/quizdates.php b/report/editdates/mod/quizdates.php
+new file mode 100755
+index 0000000..af81d97
+--- /dev/null
++++ b/report/editdates/mod/quizdates.php
+@@ -0,0 +1,65 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>..
++
++require_once($CFG->dirroot.'/mod/quiz/lib.php');
++
++class report_editdates_mod_quiz_date_extractor
++        extends report_editdates_mod_date_extractor {
++
++    public function __construct($course) {
++        parent::__construct($course, 'quiz');
++        parent::load_data();
++    }
++
++    public function get_settings(cm_info $cm) {
++        $quiz = $this->mods[$cm->instance];
++        return array('timeopen' => new report_editdates_date_setting(
++                                        get_string('quizopen', 'quiz'),
++                                        $quiz->timeopen, self::DATETIME, true, 1),
++                     'timeclose' => new report_editdates_date_setting(
++                                        get_string('quizclose', 'quiz'),
++                                        $quiz->timeclose, self::DATETIME, true, 1)
++        );
++    }
++
++    public function validate_dates(cm_info $cm, array $dates) {
++        $errors = array();
++        if ($dates['timeopen'] != 0 && $dates['timeclose'] != 0
++                && $dates['timeclose'] < $dates['timeopen']) {
++            $errors['timeclose'] = get_string('timeclose', 'report_editdates');
++        }
++        return $errors;
++    }
++
++    public function save_dates(cm_info $cm, array $dates) {
++        parent::save_dates($cm, $dates);
++
++        // Fetch module instance from $mods array.
++        $quiz = $this->mods[$cm->instance];
++
++        $quiz->instance = $cm->instance;
++        $quiz->coursemodule = $cm->id;
++
++        // Updating date values.
++        foreach ($dates as $datetype => $datevalue) {
++            $quiz->$datetype = $datevalue;
++        }
++
++        // Calling the update event method to change the calender evenrs accordingly.
++        quiz_update_events($quiz);
++
++    }
++}
+diff --git a/report/editdates/mod/scormdates.php b/report/editdates/mod/scormdates.php
+new file mode 100755
+index 0000000..db1d838
+--- /dev/null
++++ b/report/editdates/mod/scormdates.php
+@@ -0,0 +1,46 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>..
++
++require_once($CFG->dirroot.'/mod/scorm/lib.php');
++
++class report_editdates_mod_scorm_date_extractor
++        extends report_editdates_mod_date_extractor {
++
++    public function __construct($course) {
++        parent::__construct($course, 'scorm');
++        parent::load_data();
++    }
++
++    public function get_settings(cm_info $cm) {
++        $mod = $this->mods[$cm->instance];
++        return array('timeopen' => new report_editdates_date_setting(
++                                        get_string("scormopen", "scorm"),
++                                        $mod->timeopen, self::DATETIME, true, 5),
++                     'timeclose' => new report_editdates_date_setting(
++                                        get_string("scormclose", "scorm"),
++                                        $mod->timeclose, self::DATETIME, true, 5)
++        );
++    }
++
++    public function validate_dates(cm_info $cm, array $dates) {
++        $errors = array();
++        if ($dates['timeopen'] != 0 && $dates['timeclose'] != 0
++                && $dates['timeclose'] < $dates['timeopen']) {
++            $errors['timeclose'] = get_string('timeclose', 'report_editdates');
++        }
++        return $errors;
++    }
++}
+diff --git a/report/editdates/mod/workshopdates.php b/report/editdates/mod/workshopdates.php
+new file mode 100755
+index 0000000..8c4bf24
+--- /dev/null
++++ b/report/editdates/mod/workshopdates.php
+@@ -0,0 +1,95 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>..
++
++require_once($CFG->dirroot.'/mod/quiz/lib.php');
++
++class report_editdates_mod_workshop_date_extractor
++        extends report_editdates_mod_date_extractor {
++
++    public function __construct($course) {
++        parent::__construct($course, 'workshop');
++        parent::load_data();
++    }
++
++    public function get_settings(cm_info $cm) {
++        $workshop = $this->mods[$cm->instance];
++        return array('submissionstart' => new report_editdates_date_setting(
++                                        get_string('submissionstart', 'workshop'),
++                                        $workshop->submissionstart, self::DATETIME, true, 5),
++                     'submissionend' => new report_editdates_date_setting(
++                                        get_string('submissionend', 'workshop'),
++                                        $workshop->submissionend, self::DATETIME, true, 5),
++                     'assessmentstart' => new report_editdates_date_setting(
++                                        get_string('assessmentstart', 'workshop'),
++                                        $workshop->assessmentstart, self::DATETIME, true, 5),
++                     'assessmentend' => new report_editdates_date_setting(
++                                        get_string('assessmentend', 'workshop'),
++                                        $workshop->assessmentend, self::DATETIME, true, 5),
++        );
++    }
++
++    public function validate_dates(cm_info $cm, array $dates) {
++        $errors = array();
++
++        // Check the phases borders are valid.
++        if ($dates['submissionstart'] > 0 && $dates['submissionend'] > 0 &&
++                $dates['submissionstart'] >= $dates['submissionend']) {
++            $errors['submissionend'] = get_string('submissionendbeforestart', 'mod_workshop');
++        }
++        if ($dates['assessmentstart'] > 0 && $dates['assessmentend'] > 0 &&
++                $dates['assessmentstart'] >= $dates['assessmentend']) {
++            $errors['assessmentend'] = get_string('assessmentendbeforestart', 'mod_workshop');
++        }
++
++        // Check the phases do not overlap.
++        if (max($dates['submissionstart'], $dates['submissionend']) > 0 &&
++                max($dates['assessmentstart'], $dates['assessmentend']) > 0) {
++            $phasesubmissionend = max($data['submissionstart'], $data['submissionend']);
++            $phaseassessmentstart = min($data['assessmentstart'], $data['assessmentend']);
++            if ($phaseassessmentstart == 0) {
++                $phaseassessmentstart = max($data['assessmentstart'], $data['assessmentend']);
++            }
++            if ($phasesubmissionend > 0 && $phaseassessmentstart > 0 && $phaseassessmentstart < $phasesubmissionend) {
++                foreach (array('submissionend', 'submissionstart', 'assessmentstart', 'assessmentend') as $f) {
++                    if ($data[$f] > 0) {
++                        $errors[$f] = get_string('phasesoverlap', 'mod_workshop');
++                        break;
++                    }
++                }
++            }
++        }
++
++        return $errors;
++    }
++
++    public function save_dates(cm_info $cm, array $dates) {
++        parent::save_dates($cm, $dates);
++
++        // Fetch module instance from $mods array.
++        $workshop = $this->mods[$cm->instance];
++
++        $workshop->instance = $cm->instance;
++        $workshop->coursemodule = $cm->id;
++
++        // Updating date values.
++        foreach ($dates as $datetype => $datevalue) {
++            $workshop->$datetype = $datevalue;
++        }
++
++        // Calling the update event method to change the calender evenrs accordingly.
++        workshop_calendar_update($workshop, $cm->id);
++    }
++}
+diff --git a/report/editdates/styles.css b/report/editdates/styles.css
+new file mode 100755
+index 0000000..7878247
+--- /dev/null
++++ b/report/editdates/styles.css
+@@ -0,0 +1,3 @@
++#page-report-editdates-index #activitytypeform {
++    margin-bottom: 1em;
++}
+diff --git a/report/editdates/tests/behat/basic.feature b/report/editdates/tests/behat/basic.feature
+new file mode 100755
+index 0000000..8b09b46
+--- /dev/null
++++ b/report/editdates/tests/behat/basic.feature
+@@ -0,0 +1,68 @@
++@ou @ou_vle @report @report_editdates
++Feature: Edit course plugin dates
++    When a user view edit dates report
++    They can change the plugn date settings
++
++    Background: Setup course and sample plugins
++        Given the following "users" exist:
++            | username | firstname | lastname | email |
++            | teacher1 | Teacher | 1 | teacher1@asd.com |
++            | student1 | Student | 1 | student1@asd.com |
++            | student2 | Student | 2 | student2@asd.com |
++            | student3 | Student | 3 | student3@asd.com |
++            | student4 | Student | 4 | student4@asd.com |
++        And the following "courses" exist:
++            | fullname | shortname | category |
++            | Course 1 | C1 | 0 |
++        And the following "course enrolments" exist:
++            | user | course | role |
++            | teacher1 | C1 | editingteacher |
++            | student1 | C1 | student |
++            | student2 | C1 | student |
++            | student3 | C1 | student |
++            | student4 | C1 | student |
++        And I log in as "teacher1"
++        And I follow "Course 1"
++        And I turn editing mode on
++        And I add a "Quiz" to section "1" and I fill the form with:
++          | Name | Test quiz name 1 |
++          | Description | Test forum description |
++        And I add a "Quiz" to section "2" and I fill the form with:
++          | Name | Test quiz name 2 |
++          | Description | Test forum description |
++        And I add a "Quiz" to section "3" and I fill the form with:
++          | Name | Test quiz name 3 |
++          | Description | Test forum description |
++        Given I log out
++
++    @javascript @_switch_iframe
++    Scenario: Test edit dates report can be used to change plugin instance dates
++        When I log in as "admin"
++        And I am on site homepage
++        And I follow "Course 1"
++        And I navigate to "Dates" node in "Course administration > Reports"
++        And I follow "Dates"
++        Then I should see "Course 1"
++        And I should see "Activity view filter "
++        And I follow "Expand all"
++        Then I should see "Course start date"
++        And I should see "Test quiz name 1"
++        And I should see "Test quiz name 2"
++        And I should see "Test quiz name 3"
++        # test to see whether we can pick up xpath element
++        And I set the field with xpath "//fieldset[@id='id_section2header']/div[@class='fcontainer clearfix']/div[2]/fieldset[1]/span/input" to "1"
++        And I set the field with xpath "//fieldset[@id='id_section2header']/div[@class='fcontainer clearfix']/div[3]/fieldset[1]/span/input" to "1"
++        And I set the field with xpath "//fieldset[@id='id_section3header']/div[@class='fcontainer clearfix']/div[2]/fieldset[1]/span/input" to "1"
++        And I set the field with xpath "//fieldset[@id='id_section3header']/div[@class='fcontainer clearfix']/div[3]/fieldset[1]/span/input" to "1"
++        And I press "Save changes"
++        Then I should see "Course 1"
++        And I should see "Activity view filter "
++        And I follow "Expand all"
++        Then I should see "Course start date"
++        And I should see "Test quiz name 1"
++        And I should see "Test quiz name 2"
++        And I should see "Test quiz name 3"
++        And the "value" attribute of "//fieldset[@id='id_section2header']/div[@class='fcontainer clearfix']/div[2]/fieldset[1]/span/input" "xpath_element" should contain "1"
++        And the "value" attribute of "//fieldset[@id='id_section2header']/div[@class='fcontainer clearfix']/div[3]/fieldset[1]/span/input" "xpath_element" should contain "1"
++        And the "value" attribute of "//fieldset[@id='id_section3header']/div[@class='fcontainer clearfix']/div[2]/fieldset[1]/span/input" "xpath_element" should contain "1"
++        And the "value" attribute of "//fieldset[@id='id_section3header']/div[@class='fcontainer clearfix']/div[3]/fieldset[1]/span/input" "xpath_element" should contain "1"
+diff --git a/report/editdates/version.php b/report/editdates/version.php
+new file mode 100755
+index 0000000..3d75712
+--- /dev/null
++++ b/report/editdates/version.php
+@@ -0,0 +1,34 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++/**
++ * report_editdates version information.
++ *
++ * @package   report_editdates
++ * @copyright 2011 The Open University
++ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++defined('MOODLE_INTERNAL') || die;
++
++$plugin->version   = 2015121500;
++$plugin->requires  = 2014041100;
++$plugin->cron      = 0;
++$plugin->component = 'report_editdates';
++$plugin->maturity  = MATURITY_STABLE;
++$plugin->release   = '2.4 for Moodle 2.7+';
++
++$plugin->outestssufficient = true;
+-- 
+1.8.3.1
+

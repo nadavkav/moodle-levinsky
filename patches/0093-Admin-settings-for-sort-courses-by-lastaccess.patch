@@ -1,0 +1,25 @@
+From a5de539fc86a737bf3de8d15a5ff51ee17dfc4b9 Mon Sep 17 00:00:00 2001
+From: Nadav Kavalerchik <nadavkav@gmail.com>
+Date: Fri, 28 Sep 2018 21:56:39 +0300
+Subject: [PATCH 93/95] Admin settings for sort courses by lastaccess
+
+---
+ admin/settings/appearance.php | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/admin/settings/appearance.php b/admin/settings/appearance.php
+index 5e13a2f..c34685f 100644
+--- a/admin/settings/appearance.php
++++ b/admin/settings/appearance.php
+@@ -177,6 +177,8 @@ preferences,moodle|/user/preferences.php|preferences',
+         'fullname' => new lang_string('sort_fullname', 'admin'),
+         'shortname' => new lang_string('sort_shortname', 'admin'),
+         'idnumber' => new lang_string('sort_idnumber', 'admin'),
++        'idnumberdesc' => new lang_string('sort_idnumber', 'admin') .' '. new lang_string('descending', 'data'),
++        'lastaccess' => new lang_string('lastaccess') ,
+     );
+     $temp->add(new admin_setting_configselect('navsortmycoursessort', new lang_string('navsortmycoursessort', 'admin'), new lang_string('navsortmycoursessort_help', 'admin'), 'sortorder', $sortoptions));
+     $temp->add(new admin_setting_configtext('navcourselimit', new lang_string('navcourselimit', 'admin'),
+-- 
+1.8.3.1
+

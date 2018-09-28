@@ -1,0 +1,161 @@
+From 11b4d7b2a6b82be6c5830c2715ea3fe49ea1d077 Mon Sep 17 00:00:00 2001
+From: Nadav Kavalerchik <nadavkav@gmail.com>
+Date: Sat, 14 Oct 2017 12:14:43 +0300
+Subject: [PATCH 59/95] question/bank (patch) Show own questions in shared
+ category (MDL-57376)
+
+---
+ lang/en/question.php                               |  1 +
+ mod/quiz/classes/question/bank/custom_view.php     |  3 +-
+ question/classes/bank/search/viewown_condition.php | 62 ++++++++++++++++++++++
+ question/classes/bank/view.php                     | 15 ++++--
+ 4 files changed, 77 insertions(+), 4 deletions(-)
+ create mode 100644 question/classes/bank/search/viewown_condition.php
+
+diff --git a/lang/en/question.php b/lang/en/question.php
+index b3c377d..695dae5 100644
+--- a/lang/en/question.php
++++ b/lang/en/question.php
+@@ -409,6 +409,7 @@ $string['showquestiontext'] = 'Show question text in the question list';
+ $string['shown'] = 'Shown';
+ $string['shownumpartscorrect'] = 'Show the number of correct responses';
+ $string['shownumpartscorrectwhenfinished'] = 'Show the number of correct responses once the question has finished';
++$string['showownquestions'] = 'In this category you can only see the questions you created';
+ $string['specificfeedback'] = 'Specific feedback';
+ $string['specificfeedback_help'] = 'Feedback that depends on what response the student gave.';
+ $string['started'] = 'Started';
+diff --git a/mod/quiz/classes/question/bank/custom_view.php b/mod/quiz/classes/question/bank/custom_view.php
+index f3db929..b040e4a 100644
+--- a/mod/quiz/classes/question/bank/custom_view.php
++++ b/mod/quiz/classes/question/bank/custom_view.php
+@@ -159,9 +159,10 @@ class custom_view extends \core_question\bank\view {
+         $cmoptions->hasattempts = !empty($this->quizhasattempts);
+ 
+         $canuseall = has_capability('moodle/question:useall', $catcontext);
++        $canusemine = has_capability('moodle/question:usemine', $catcontext);
+ 
+         echo '<div class="modulespecificbuttonscontainer">';
+-        if ($canuseall) {
++        if ($canuseall || $canusemine) {
+ 
+             // Add selected questions to the quiz.
+             $params = array(
+diff --git a/question/classes/bank/search/viewown_condition.php b/question/classes/bank/search/viewown_condition.php
+new file mode 100644
+index 0000000..bac5dce
+--- /dev/null
++++ b/question/classes/bank/search/viewown_condition.php
+@@ -0,0 +1,62 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++/**
++ * A search class which controls the display of question(s) created by current viewing user.
++ *
++ * @package   core_question
++ * @copyright 2016 Nadav Kavalerchik
++ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++namespace core_question\bank\search;
++defined('MOODLE_INTERNAL') || die();
++
++/**
++ * This class controls view of question(s) created by current user.
++ *
++ * @copyright 2016 Nadav Kavalerchik
++ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++class viewown_condition extends condition {
++
++    /** @var string SQL fragment to add to the where clause. */
++    protected $where;
++
++    /**
++     * Constructor.
++     */
++    public function __construct() {
++        global $USER;
++        $this->where = 'q.createdby = '.$USER->id;
++    }
++
++    /**
++     * Returns WHERE conditions.
++     * @return string the sql WHERE part of the query.
++     */
++    public function where() {
++        return  $this->where;
++    }
++
++    /**
++     * Print HTML to display a message indicating:
++     * "In this category you can only see the questions you created"
++     */
++    public function display_options() {
++        echo \html_writer::div(get_string('showownquestions', 'question'));
++    }
++}
+\ No newline at end of file
+diff --git a/question/classes/bank/view.php b/question/classes/bank/view.php
+index 102531d..37b98b5 100644
+--- a/question/classes/bank/view.php
++++ b/question/classes/bank/view.php
+@@ -470,6 +470,14 @@ class view {
+         $editcontexts = $this->contexts->having_one_edit_tab_cap($tabname);
+         // Category selection form.
+         echo $OUTPUT->heading(get_string('questionbank', 'question'), 2);
++
++        // What questions am I allowed to view in this category.
++        list($questioncatid, $questioncatcontextid) = explode(',', $cat);
++        $categorycontext = \context::instance_by_id($questioncatcontextid);
++        if (!has_capability('moodle/question:viewall', $categorycontext)
++            && has_capability('moodle/question:viewmine', $categorycontext)) {
++            array_unshift($this->searchconditions, new \core_question\bank\search\viewown_condition());
++        }
+         array_unshift($this->searchconditions, new \core_question\bank\search\hidden_condition(!$showhidden));
+         array_unshift($this->searchconditions, new \core_question\bank\search\category_condition(
+                 $cat, $recurse, $editcontexts, $this->baseurl, $this->course));
+@@ -749,9 +757,10 @@ class view {
+         $caneditall = has_capability('moodle/question:editall', $catcontext);
+         $canuseall = has_capability('moodle/question:useall', $catcontext);
+         $canmoveall = has_capability('moodle/question:moveall', $catcontext);
++        $canmmovemine = has_capability('moodle/question:movemine', $catcontext);
+ 
+         echo '<div class="modulespecificbuttonscontainer">';
+-        if ($caneditall || $canmoveall || $canuseall) {
++        if ($caneditall || $canmoveall || $canuseall || $canmmovemine) {
+             echo '<strong>&nbsp;'.get_string('withselected', 'question').':</strong><br />';
+ 
+             // Print delete and move selected question.
+@@ -759,7 +768,7 @@ class view {
+                 echo '<input type="submit" class="btn btn-secondary" name="deleteselected" value="' . get_string('delete') . "\" />\n";
+             }
+ 
+-            if ($canmoveall && count($addcontexts)) {
++            if (($canmoveall || $canmmovemine ) && count($addcontexts)) {
+                 echo '<input type="submit" class="btn btn-secondary" name="move" value="' . get_string('moveto', 'question') . "\" />\n";
+                 question_category_select_menu($addcontexts, false, 0, "{$category->id},{$category->contextid}");
+             }
+@@ -937,4 +946,4 @@ class view {
+     public function add_searchcondition($searchcondition) {
+         $this->searchconditions[] = $searchcondition;
+     }
+-}
++}
+\ No newline at end of file
+-- 
+1.8.3.1
+

@@ -1,0 +1,36 @@
+From 0034a9d9ba63b02ac7f70704a1a1c58278cbb24e Mon Sep 17 00:00:00 2001
+From: Nadav Kavalerchik <nadavkav@gmail.com>
+Date: Mon, 16 Oct 2017 10:31:04 +0300
+Subject: [PATCH 83/95] local/ws_rashim (update) event/user_login_failed.php
+
+---
+ local/ws_rashim/classes/event/user_login_failed.php | 16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
+ create mode 100644 local/ws_rashim/classes/event/user_login_failed.php
+
+diff --git a/local/ws_rashim/classes/event/user_login_failed.php b/local/ws_rashim/classes/event/user_login_failed.php
+new file mode 100644
+index 0000000..734162c
+--- /dev/null
++++ b/local/ws_rashim/classes/event/user_login_failed.php
+@@ -0,0 +1,16 @@
++<?php
++
++namespace local_ws_rashim\event;
++
++defined ( 'MOODLE_INTERNAL' ) || die ();
++
++class user_login_failed extends \core\event\user_login_failed {
++	public function get_description() {
++		$username = s($this->other['username']);
++		$reason = s($this->other['reason']);
++		
++		return "Login failed for the username '{$username}' for the reason '{$reason}'.";
++	}
++}
++
++?>
+\ No newline at end of file
+-- 
+1.8.3.1
+

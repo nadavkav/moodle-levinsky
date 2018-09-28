@@ -1,0 +1,76 @@
+From 1f43384fa07c9ee315be9332a2c54dbfbeeb904c Mon Sep 17 00:00:00 2001
+From: Nadav Kavalerchik <nadavkav@gmail.com>
+Date: Sat, 14 Oct 2017 15:16:00 +0300
+Subject: [PATCH 67/95] user (patch) prevent non admin user from changing
+ firstname, lastname and email
+
+---
+ user/editlib.php | 36 +++++++++++++++++++++++++++---------
+ 1 file changed, 27 insertions(+), 9 deletions(-)
+
+diff --git a/user/editlib.php b/user/editlib.php
+index 7c80aab..49acdbc 100644
+--- a/user/editlib.php
++++ b/user/editlib.php
+@@ -267,14 +267,19 @@ function useredit_shared_definition(&$mform, $editoroptions, $filemanageroptions
+ 
+     // Add the necessary names.
+     foreach (useredit_get_required_name_fields() as $fullname) {
+-        $mform->addElement('text', $fullname,  get_string($fullname),  'maxlength="100" size="30"');
+-        if ($stringman->string_exists('missing'.$fullname, 'core')) {
+-            $strmissingfield = get_string('missing'.$fullname, 'core');
++        // Only admin can change user first and last names (nadavkav)
++        if (has_capability('moodle/site:config', context_system::instance())) {
++            $mform->addElement('text', $fullname,  get_string($fullname),  'maxlength="100" size="30"');
++            if ($stringman->string_exists('missing'.$fullname, 'core')) {
++                $strmissingfield = get_string('missing'.$fullname, 'core');
++            } else {
++                $strmissingfield = $strrequired;
++            }
++            $mform->addRule($fullname, $strmissingfield, 'required', null, 'client');
++            $mform->setType($fullname, PARAM_NOTAGS);
+         } else {
+-            $strmissingfield = $strrequired;
++            $mform->addElement('static', $fullname,  get_string($fullname),  'maxlength="100" size="30"');
+         }
+-        $mform->addRule($fullname, $strmissingfield, 'required', null, 'client');
+-        $mform->setType($fullname, PARAM_NOTAGS);
+     }
+ 
+     $enabledusernamefields = useredit_get_enabled_name_fields();
+@@ -291,9 +296,14 @@ function useredit_shared_definition(&$mform, $editoroptions, $filemanageroptions
+                 . get_string('emailchangecancel', 'auth') . '</a>';
+         $mform->addElement('static', 'emailpending', get_string('email'), $notice);
+     } else {
+-        $mform->addElement('text', 'email', get_string('email'), 'maxlength="100" size="30"');
+-        $mform->addRule('email', $strrequired, 'required', null, 'client');
+-        $mform->setType('email', PARAM_RAW_TRIMMED);
++        // Only admin can change email (nadavkav)
++        if (has_capability('moodle/site:config', context_system::instance())) {
++            $mform->addElement('text', 'email', get_string('email'), 'maxlength="100" size="30"');
++            $mform->addRule('email', $strrequired, 'required', null, 'client');
++            $mform->setType('email', PARAM_RAW_TRIMMED);//PARAM_EMAIL);
++        } else {
++            $mform->addElement('static', 'email', get_string('email'), 'maxlength="100" size="30"');
++        }
+     }
+ 
+     $choices = array();
+@@ -326,6 +336,14 @@ function useredit_shared_definition(&$mform, $editoroptions, $filemanageroptions
+         $mform->addElement('select', 'timezone', get_string('timezone'), $choices);
+     }
+ 
++    // Multi-Calendar Support - see MDL-18375.
++    $calendartypes = \core_calendar\type_factory::get_list_of_calendar_types();
++    // We do not want to show this option unless there is more than one calendar type to display.
++    if (count($calendartypes) > 1) {
++        $mform->addElement('select', 'calendartype', get_string('preferredcalendar', 'calendar'), $calendartypes);
++        $mform->setDefault('calendartype', $CFG->calendartype);
++    }
++
+     if (!empty($CFG->allowuserthemes)) {
+         $choices = array();
+         $choices[''] = get_string('default');
+-- 
+1.8.3.1
+

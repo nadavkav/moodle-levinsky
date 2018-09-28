@@ -1,0 +1,829 @@
+From e504f23ed198712dcc4d09d5219c9a4da72ffbbb Mon Sep 17 00:00:00 2001
+From: Nadav Kavalerchik <nadavkav@gmail.com>
+Date: Wed, 11 Oct 2017 21:17:15 +0300
+Subject: [PATCH 27/95] blocks/quickfindlist (new)
+
+---
+ blocks/quickfindlist/README.txt                    |  13 ++
+ blocks/quickfindlist/block_quickfindlist.php       | 218 +++++++++++++++++++++
+ blocks/quickfindlist/db/access.php                 |  76 +++++++
+ blocks/quickfindlist/edit_form.php                 | 125 ++++++++++++
+ .../quickfindlist/lang/en/block_quickfindlist.php  |  42 ++++
+ .../quickfindlist/lang/ru/block_quickfindlist.php  |  45 +++++
+ blocks/quickfindlist/module.js                     |  88 +++++++++
+ blocks/quickfindlist/quickfind.php                 |  76 +++++++
+ blocks/quickfindlist/styles.css                    |  25 +++
+ blocks/quickfindlist/version.php                   |  30 +++
+ 10 files changed, 738 insertions(+)
+ create mode 100755 blocks/quickfindlist/README.txt
+ create mode 100755 blocks/quickfindlist/block_quickfindlist.php
+ create mode 100755 blocks/quickfindlist/db/access.php
+ create mode 100755 blocks/quickfindlist/edit_form.php
+ create mode 100755 blocks/quickfindlist/lang/en/block_quickfindlist.php
+ create mode 100755 blocks/quickfindlist/lang/ru/block_quickfindlist.php
+ create mode 100755 blocks/quickfindlist/module.js
+ create mode 100755 blocks/quickfindlist/quickfind.php
+ create mode 100755 blocks/quickfindlist/styles.css
+ create mode 100755 blocks/quickfindlist/version.php
+
+diff --git a/blocks/quickfindlist/README.txt b/blocks/quickfindlist/README.txt
+new file mode 100755
+index 0000000..3c1c74b
+--- /dev/null
++++ b/blocks/quickfindlist/README.txt
+@@ -0,0 +1,13 @@
++Quick Find List Block for Moodle
++
++This block allows quick searching of users from a block, and displays a configurable link for
++each search result
++
++To install, place all files in /blocks/quickfindlist and visit /admin/index.php in your browser.
++
++This block was written by Mike Worth <mike@mike-worth.com> and Mark Johnson <mark.johnson@tauntons.ac.uk> and is
++Copyright Taunton's College, Southampton.  It currently maintained by Mark Johnson.
++
++Russian translation by George Wise
++
++Released Under the GNU General Public Licence http://www.gnu.org/copyleft/gpl.html
+diff --git a/blocks/quickfindlist/block_quickfindlist.php b/blocks/quickfindlist/block_quickfindlist.php
+new file mode 100755
+index 0000000..97f5b7f
+--- /dev/null
++++ b/blocks/quickfindlist/block_quickfindlist.php
+@@ -0,0 +1,218 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++
++/**
++ * Defines the block_quickfindlist class
++ *
++ * @package    block_quickfindlist
++ * @copyright  2010 Onwards Taunton's College, UK
++ * @author      Mark Johnson <mark.johnson@tauntons.ac.uk>
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++/**
++ *  Class definition for the Quick Find List block.
++ */
++class block_quickfindlist extends block_base {
++
++    public function init() {
++        $this->content_type = BLOCK_TYPE_TEXT;
++        $this->title = get_string('quickfindlist', 'block_quickfindlist');
++    }
++
++
++    public function instance_allow_multiple() {
++        return true;
++    }
++
++    public function preferred_width() {
++        // The preferred value is in pixels
++        return 180;
++    }
++
++    /**
++     *  Generates the block's content
++     *
++     *  Determines the role configured for this instance, and ensures it doesn't conflict with other
++     *  instances on the page.
++     *  Then displays a form for searching the users who have that role, and if required, the
++     *  results from the submitted search.
++     */
++    public function get_content() {
++        global $CFG, $COURSE, $DB;
++        if ($this->content !== null) {
++            return $this->content;
++        }
++
++        $this->content = new stdClass;
++
++        if (empty($this->config->role)) {
++            $select = 'SELECT * ';
++            $from = 'FROM {block} AS b
++                        JOIN {block_instances} AS bi ON b.name = blockname ';
++            $where = 'WHERE name = \'quickfindlist\'
++                        AND pagetypepattern = ?
++                        AND parentcontextid = ?
++                        AND bi.id < ?';
++            $params = array(
++                $this->instance->pagetypepattern,
++                $this->instance->parentcontextid,
++                $this->instance->id
++            );
++            if ($thispageqflblocks = $DB->get_records_sql($select.$from.$where, $params)) {
++                foreach ($thispageqflblocks as $thispageqflblock) {
++                    //don't give a warning for blocks without a role configured
++                    if (@unserialize(base64_decode($thispageqflblock->configdata))->role < 1) {
++                        $this->content->text = get_string('multiplenorole', 'block_quickfindlist');
++                        return $this->content;
++                    }
++                }
++            }
++            if (empty($this->config)) {
++                 $this->config = new stdClass();
++            }
++
++            $this->config->role = -1;
++        }
++
++        if ($role = $DB->get_record('role', array('id' => $this->config->role))) {
++            $roleid = $role->id;
++            $this->title = $role->name.get_string('list', 'block_quickfindlist');
++        } else {
++            $roleid = '-1';
++            $strallusers = get_string('allusers', 'block_quickfindlist');
++            $strlist = get_string('list', 'block_quickfindlist');
++            $this->title = $strallusers.$strlist;
++        }
++
++        $context_system = context_system::instance();
++
++        if (has_capability('block/quickfindlist:use', $context_system)) {
++            if (empty($this->config->userfields)) {
++                $this->config->userfields = get_string('userfieldsdefault', 'block_quickfindlist');
++            }
++            if (empty($this->config->url)) {
++                $url = new moodle_url('/user/view.php', array('course' => $COURSE->id));
++            } else {
++                $url = new moodle_url($this->config->url);
++            }
++            $loginasurl = new moodle_url('/course/loginas.php', array('id' => $COURSE->id));
++            $name = optional_param('quickfindlistsearch'.$roleid, '', PARAM_TEXT);
++
++            $anchor = html_writer::tag('a', '', array('name' => 'quickfindanchor'.$roleid));
++            $searchparams = array(
++                'id' => 'quickfindlistsearch'.$roleid,
++                'name' => 'quickfindlistsearch'.$roleid,
++                'class' => 'quickfindlistsearch',
++                'autocomplete' => 'off'
++            );
++            $search = html_writer::empty_tag('input', $searchparams);
++            $progressparams = array(
++                'id' => 'quickfindprogress'.$roleid,
++                'class' => 'quickfindprogress',
++                'src' => $this->page->theme->pix_url('i/loading_small', 'moodle'),
++                'alt' => get_string('loading', 'block_quickfindlist')
++            );
++            $progress = html_writer::empty_tag('img', $progressparams);
++            $submitparams = array(
++                'type' => 'submit',
++                'class' => 'submitbutton',
++                'name' => 'quickfindsubmit'.$roleid,
++                'value' => get_string('search')
++            );
++            $submit = html_writer::empty_tag('input', $submitparams);
++            $formparams = array(
++                'id' => 'quickfindform'.$roleid,
++                'action' => $this->page->url.'#quickfindanchor'.$roleid,
++                'method' => 'post'
++            );
++            $form = html_writer::tag('form', $search.$progress.$submit, $formparams);
++
++            $quickfindsubmit[$roleid] = optional_param('quickfindsubmit'.$roleid,
++                                                       false,
++                                                       PARAM_ALPHA);
++            $listcontents = '';
++            if (!empty($quickfindsubmit[$roleid])) {
++                if (!empty($name)) {
++                    $params = array("%$name%");
++                    $select = 'SELECT id, firstname, lastname, username ';
++                    $from = 'FROM {user} AS u ';
++                    $where = "WHERE deleted = 0 AND CONCAT(firstname, ' ', lastname) LIKE ? ";
++                    if ($this->config->role != -1) {
++                        $params[] = $this->config->role;
++                        $subselect = 'SELECT COUNT(*) ';
++                        $subfrom = 'FROM {role_assignments} AS ra
++                                           JOIN {context} AS c ON c.id = contextid ';
++                        $subwhere = 'WHERE ra.userid = u.id
++                                           AND ra.roleid=?';
++                        if ($COURSE->format != 'site') {
++                            $params[] = $COURSE->id;
++                            $subwhere .= ' AND contextlevel=50 AND instanceid = ?';
++                        }
++                        $where .= 'AND ('.$subselect.$subfrom.$subwhere.') > 0 ';
++                    }
++                    $order = 'ORDER BY lastname';
++
++                    if ($people = $DB->get_records_sql($select.$from.$where.$order, $params)) {
++                        foreach ($people as $person) {
++                            $userstring = str_replace('[[firstname]]',
++                                                      $person->firstname,
++                                                      $this->config->userfields);
++                            $userstring = str_replace('[[lastname]]',
++                                                      $person->lastname,
++                                                      $userstring);
++                            $userstring = str_replace('[[username]]',
++                                                      $person->username,
++                                                      $userstring);
++                            $linkurl = new moodle_url($url, array('id' => $person->id));
++                            $link = html_writer::tag('a', $userstring, array('href' => $linkurl));
++                            $listcontents .= html_writer::tag('li', $link);
++                        }
++                    }
++                }
++            }
++            $list = html_writer::tag('ul', $listcontents, array('id' => 'quickfindlist'.$roleid));
++
++            $jsmodule = array(
++                'name'  =>  'block_quickfindlist',
++                'fullpath'  =>  '/blocks/quickfindlist/module.js',
++                'requires'  =>  array('base', 'node', 'json', 'io')
++            );
++            $jsdata = array(
++                $this->config->role,
++                $this->config->userfields,
++                $url->out(false),
++                $COURSE->format,
++                $COURSE->id,
++                sesskey(),
++                $loginasurl->out(false)
++            );
++            $this->page->requires->js_init_call('M.block_quickfindlist.init',
++                                                $jsdata,
++                                                false,
++                                                $jsmodule);
++            if (empty($this->content)) {
++                 $this->content = new stdClass();
++            }
++            $this->content->footer='';
++            $this->content->text = $anchor.$form.$list;
++        }
++
++        return $this->content;
++
++    }
++}
+diff --git a/blocks/quickfindlist/db/access.php b/blocks/quickfindlist/db/access.php
+new file mode 100755
+index 0000000..fe6ead4
+--- /dev/null
++++ b/blocks/quickfindlist/db/access.php
+@@ -0,0 +1,76 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++
++/**
++ * Defines the block_quickfindlist capabilities
++ *
++ * @package    block_quickfindlist
++ * @copyright  2010 Onwards Taunton's College, UK
++ * @author      Mark Johnson <mark.johnson@tauntons.ac.uk>
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++defined('MOODLE_INTERNAL') || die();
++
++$capabilities = array(
++
++    'block/quickfindlist:addinstance' => array(
++        'riskbitmask' => RISK_SPAM | RISK_XSS,
++
++        'captype' => 'write',
++        'contextlevel' => CONTEXT_BLOCK,
++        'archetypes' => array(
++            'editingteacher' => CAP_ALLOW,
++            'manager' => CAP_ALLOW
++        ),
++
++        'clonepermissionsfrom' => 'moodle/site:manageblocks'
++    ),
++
++    'block/quickfindlist:use' => array(
++
++        'captype' => 'view',
++        'contextlevel' => CONTEXT_SYSTEM,
++        'legacy' => array(
++            'student' => CAP_ALLOW,
++            'teacher' => CAP_ALLOW,
++            'editingteacher' => CAP_ALLOW,
++            'coursecreator' => CAP_ALLOW,
++            'manager' => CAP_ALLOW
++        )
++    ),
++    'block/quickfindlist:addinstance' => array(
++        'riskbitmask' => RISK_SPAM | RISK_XSS,
++
++        'captype' => 'write',
++        'contextlevel' => CONTEXT_BLOCK,
++        'archetypes' => array(
++            'editingteacher' => CAP_ALLOW,
++            'manager' => CAP_ALLOW
++        ),
++        'clonepermissionsfrom' => 'moodle/site:manageblocks'
++    ),
++    'block/quickfindlist:myaddinstance' => array(
++        'captype' => 'write',
++        'contextlevel' => CONTEXT_SYSTEM,
++        'archetypes' => array(
++            'user' => CAP_ALLOW
++        ),
++
++        'clonepermissionsfrom' => 'moodle/my:manageblocks'
++    )
++);
+diff --git a/blocks/quickfindlist/edit_form.php b/blocks/quickfindlist/edit_form.php
+new file mode 100755
+index 0000000..d33d7e7
+--- /dev/null
++++ b/blocks/quickfindlist/edit_form.php
+@@ -0,0 +1,125 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++
++/**
++ * Defines the form for editing block instances
++ *
++ * @package    block_quickfindlist
++ * @copyright  2010 Onwards Taunton's College, UK
++ * @author      Mark Johnson <mark.johnson@tauntons.ac.uk>
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++/**
++ * Form for editing Quick Find List block instances
++ */
++class block_quickfindlist_edit_form extends block_edit_form {
++    /**
++     * Adds block-specific fields to the parent form
++     *
++     * Allows configuration of the role to be searched, the text to display for each result, and
++     * the url the results should link to.
++     *
++     * @param mixed $mform
++     * @access protected
++     * @return void
++     */
++    protected function specific_definition($mform) {
++        global $DB;
++        global $COURSE;
++
++        if (!empty($this->config->role)) {
++            $currentrole = $this->config->role;
++        } else {
++            $currentrole = null;
++        }
++
++        $allusers = new stdClass;
++        $allusers->id = -1;
++        $allusers->name = get_string('allusers', 'block_quickfindlist');
++        $roles = array_merge(array($allusers), $DB->get_records('role'));
++
++        $rolesused = array();
++
++        $select = 'SELECT * ';
++        $from = 'FROM {block} AS b
++                    JOIN {block_instances} AS bi ON b.name = blockname ';
++        $where = 'WHERE name = "quickfindlist"
++                    AND pagetypepattern = "?"
++                    AND parentcontextid = ?
++                    AND bi.id < ?';
++        $params = array(
++            $this->block->instance->pagetypepattern,
++            $this->block->instance->parentcontextid,
++            $this->block->instance->id
++        );
++        if ($blocksonthispage = $DB->get_records_sql($select.$from.$where, $params)) {
++            foreach ($blocksonthispage as $block) {
++                if ($block->config = unserialize(base64_decode($block->configdata))) {
++                    $rolesused[] = $block->config->role;
++                }
++            }
++        }
++
++        $strrole = get_string('role', 'block_quickfindlist');
++        $select = HTML_QuickForm::createElement('select', 'config_role', $strrole);
++
++        foreach ($roles as $role) {
++            $attributes = array();
++            if ($currentrole == $role->id) {
++                $attributes['selected'] = 'selected';
++            } else if (in_array($role->id, $rolesused)) {
++                $attributes['disabled'] = 'disabled';
++            }
++
++            $value = $role->id;
++            $text = $role->name;
++
++            $params = array($role->id);
++            $subselect = 'SELECT COUNT(*) ';
++            $subfrom = 'FROM {role_assignments} AS ra
++                           JOIN {context} AS c ON c.id = contextid ';
++            $subwhere = 'WHERE ra.userid = {user}.id
++                           AND ra.roleid = ?';
++
++            if ($COURSE->format != 'site') {
++                $params[] = $COURSE->id;
++                $subwhere .= ' AND contextlevel = 50 AND instanceid = ?';
++            }
++
++            $where = '('.$subselect.$subfrom.$subwhere.') > 0
++                AND deleted = 0';
++
++            $usercount = $DB->count_records_select('user', $where, $params);
++            if ($usercount > 5000) {
++                echo $text .= get_string('lotsofusers', 'block_quickfindlist', $usercount);
++            }
++            $select->addOption($text, $value, $attributes);
++        }
++
++        // Fields for editing HTML block title and contents.
++        $mform->addElement('header', 'configheader', get_string('blocksettings', 'block'));
++        $mform->addElement($select);
++        $struserfields = get_string('userfields', 'block_quickfindlist');
++        $userfieldsdefault = get_string('userfieldsdefault', 'block_quickfindlist');
++        $mform->addElement('text', 'config_userfields', $struserfields);
++        $mform->setType('config_userfields', PARAM_TEXT);
++        $mform->setDefault('config_userfields', $userfieldsdefault);
++        $mform->addElement('text', 'config_url', get_string('url', 'block_quickfindlist'));
++        $mform->setType('config_url', PARAM_URL);
++    }
++}
+diff --git a/blocks/quickfindlist/lang/en/block_quickfindlist.php b/blocks/quickfindlist/lang/en/block_quickfindlist.php
+new file mode 100755
+index 0000000..f9d1915
+--- /dev/null
++++ b/blocks/quickfindlist/lang/en/block_quickfindlist.php
+@@ -0,0 +1,42 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++
++/**
++ * Defines lang strings for Quick Find List block
++ *
++ * @package    block_quickfindlist
++ * @copyright  2010 Onwards Taunton's College, UK
++ * @author      Mark Johnson <mark.johnson@tauntons.ac.uk>
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++$string['allusers']         = 'All Users';
++$string['pluginname']         = 'Quickfind List';
++$string['blockname']         = 'Quickfind List';
++$string['list']         =  ' List';
++$string['loading']  = 'Loading...';
++$string['lotsofusers']         = ' WARNING: lots of users ({$a}) could get slow';
++$string['multiplenorole']         = 'You cannot have two blocks on the same page without a role configured; Edit this block and select a role.';
++$string['nousers']         =  'ERROR: No users have that role';
++$string['quickfindlist']         = 'Quickfind List';
++$string['quickfindlist:addinstance'] = 'Add a new quickfindlist block';
++$string['quickfindlist:myaddinstance'] = 'Add a new quickfindlist block to My home';
++$string['quickfindlist:use']         = 'Use Quickfind List';
++$string['role']         = 'Role for listed people to have';
++$string['url']         = 'Page to link to (the person\'s id will be appended to the end).<br />Leave blank for default profile';
++$string['userfields']         = 'User data to display/search,<br />You can use the following placeholders:<ul><li>[[firstname]]</li><li>[[lastname]]</li><li>[[username]]</li></ul>';
++$string['userfieldsdefault']         = '[[firstname]] [[lastname]]';
+diff --git a/blocks/quickfindlist/lang/ru/block_quickfindlist.php b/blocks/quickfindlist/lang/ru/block_quickfindlist.php
+new file mode 100755
+index 0000000..d2efdee
+--- /dev/null
++++ b/blocks/quickfindlist/lang/ru/block_quickfindlist.php
+@@ -0,0 +1,45 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++
++/**
++ * Defines lang strings for Quick Find List block
++ *
++ * @package    block_quickfindlist
++ * @copyright  2010 Onwards Taunton's College, UK
++ * @author      Mark Johnson <mark.johnson@tauntons.ac.uk>
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++$string['allusers']         = 'Все пользователи'; // All Users
++$string['pluginname']         = 'Quickfind List'; // Quickfind List, proper name not to be translated (rus. Быстрый поиск)
++$string['blockname']         = 'Быстрый поиск'; // Quickfind List, proper name can be without translation
++$string['list']         =  ' Список'; // List
++$string['loading']  = 'Загрузка...'; // Loading...
++$string['lotsofusers']         = ' ПРЕДУПРЕЖДЕНИЕ: слишком много пользователей ({$a}) возможно замедление работы'; // WARNING: lots of users ({$a}) could get slow
++
++// You cannot have two blocks on the same page without a role configured; Edit this block and select a role.
++$string['multiplenorole']         = 'Нельзя использовать два одинаковых блока; Отредактируйте блоки и назначте им роли.';
++$string['nousers']         =  'ОШИБКА: Нет пользователей с такого типа (роли)'; // ERROR: No users have that role'
++$string['quickfindlist']         = 'Quickfind List'; // Quickfind
++$string['quickfindlist:use']         = 'Использовать Quickfind List'; // Use Quickfind List
++$string['role']         = 'Для перечисленных пользователей'; // Role for listed people to have
++
++// Page to link to (the person\'s id will be appended to the end).<br />Leave blank for default profile
++$string['url']         = 'Ссылка на страницу (id пользователя подставится в конце).<br />Оставьте пустым для профиля по умолчанию';
++// User data to display/search,<br />You can use the following placeholders:<ul><li>[[firstname]]</li><li>[[lastname]]</li><li>[[username]]</li></ul>
++$string['userfields']         = 'Шаблон информации, отобажаемой о пользователе,<br />Допустимы следующие конструкции:<ul><li>[[firstname]]</li><li>[[lastname]]</li><li>[[username]]</li></ul>';
++$string['userfieldsdefault']         = '[[firstname]] [[lastname]]';
+diff --git a/blocks/quickfindlist/module.js b/blocks/quickfindlist/module.js
+new file mode 100755
+index 0000000..a782c08
+--- /dev/null
++++ b/blocks/quickfindlist/module.js
+@@ -0,0 +1,88 @@
++M.block_quickfindlist = {
++
++    sesskey: null,
++    loginasurl: null,
++
++    init: function(Y, roleid, userfields, url, courseformat, courseid, sesskey, loginasurl) {
++        this.Y = Y;
++        if (this.instances === undefined) {
++            this.instances = new Array();
++        }
++        this.sesskey = sesskey;
++        this.loginasurl = loginasurl;
++
++        var instance = {
++            'roleid': roleid,
++            'userfields': userfields,
++            'url': url,
++            'courseformat': courseformat,
++            'courseid': courseid,
++            'progress': Y.one('#quickfindprogress'+roleid),
++            'xhr': null
++        }
++        this.instances[roleid] = instance;
++        Y.on('keyup', this.search_on_type, '#quickfindlistsearch'+roleid);
++        Y.on('submit', this.search_on_submit, '#quickfindform'+roleid);
++    },
++
++    search_on_type: function(e) {
++        var searchstring = e.target.get('value');
++        var roleid = /[\-0-9]+/.exec(e.target.get('id'))[0];
++        M.block_quickfindlist.search(searchstring, roleid);
++    },
++
++    search_on_submit: function(e) {
++        e.preventDefault();
++        var roleid = /[\-0-9]+/.exec(e.target.get('id'))[0];
++        var searchstring = e.target.getById('quickfindlistsearch'+roleid).value;
++        M.block_quickfindlist.search(searchstring, roleid);
++    },
++
++    search: function(searchstring, roleid) {
++
++        var Y = this.Y;
++        var instance = this.instances[roleid];
++
++        uri = M.cfg.wwwroot+'/blocks/quickfindlist/quickfind.php';
++        if (instance.xhr != null) {
++            instance.xhr.abort();
++        }
++        instance.progress.setStyle('visibility', 'visible');
++        instance.xhr = Y.io(uri, {
++            data: 'role='+roleid
++                +'&name='+searchstring
++                +'&courseformat='+instance.courseformat
++                +'&courseid='+instance.courseid
++                +'&sesskey='+this.sesskey,
++            context: this,
++            on: {
++                success: function(id, o) {
++                    var response = Y.JSON.parse(o.responseText);
++                    var instance = this.instances[response.roleid];
++                    var list = Y.Node.create('<ul />');
++                    for (p in response.people) {
++                        var userstring = instance.userfields.replace('[[firstname]]', response.people[p].firstname);
++                        userstring = userstring.replace('[[lastname]]', response.people[p].lastname);
++                        userstring = userstring.replace('[[username]]', response.people[p].username);
++                        loginas = '<a href="'+this.loginasurl+'&user='+response.people[p].id+'&sesskey='+ this.sesskey+'"><i class="fa fa-user"></i></a>';
++                        li = Y.Node.create('<li><a href="'+instance.url+'&id='+response.people[p].id+'">'+userstring+'</a>'+loginas+'</li>');
++
++                        list.appendChild(li);
++                    }
++                    instance.progress.setStyle('visibility', 'hidden');
++                    Y.one('#quickfindlist'+roleid).replace(list);
++                    list.set('id', 'quickfindlist'+roleid);
++                },
++                failure: function(id, o) {
++                    if (o.statusText != 'abort') {
++                        var instance = this.currentinstance;
++                        instance.progress.setStyle('visibility', 'hidden');
++                        if (o.statusText !== undefined) {
++                            instance.listcontainer.set('innerHTML', o.statusText);
++                        }
++                    }
++                }
++            }
++        });
++    }
++}
+diff --git a/blocks/quickfindlist/quickfind.php b/blocks/quickfindlist/quickfind.php
+new file mode 100755
+index 0000000..f8faa71
+--- /dev/null
++++ b/blocks/quickfindlist/quickfind.php
+@@ -0,0 +1,76 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++
++/**
++ * AJAX script to respond to search requests
++ *
++ * Checks the user has required permissions, then returns a JSON object containing search results
++ *
++ * @package    block_quickfindlist
++ * @copyright  2010 Onwards Taunton's College, UK
++ * @author      Mark Johnson <mark.johnson@tauntons.ac.uk>
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++define('AJAX_SCRIPT', true);
++require_once('../../config.php');
++
++$name = required_param('name', PARAM_TEXT);
++$role = required_param('role', PARAM_INT);
++$courseformat = required_param('courseformat', PARAM_TEXT);
++$courseid = required_param('courseid', PARAM_TEXT);
++
++$context = get_context_instance(CONTEXT_COURSE, $courseid);
++
++if (isloggedin() && has_capability('block/quickfindlist:use', $context) && confirm_sesskey()) {
++
++    $output = new stdClass;
++    $output->roleid = $role;
++    if (!empty($name)) {
++
++        $params = array("%$name%");
++        $select = 'SELECT id, firstname, lastname, username ';
++        $from = 'FROM {user} AS u ';
++        if (is_numeric($name)) {
++            $where = "WHERE deleted = 0 AND idnumber LIKE ? ";
++        } else {
++            $where = "WHERE deleted = 0 AND " . $DB->sql_concat('firstname', 'lastname') . " LIKE ? ";
++        }
++        if ($role != -1) {
++            $params[] = $role;
++            $subselect = 'SELECT COUNT(*) ';
++            $subfrom = 'FROM {role_assignments} AS ra
++                               JOIN {context} AS c ON c.id = contextid ';
++            $subwhere = 'WHERE ra.userid = u.id
++                               AND ra.roleid=?';
++            if ($courseformat != 'site') {
++                $params[] = $courseid;
++                $subwhere .= ' AND contextlevel=50 AND instanceid = ?';
++            }
++            $where .= 'AND ('.$subselect.$subfrom.$subwhere.') > 0 ';
++        }
++        $order = 'ORDER BY lastname';
++
++        if ($people = $DB->get_records_sql($select.$from.$where.$order, $params)) {
++            $output->people = $people;
++        }
++    }
++    echo json_encode($output);
++
++} else {
++    header('HTTP/1.1 401 Not Authorised');
++}
+diff --git a/blocks/quickfindlist/styles.css b/blocks/quickfindlist/styles.css
+new file mode 100755
+index 0000000..bf884a5
+--- /dev/null
++++ b/blocks/quickfindlist/styles.css
+@@ -0,0 +1,25 @@
++body.jsenabled .block_quickfindlist .submitbutton {
++    display: none;
++}
++
++.block_quickfindlist .quickfindprogress {
++    visibility: hidden;
++}
++
++.block_quickfindlist ul {
++    margin: 0;
++}
++
++.block_quickfindlist li {
++    list-style-type: none;
++    margin-left: 0;
++    padding-bottom: 0.2em;
++    margin-bottom: 0.2em;
++    border-bottom-style: solid;
++    border-bottom-width: 1px;
++    border-bottom-color: #d3d3d3;
++}
++
++.quickfindlistsearch {
++    width: 10em;
++}
+diff --git a/blocks/quickfindlist/version.php b/blocks/quickfindlist/version.php
+new file mode 100755
+index 0000000..4c6815d
+--- /dev/null
++++ b/blocks/quickfindlist/version.php
+@@ -0,0 +1,30 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++/**
++ * Defines block metadata
++ *
++ * @package    block_quickfindlist
++ * @copyright  2010 Onwards Taunton's College, UK
++ * @author      Mark Johnson <mark.johnson@tauntons.ac.uk>
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++$plugin->version = 2014072202;
++$plugin->requires = 2010112400;
++$plugin->component = 'block_quickfindlist';
++$plugin->maturity = MATURITY_STABLE;
++$plugin->release = '2.0.3 (Build: 2014072202)';
+-- 
+1.8.3.1
+

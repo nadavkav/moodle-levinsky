@@ -1,0 +1,33 @@
+From 86f2cc09bbd9fe461ef262162188ba3c70c69554 Mon Sep 17 00:00:00 2001
+From: Nadav Kavalerchik <nadavkav@gmail.com>
+Date: Tue, 7 Nov 2017 22:07:58 +0200
+Subject: [PATCH 86/95] Miclol - bulk course create fix
+
+---
+ course/modlib.php | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
+
+diff --git a/course/modlib.php b/course/modlib.php
+index 4d2348e..cb826fe 100644
+--- a/course/modlib.php
++++ b/course/modlib.php
+@@ -600,9 +600,15 @@ function update_moduleinfo($cm, $moduleinfo, $course, $mform = null) {
+ 
+     // Make sure visibility is set correctly (in particular in calendar).
+     if (has_capability('moodle/course:activityvisibility', $modcontext)) {
+-        set_coursemodule_visible($moduleinfo->coursemodule, $moduleinfo->visible, $moduleinfo->visibleoncoursepage);
++        if (isset($moduleinfo->visibleoncoursepage)) {
++            set_coursemodule_visible($moduleinfo->coursemodule, $moduleinfo->visible, $moduleinfo->visibleoncoursepage);
++        } else {
++            // Assuming default visibleoncoursepage == 1, is a good choice.
++            set_coursemodule_visible($moduleinfo->coursemodule, $moduleinfo->visible);
++        }
+     }
+ 
++
+     if (isset($moduleinfo->cmidnumber)) { // Label.
+         // Set cm idnumber - uniqueness is already verified by form validation.
+         set_coursemodule_idnumber($moduleinfo->coursemodule, $moduleinfo->cmidnumber);
+-- 
+1.8.3.1
+

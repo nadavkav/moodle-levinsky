@@ -1,0 +1,28 @@
+From 7a964de5798a22cd076dc69956369a966249aa54 Mon Sep 17 00:00:00 2001
+From: Nadav Kavalerchik <nadavkav@gmail.com>
+Date: Mon, 16 Oct 2017 10:18:01 +0300
+Subject: [PATCH 72/95] login/logout (patch) Add a special redirect to levinsky
+ portal
+
+---
+ login/logout.php | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/login/logout.php b/login/logout.php
+index 664b179..4c3b599 100644
+--- a/login/logout.php
++++ b/login/logout.php
+@@ -36,7 +36,9 @@ $login   = optional_param('loginpage', 0, PARAM_BOOL);
+ if ($login) {
+     $redirect = get_login_url();
+ } else {
+-    $redirect = $CFG->wwwroot.'/';
++    //$redirect = $CFG->wwwroot.'/';
++    // Special logout using SAML and IdP (nadavkav)
++    $redirect = 'https://portal.levinsky.ac.il/';
+ }
+ 
+ if (!isloggedin()) {
+-- 
+1.8.3.1
+

@@ -1,0 +1,952 @@
+From ce40474bc68b0b1ea089f090706b095c7cf8c572 Mon Sep 17 00:00:00 2001
+From: Nadav Kavalerchik <nadavkav@gmail.com>
+Date: Mon, 16 Oct 2017 10:28:40 +0300
+Subject: [PATCH 80/95] report/editgroups (new) m31 version
+
+---
+ report/editgroups/README.txt                      |  17 ++
+ report/editgroups/classes/event/report_viewed.php | 101 ++++++++++
+ report/editgroups/db/access.php                   |  38 ++++
+ report/editgroups/db/install.php                  |  49 +++++
+ report/editgroups/form.php                        | 233 ++++++++++++++++++++++
+ report/editgroups/index.php                       | 184 +++++++++++++++++
+ report/editgroups/internaldoc/testcase.txt        |  27 +++
+ report/editgroups/lang/en/report_editgroups.php   |  36 ++++
+ report/editgroups/lib.php                         |  61 ++++++
+ report/editgroups/styles.css                      |   3 +
+ report/editgroups/tests/behat/basic.feature       |  62 ++++++
+ report/editgroups/version.php                     |  34 ++++
+ 12 files changed, 845 insertions(+)
+ create mode 100755 report/editgroups/README.txt
+ create mode 100755 report/editgroups/classes/event/report_viewed.php
+ create mode 100755 report/editgroups/db/access.php
+ create mode 100755 report/editgroups/db/install.php
+ create mode 100755 report/editgroups/form.php
+ create mode 100755 report/editgroups/index.php
+ create mode 100755 report/editgroups/internaldoc/testcase.txt
+ create mode 100755 report/editgroups/lang/en/report_editgroups.php
+ create mode 100755 report/editgroups/lib.php
+ create mode 100755 report/editgroups/styles.css
+ create mode 100755 report/editgroups/tests/behat/basic.feature
+ create mode 100755 report/editgroups/version.php
+
+diff --git a/report/editgroups/README.txt b/report/editgroups/README.txt
+new file mode 100755
+index 0000000..7fb72d2
+--- /dev/null
++++ b/report/editgroups/README.txt
+@@ -0,0 +1,17 @@
++Edit groups report
++
++This 'report' is actually a tool that lets you edit all the groups settings for
++all the activities in your course on a single page.
++
++You can install it from the Moodle plugins database
++http://moodle.org/plugins/view.php?plugin=report_editgroups
++
++Alternatively, you can install it using git. In the top-level folder of your
++Moodle install, type the command:
++    git clone git://github.com/moodleou/moodle-report_editgroups.git report/editgroups
++    echo '/report/editgroups/' >> .git/info/exclude
++
++Then visit the admin screen to allow the install to complete.
++
++Once the plugin is installed, you can access the functionality by going to
++Reports -> Groups in the Course adminstration block.
+diff --git a/report/editgroups/classes/event/report_viewed.php b/report/editgroups/classes/event/report_viewed.php
+new file mode 100755
+index 0000000..a186b1a
+--- /dev/null
++++ b/report/editgroups/classes/event/report_viewed.php
+@@ -0,0 +1,101 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++/**
++ *
++ * @package    report_editgroups
++ * @copyright  2014 The Open University
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++namespace report_editgroups\event;
++
++defined('MOODLE_INTERNAL') || die();
++
++/**
++ *
++ * @package    report_editgroups
++ * @since      Moodle 2.7
++ * @copyright  2014 The Open University
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++class report_viewed extends \core\event\base {
++
++    /**
++     * Init method.
++     *
++     * @return void
++     */
++    protected function init() {
++        $this->data['crud'] = 'r';
++        $this->data['edulevel'] = self::LEVEL_OTHER;
++    }
++
++    /**
++     * Returns description of what happened.
++     *
++     * @return string
++     */
++    public function get_description() {
++        $description = <<<EOF
++The user with id '$this->userid' viewed report edit groups page on course id '$this->courseid'
++EOF;
++
++        return $description;
++    }
++
++    /**
++     * Return localised event name.
++     *
++     * @return string
++     */
++    public static function get_name() {
++        return get_string('event:reportviewed', 'report_editgroups');
++    }
++
++    /**
++     * Get URL related to the action
++     *
++     * @return \moodle_url
++     */
++    public function get_url() {
++        $params = array('id' => $this->courseid);
++        if ($this->other['activitytype']) {
++            $params['activitytype'] = $this->other['activitytype'];
++        }
++        return new \moodle_url('/report/editgroups/index.php', $params);
++    }
++
++    public static function get_legacy_eventname() {
++        return 'report edit groups';
++    }
++
++    /**
++     * Return the legacy event log data.
++     *
++     * @return array|null
++     */
++    protected function get_legacy_logdata() {
++        return array(
++                $this->courseid,
++                "course",
++                "report edit groups",
++                "report/editgroups/index.php?id={$this->courseid}",
++                $this->contextinstanceid
++        );
++    }
++
++}
+diff --git a/report/editgroups/db/access.php b/report/editgroups/db/access.php
+new file mode 100755
+index 0000000..6b73711
+--- /dev/null
++++ b/report/editgroups/db/access.php
+@@ -0,0 +1,38 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++/**
++ * report_editgroups capability definitions.
++ *
++ * @package   report_editgroups
++ * @copyright 2011 The Open University
++ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++defined('MOODLE_INTERNAL') || die;
++
++$capabilities = array(
++    'report/editgroups:view' => array(
++        'riskbitmask' => RISK_PERSONAL,
++        'captype' => 'read',
++        'contextlevel' => CONTEXT_COURSE,
++        'archetypes' => array(
++            'editingteacher' => CAP_ALLOW,
++            'manager' => CAP_ALLOW
++        ),
++        'clonepermissionsfrom' => 'moodle/site:viewreports',
++    ),
++);
+diff --git a/report/editgroups/db/install.php b/report/editgroups/db/install.php
+new file mode 100755
+index 0000000..e317aa6
+--- /dev/null
++++ b/report/editgroups/db/install.php
+@@ -0,0 +1,49 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++/**
++ * Post installation and migration code.
++ *
++ * @package   report_editgroups
++ * @copyright 2012 The Open University
++ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++defined('MOODLE_INTERNAL') || die;
++
++function xmldb_report_editgroups_install() {
++    global $DB;
++
++    // This is a hack to copy the permission from the old place, if they were present.
++    // If this report is installed into a new Moodle, we just do what it says in access.php
++    // and clone the permissions from moodle/site:viewreports, but if we are upgrading
++    // a Moodle that had the old course report plugin installed, then we get rid of the
++    // new cloned capabilities, and transfer the old permissions.
++    if ($DB->record_exists('role_capabilities', array('capability' => 'coursereport/editgroups:view'))) {
++        $DB->delete_records('role_capabilities', array('capability' => 'report/editgroups:view'));
++        $DB->set_field('role_capabilities', 'capability', 'report/editgroups:view',
++                array('capability' => 'coursereport/editgroups:view'));
++    }
++
++    // This is a hack which is needed for cleanup of original coursereport_completion stuff.
++    unset_all_config_for_plugin('coursereport_editgroups');
++    capabilities_cleanup('coursereport_editgroups');
++
++    // Update existing block page patterns.
++    $DB->set_field('block_instances', 'pagetypepattern', 'report-editgroups-index',
++            array('pagetypepattern' => 'course-report-editgroups-index'));
++}
++
+diff --git a/report/editgroups/form.php b/report/editgroups/form.php
+new file mode 100755
+index 0000000..9b90090
+--- /dev/null
++++ b/report/editgroups/form.php
+@@ -0,0 +1,233 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++/**
++ * report_editgroups form definition.
++ *
++ * @package   report_editgroups
++ * @copyright 2011 The Open University
++ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++defined('MOODLE_INTERNAL') || die;
++
++require_once($CFG->libdir.'/formslib.php');
++
++
++/**
++ * The form for editing the group settings.
++ *
++ * @copyright 2011 The Open University
++ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++class report_editgroups_form extends moodleform {
++
++    public function definition() {
++        global $CFG, $COURSE, $DB;
++        $mform = $this->_form;
++
++        $modinfo       = $this->_customdata['modinfo'];
++        $course        = $this->_customdata['course'];
++        $activitytype  = $this->_customdata['activitytype'];
++
++        // Context instance of the course.
++        $coursecontext = context_course::instance($course->id);
++
++        // Groupings selector - used for normal grouping mode
++        // or also when restricting access with groupmembers only.
++        $options = array();
++        $options[0] = get_string('none');
++        // Fetching groupings available to this course.
++        if ($groupings = $DB->get_records('groupings', array('courseid'=>$COURSE->id))) {
++            foreach ($groupings as $grouping) {
++                $options[$grouping->id] = format_string($grouping->name);
++            }
++        }
++        // Flags to honour course level settings.
++        $forcegroupmode = false;
++
++        // If group mode is forced @ course level.
++        if ($COURSE->groupmodeforce) {
++            $forcegroupmode = true;
++        }
++        // For showing submit buttons.
++        $showactionbuttons = false;
++
++        // Store current activity type.
++        $mform->addElement('hidden', 'activitytype', $activitytype);
++        $mform->setType('activitytype', PARAM_PLUGIN);
++
++        // Add save action button to the top of the form.
++        $this->add_action_buttons();
++
++        // Default -1 to display header for 0th section.
++        $prevsectionnum = -1;
++
++        // Cycle through all the sections in the course.
++        $cms = $modinfo->get_cms();
++        foreach ($modinfo->get_sections() as $sectionnum => $section) {
++            // Var to count the number of elements in the section.
++            // It will be used to remove section if it is empty.
++            $elementadded = 0;
++            // Var to store current section name.
++            $sectionname = '';
++            // Cycle through each module in a section.
++            foreach ($section as $cmid) {
++                $cm = $cms[$cmid];
++
++                // No need to display/continue if this module is not visible to user.
++                if (!$cm->uservisible) {
++                    continue;
++                }
++
++                // If activity filter is on, then filter module by activity type.
++                if ($activitytype && $cm->modname != $activitytype) {
++                    continue;
++                }
++
++                // Check if the user has capability to edit this module settings.
++                $modcontext = context_module::instance($cm->id);
++                $ismodreadonly = !has_capability('moodle/course:manageactivities', $modcontext);
++
++                // Flags to determine availabiltity of group features.
++                $isenabledgroups            = plugin_supports('mod', $cm->modname, FEATURE_GROUPS, true);
++                $isenabledgroupings         = plugin_supports('mod', $cm->modname, FEATURE_GROUPINGS, false);
++
++                // Only if the module supports either of 3 possible
++                // group settings then proceed further.
++                if ($isenabledgroups or $isenabledgroupings) {
++                    // New section, create header.
++                    if (($prevsectionnum != $sectionnum)) {
++                        $sectionname = get_section_name($course, $modinfo->get_section_info($sectionnum));
++                        $headername = 'section' . $sectionnum . 'header';
++                        $mform->addElement('header', $headername, $sectionname);
++                        $mform->setExpanded($headername, false);
++                        $prevsectionnum = $sectionnum;
++                    }
++
++                    // Display activity name.
++                    $iconmarkup = html_writer::empty_tag('img', array(
++                            'src' => $cm->get_icon_url(), 'class' => 'activityicon', 'alt' => '' ));
++                    $stractivityname = html_writer::tag('strong' , $iconmarkup . $cm->name);
++
++                    // Activity name shall be displayed only if any group mode setting is
++                    // visible for the user check if group mode is enabled or
++                    // availability to group mode is enabled @ site level.
++                    if ($isenabledgroups) {
++                        // Added activity name on the form.
++                        $mform->addElement('static', 'modname', $stractivityname);
++                    }
++                    // Var to store element name.
++                    $elname = '';
++                    // If group mode is enabled for this module.
++                    if ($isenabledgroups) {
++                        $groupoptions = array(NOGROUPS => get_string('groupsnone'),
++                        SEPARATEGROUPS => get_string('groupsseparate'),
++                        VISIBLEGROUPS  => get_string('groupsvisible'));
++
++                        // Create element name and append course module id to it.
++                        $elname = 'groupmode['.$cm->id.']';
++                        // Add element to the form.
++                        $mform->addElement('select', $elname, get_string('groupmode',
++                                'group'), $groupoptions, NOGROUPS);
++                        $mform->addHelpButton($elname, 'groupmode', 'group');
++                         // If group mode is forced @ course level, then honour those settings.
++                        if ($forcegroupmode) {
++                            $mform->setDefault($elname, $COURSE->groupmode);
++                        } else {
++                            $mform->setDefault($elname, $cm->groupmode);
++                        }
++                        // If groupmode is forced or user is not capable
++                        // to edit this setting, it should appear readonly.
++                        if ($forcegroupmode || $ismodreadonly) {
++                            $mform->hardFreeze($elname);
++                        }
++                        // Increment the counter since an element is added.
++                        $elementadded++;
++                    }
++                    // Display grouping option only if groupings are enabled for this module
++                    // or if this activity available only to group members.
++                    if ($isenabledgroupings) {
++                        // Adding element(select box for grouping) to the form.
++                        $elname = 'groupingid['.$cm->id.']';
++                        $mform->addElement('select', $elname,
++                                get_string('grouping', 'group'), $options);
++                        $mform->addHelpButton($elname, 'grouping', 'group');
++                        $mform->setDefault($elname, $cm->groupingid);
++
++                        // If user is not capable to edit this setting, it should appear readonly.
++                        if ($ismodreadonly) {
++                            $mform->hardFreeze($elname);
++                        }
++                        // Increment the counter since an element is added.
++                        $elementadded++;
++                    }
++
++                    // If group mode is enabled and available to
++                    // group members does not exist for this module,
++                    // then the grouping selector should be disabled by default,
++                    // but only if a grouping is not already set.
++                    if (!$cm->groupingid) {
++                        if ($mform->elementExists('groupmode['.$cmid.']')
++                                && !$mform->elementExists('groupmembersonly['.$cmid.']')
++                                && !$forcegroupmode) {
++                            $mform->disabledif('groupingid['.$cmid.']',
++                                 'groupmode['.$cmid.']', 'eq', NOGROUPS);
++
++                        } else if (!$mform->elementExists('groupmode['.$cmid.']')
++                                && $mform->elementExists('groupmembersonly['.$cmid.']')) {
++                            // If group mode is not present and available to group
++                            // members only is present,then grouping option
++                            // should be disabled by default.
++                            $mform->disabledif('groupingid['.$cmid.']',
++                                 'groupmembersonly['.$cmid.']', 'notchecked');
++
++                        } else if (!$mform->elementExists('groupmode['.$cmid.']')
++                                && !$mform->elementExists('groupmembersonly['.$cmid.']')) {
++                            // If groupmode and available to groupmembers only does
++                            // not exist for a module, then grouping option should not exist
++                            // for that module groupings have no use without
++                            // groupmode or groupmembersonly.
++                            if ($mform->elementExists('groupingid['.$cmid.']')) {
++                                $mform->removeElement('groupingid['.$cmid.']');
++                                // Decrement the counter since an element is removed.
++                                $elementadded--;
++                            }
++                        }
++                    }
++                }
++            }
++
++            // If section is added and no element added in this section,
++            // then remove the empty section.
++            if (($elementadded == 0) && ($sectionname != '') && $mform->elementExists($sectionname)) {
++                $mform->removeElement($sectionname);
++            }
++            if (!$showactionbuttons && $elementadded > 0) {
++                // Set flag to show action buttons.
++                $showactionbuttons = true;
++            }
++        }
++
++        // Adding submit/cancel buttons @ the end of the form.
++        if ($showactionbuttons) {
++            $this->add_action_buttons();
++        } else {
++            // Remove top action button.
++            $mform->removeElement('buttonar');
++        }
++    }
++}
+diff --git a/report/editgroups/index.php b/report/editgroups/index.php
+new file mode 100755
+index 0000000..95a82f7
+--- /dev/null
++++ b/report/editgroups/index.php
+@@ -0,0 +1,184 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++/**
++ * Script for editing group settings throughout a course.
++ *
++ * @package   report_editgroups
++ * @copyright 2011 The Open University
++ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++
++require_once(dirname(__FILE__) . '/../../config.php');
++require_once($CFG->dirroot . '/course/lib.php');
++require_once(dirname(__FILE__) . '/form.php');
++
++define('REPORT_EDITGROUPS_ENABLE_FILTER_THRESHOLD', 20);
++
++$id = required_param('id', PARAM_INT); // Course id.
++$activitytype = optional_param('activitytype', '', PARAM_PLUGIN);
++
++// Should be a valid course id.
++$course = $DB->get_record('course', array('id' => $id), '*', MUST_EXIST);
++
++// Needed to setup proper $COURSE.
++require_login($course);
++
++// Setup page.
++$urlparams = array('id' => $id);
++if ($activitytype) {
++    $urlparams['activitytype'] = $activitytype;
++}
++$PAGE->set_url('/report/editgroups/index.php', $urlparams);
++$PAGE->set_pagelayout('admin');
++
++// Check permissions.
++$coursecontext = context_course::instance($course->id);
++require_capability('report/editgroups:view', $coursecontext);
++
++// Fetching all modules in the course.
++$modinfo = get_fast_modinfo($course);
++$cms = $modinfo->get_cms();
++
++// Prepare a list of activity types used in this course, and count the number that
++// might be displayed.
++$activitiesdisplayed = 0;
++$activitytypes = array();
++foreach ($modinfo->get_sections() as $sectionnum => $section) {
++    foreach ($section as $cmid) {
++        $cm = $cms[$cmid];
++
++        // Filter activities to those that are relevant to this report.
++        if (!$cm->uservisible ||
++                !(plugin_supports('mod', $cm->modname, FEATURE_GROUPS, true) ||
++                plugin_supports('mod', $cm->modname, FEATURE_GROUPINGS, false))) {
++            continue;
++        }
++
++        $activitiesdisplayed += 1;
++        $activitytypes[$cm->modname] = get_string('modulename', $cm->modname);
++    }
++}
++core_collator::asort($activitytypes);
++
++if ($activitiesdisplayed <= REPORT_EDITGROUPS_ENABLE_FILTER_THRESHOLD) {
++    $activitytypes = array('' => get_string('all')) + $activitytypes;
++}
++
++// If activity count is above the threshold, activate the filter controls.
++if (!$activitytype && $activitiesdisplayed > REPORT_EDITGROUPS_ENABLE_FILTER_THRESHOLD) {
++    reset($activitytypes);
++    redirect(new moodle_url('/report/editgroups/index.php',
++            array('id' => $id, 'activitytype' => key($activitytypes))));
++}
++
++// Creating form instance, passed course id as parameter to action url.
++$baseurl = new moodle_url('/report/editgroups/index.php', array('id' => $id));
++$mform = new report_editgroups_form($baseurl, array('modinfo' => $modinfo,
++        'course' => $course, 'activitytype' => $activitytype));
++
++$returnurl = new moodle_url('/course/view.php', array('id' => $id));
++if ($mform->is_cancelled()) {
++    // Redirect to course view page if form is cancelled.
++    redirect($returnurl);
++
++} else if ($data = $mform->get_data()) {
++
++    $groupingids = array();
++    $groupmodes = array();
++    $groupmembersonly = array();
++    // Grouping id values from the $data.
++    if (isset($data->groupingid) && is_array($data->groupingid)) {
++        $groupingids = $data->groupingid;
++    }
++    // Groupmode values from the $data.
++    if (isset($data->groupmode) && is_array($data->groupmode)) {
++        $groupmodes = $data->groupmode;
++    }
++    // Group members only values from $data.
++    if (isset($data->groupmembersonly) && is_array($data->groupmembersonly)) {
++        $groupmembersonly = $data->groupmembersonly;
++    }
++    // Start transaction.
++    $transaction = $DB->start_delegated_transaction();
++    // Looping through all the modules in the course.
++    foreach ($modinfo->get_cms() as $cmid => $cm) {
++        $modulecontext = context_module::instance($cmid);
++        // Update only if user can manage activities in course context.
++        if (has_capability('moodle/course:manageactivities', $modulecontext)) {
++            // Object that will be used for updating the course module.
++            $cmod = new stdClass();
++            $cmod->id = $cmid;
++            // Flag to determine if any of the settings exists for this module.
++            $updatemod = false;
++            // Update grouping id.
++            if ($groupingids && array_key_exists($cmid, $groupingids)) {
++                $cmod->groupingid = $groupingids[$cmid];
++                $updatemod = true;
++            }
++            // Update group mode setting
++            // if this id exists in the array received from $mform.
++            if ($groupmodes && array_key_exists($cmid, $groupmodes)) {
++                $cmod->groupmode = $groupmodes[$cmid];
++                $updatemod = true;
++            }
++            // Update groupmembers only
++            // if this id exists in the array received from $mform.
++            if ($groupmembersonly && array_key_exists($cmid, $groupmembersonly)) {
++                $cmod->groupmembersonly = $groupmembersonly[$cmid];
++                $updatemod = true;
++            }
++            // Module should be updated only if any of it has any of the group settings.
++            if ($updatemod) {
++                // Updating $cm object in course_modules table.
++                $DB->update_record('course_modules', $cmod, false);
++            } else { // No group setting for this module, continue.
++                continue;
++            }
++        }
++    }
++    // Transaction will be committed if every thing went fine.
++    $transaction->allow_commit();
++    // Rebuild cache after successful updations.
++    rebuild_course_cache($course->id);
++    redirect($PAGE->url);
++}
++
++// Prepare activity type menu.
++$select = new single_select($baseurl, 'activitytype', $activitytypes, $activitytype, null, 'activitytypeform');
++$select->set_label(get_string('activitytypefilter', 'report_editgroups'));
++$select->set_help_icon('activitytypefilter', 'report_editgroups');
++
++// Making log entry.
++$event = \report_editgroups\event\report_viewed::create(
++        array('context' => $coursecontext, 'other' => array('activitytype' => $activitytype)));
++$event->trigger();
++
++// Set page title and page heading.
++$PAGE->set_title($course->shortname . ': ' . get_string('editgroups' , 'report_editgroups'));
++$PAGE->set_heading($course->fullname);
++
++// Displaying the form.
++echo $OUTPUT->header();
++echo $OUTPUT->heading(format_string($course->fullname));
++
++echo $OUTPUT->heading(get_string('activityfilter', 'report_editgroups'));
++echo $OUTPUT->render($select);
++
++$mform->display();
++
++echo $OUTPUT->footer();
+diff --git a/report/editgroups/internaldoc/testcase.txt b/report/editgroups/internaldoc/testcase.txt
+new file mode 100755
+index 0000000..90128df
+--- /dev/null
++++ b/report/editgroups/internaldoc/testcase.txt
+@@ -0,0 +1,27 @@
++Initial Setup
++=============
++
++You need one test course with a few activities (fewer than 20), and one test
++course with many activities (more than 20), including at least one of each type.
++In both courses, make sure you have some ground and groupings set up.
++
++Test script
++===========
++
++1.  In the small course, go to Administration -> Reports -> Grades.
++2.  At the top will be an 'Activity type' selector. This should be set to 'All activities'.
++3.  Then there will be a form with a section at for each course section containing
++    relevant activites. In each section will be all the groups settings for each
++    activity.
++4.  Change some settings here, then go to the standard edit settings page for that
++    activity, and ensure that the changed settings have been saved.
++5.  Change some group settings in the standard activity settings from, go back to
++    the edit dates report, and ensure the updated dates are shown there.
++6.  Now go to the report for the large course. The report will automatically
++    swtich to only show one type of activity, to stop the form from being too big.
++7.  Switch through each activity type, and ensure that the groups settings in the
++    report have exactly the same set of groups settings as in the standard
++    activity settings form. Specific things to check are:
++    * which settings are displayed.
++    * that the disabled-if dependencies between the settings for each activity are
++      the same as on the editing form.
+diff --git a/report/editgroups/lang/en/report_editgroups.php b/report/editgroups/lang/en/report_editgroups.php
+new file mode 100755
+index 0000000..3b0ede4
+--- /dev/null
++++ b/report/editgroups/lang/en/report_editgroups.php
+@@ -0,0 +1,36 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++/**
++ * Strings for component 'report_editgroups', language 'en'
++ *
++ * @package   report_editgroups
++ * @copyright 2011 The Open University
++ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++defined('MOODLE_INTERNAL') || die;
++
++
++$string['activityfilter'] = 'Activity view filter <small>(changing this filter will not save the remaining form data)</small>';
++$string['activitytypefilter'] = 'Activity type';
++$string['activitytypefilter_help'] = 'Use the filter to select activities to view and modify. Applying the filter will change the form display but will not save any existing changes.';
++$string['applyactivitytypefilter'] = 'Apply activity type filter';
++$string['editgroups'] = 'Groups';
++$string['editgroups:view'] = 'View edit groups course report';
++$string['page-report-editdates-index'] = 'Edit course group settings';
++$string['pluginname'] = 'Groups';
++$string['event:reportviewed'] = 'Edit groups report viewed';
+diff --git a/report/editgroups/lib.php b/report/editgroups/lib.php
+new file mode 100755
+index 0000000..c3db7f7
+--- /dev/null
++++ b/report/editgroups/lib.php
+@@ -0,0 +1,61 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++
++/**
++ * Library code for the edit groups report
++ *
++ * @package   report_editgroups
++ * @copyright 2012 The Open University
++ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++defined('MOODLE_INTERNAL') || die;
++
++/**
++ * This function extends the navigation with the report items
++ *
++ * @param navigation_node $navigation The navigation node to extend
++ * @param stdClass $course The course to object for the report
++ * @param stdClass $context The context of the course
++ */
++function report_editgroups_extend_navigation_course($navigation, $course, $context) {
++    global $CFG, $OUTPUT;
++    if (has_capability('report/editgroups:view', $context)) {
++        $url = new moodle_url('/report/editgroups/index.php', array('id'=>$course->id));
++        if ($activitytype = optional_param('activitytype', '', PARAM_PLUGIN)) {
++            $url->param('activitytype', $activitytype);
++        }
++        $navigation->add(get_string( 'editgroups', 'report_editgroups' ),
++                $url, navigation_node::TYPE_SETTING,
++                null, null, new pix_icon('i/report', ''));
++    }
++}
++
++/**
++ * Return a list of page types
++ * @param string $pagetype current page type
++ * @param stdClass $parentcontext Block's parent context
++ * @param stdClass $currentcontext Current context of block
++ * @return array
++ */
++function report_editgroups_page_type_list($pagetype, $parentcontext, $currentcontext) {
++    return array(
++        '*'                       => get_string('page-x', 'pagetype'),
++        'report-*'                => get_string('page-report-x', 'pagetype'),
++        'report-editgroups-index' => get_string('page-report-editgroups-index',  'report_editgroups'),
++    );
++}
+diff --git a/report/editgroups/styles.css b/report/editgroups/styles.css
+new file mode 100755
+index 0000000..71d9648
+--- /dev/null
++++ b/report/editgroups/styles.css
+@@ -0,0 +1,3 @@
++#page-report-editgroups-index #activitytypeform {
++    margin-bottom: 1em;
++}
+diff --git a/report/editgroups/tests/behat/basic.feature b/report/editgroups/tests/behat/basic.feature
+new file mode 100755
+index 0000000..05cb013
+--- /dev/null
++++ b/report/editgroups/tests/behat/basic.feature
+@@ -0,0 +1,62 @@
++@ou @ou_vle @report @report_editgroups
++Feature: Edit course plugin groups
++    When a user view edit groups report
++    They can change the plugn group settings
++
++    Background: Setup course and sample plugins
++        Given the following "users" exist:
++            | username | firstname | lastname | email |
++            | teacher1 | Teacher | 1 | teacher1@asd.com |
++            | student1 | Student | 1 | student1@asd.com |
++            | student2 | Student | 2 | student2@asd.com |
++            | student3 | Student | 3 | student3@asd.com |
++            | student4 | Student | 4 | student4@asd.com |
++        And the following "courses" exist:
++            | fullname | shortname | category |
++            | Course 1 | C1 | 0 |
++        And the following "course enrolments" exist:
++            | user | course | role |
++            | teacher1 | C1 | editingteacher |
++            | student1 | C1 | student |
++            | student2 | C1 | student |
++            | student3 | C1 | student |
++            | student4 | C1 | student |
++        And I log in as "teacher1"
++        And I follow "Course 1"
++        And I turn editing mode on
++        And I add a "Quiz" to section "1" and I fill the form with:
++          | Name | Test quiz name 1 |
++          | Description | Test forum description |
++        And I add a "Quiz" to section "2" and I fill the form with:
++          | Name | Test quiz name 2 |
++          | Description | Test forum description |
++        And I add a "Quiz" to section "3" and I fill the form with:
++          | Name | Test quiz name 3 |
++          | Description | Test forum description |
++        Given I log out
++
++    @javascript @_switch_iframe
++    Scenario: Test edit groups report can be used to change plugin instance group settings
++        When I log in as "admin"
++        And I am on site homepage
++        And I follow "Course 1"
++        And I navigate to "Groups" node in "Course administration > Reports"
++        And I follow "Groups"
++        Then I should see "Course 1"
++        And I should see "Activity view filter "
++        And I follow "Expand all"
++        And I should see "Test quiz name 1"
++        And I should see "Test quiz name 2"
++        And I should see "Test quiz name 3"
++        # So, to aviod problems we only test the 2nd and 3rd sections.
++        And I set the field with xpath "//fieldset[@id='id_section2header']/div[@class='fcontainer clearfix']/div[2]/div[@class='felement fselect']/select" to "1"
++        And I set the field with xpath "//fieldset[@id='id_section3header']/div[@class='fcontainer clearfix']/div[2]/div[@class='felement fselect']/select" to "2"
++        And I press "Save changes"
++        Then I should see "Course 1"
++        And I should see "Activity view filter "
++        And I follow "Expand all"
++        And I should see "Test quiz name 1"
++        And I should see "Test quiz name 2"
++        And I should see "Test quiz name 3"
++        And the "value" attribute of "//fieldset[@id='id_section2header']/div[@class='fcontainer clearfix']/div[2]/div[@class='felement fselect']/select" "xpath_element" should contain "1"
++        And the "value" attribute of "//fieldset[@id='id_section3header']/div[@class='fcontainer clearfix']/div[2]/div[@class='felement fselect']/select" "xpath_element" should contain "2"
+diff --git a/report/editgroups/version.php b/report/editgroups/version.php
+new file mode 100755
+index 0000000..7b776c6
+--- /dev/null
++++ b/report/editgroups/version.php
+@@ -0,0 +1,34 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++/**
++ * report_editgroups version information.
++ *
++ * @package   report_editgroups
++ * @copyright 2011 The Open University
++ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++defined('MOODLE_INTERNAL') || die;
++
++$plugin->version   = 2015051000;
++$plugin->requires  = 2014041100;
++$plugin->cron      = 0;
++$plugin->component = 'report_editgroups';
++$plugin->maturity  = MATURITY_STABLE;
++$plugin->release   = '2.4 for Moodle 2.8+';
++
++$plugin->outestssufficient = true;
+-- 
+1.8.3.1
+

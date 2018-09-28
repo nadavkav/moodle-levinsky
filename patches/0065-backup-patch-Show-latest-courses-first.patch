@@ -1,0 +1,25 @@
+From 821530801e45da008f608ddda9a319bb2fefb1a4 Mon Sep 17 00:00:00 2001
+From: Nadav Kavalerchik <nadavkav@gmail.com>
+Date: Sat, 14 Oct 2017 15:13:54 +0300
+Subject: [PATCH 65/95] backup (patch) Show latest courses first
+
+---
+ backup/util/ui/restore_ui_components.php | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/backup/util/ui/restore_ui_components.php b/backup/util/ui/restore_ui_components.php
+index 875b511..e432cfd 100644
+--- a/backup/util/ui/restore_ui_components.php
++++ b/backup/util/ui/restore_ui_components.php
+@@ -325,7 +325,7 @@ class restore_course_search extends restore_search_base {
+         $from       = " FROM {course} c ";
+         $where      = " WHERE (".$DB->sql_like('c.fullname', ':fullnamesearch', false)." OR ".
+             $DB->sql_like('c.shortname', ':shortnamesearch', false).")";
+-        $orderby    = " ORDER BY c.sortorder";
++        $orderby    = " ORDER BY c.id DESC"; // Show latest courses first.
+ 
+         if ($this->currentcourseid !== null && !$this->includecurrentcourse) {
+             $where .= " AND c.id <> :currentcourseid";
+-- 
+1.8.3.1
+

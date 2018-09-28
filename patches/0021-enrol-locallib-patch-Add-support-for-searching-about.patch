@@ -1,0 +1,37 @@
+From d84cea004df21554ea4e274785e30ed9656ab3e6 Mon Sep 17 00:00:00 2001
+From: Nadav Kavalerchik <nadavkav@gmail.com>
+Date: Wed, 11 Oct 2017 21:11:16 +0300
+Subject: [PATCH 21/95] enrol/locallib (patch) Add support for searching "about
+ to be enrolled users" by email + none directly enrolled course users are only
+ visible to admins
+
+---
+ enrol/locallib.php | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/enrol/locallib.php b/enrol/locallib.php
+index 4699b3a..de00e42 100644
+--- a/enrol/locallib.php
++++ b/enrol/locallib.php
+@@ -379,6 +379,8 @@ class course_enrolment_manager {
+         $params = array('guestid' => $CFG->siteguest);
+         if (!empty($search)) {
+             $conditions = get_extra_user_fields($this->get_context());
++            // Enable user enrollment search by email (nadavkav)
++            $conditions[] = 'u.email';
+             $conditions[] = 'u.firstname';
+             $conditions[] = 'u.lastname';
+             $conditions[] = $DB->sql_fullname('u.firstname', 'u.lastname');
+@@ -968,6 +970,9 @@ class course_enrolment_manager {
+         $users = array();
+         foreach ($userroles as $userrole) {
+             $contextid = $userrole->contextid;
++            // Hide users with system roles from list hack, but admin can see (nadavkav)
++            if (!has_capability('moodle/site:config', $context) &&
++               !has_capability('moodle/course:reviewotherusers', $context, $userrole->id)) continue;
+             unset($userrole->contextid); // This would collide with user avatar.
+             if (!array_key_exists($userrole->id, $users)) {
+                 $users[$userrole->id] = $this->prepare_user_for_display($userrole, $extrafields, $now);
+-- 
+1.8.3.1
+

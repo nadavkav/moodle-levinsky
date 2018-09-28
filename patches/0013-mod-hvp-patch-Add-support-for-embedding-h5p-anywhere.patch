@@ -1,0 +1,37 @@
+From 5203eb1cb48c5783acee74b0f5ba2350d6662899 Mon Sep 17 00:00:00 2001
+From: Nadav Kavalerchik <nadavkav@gmail.com>
+Date: Wed, 11 Oct 2017 16:39:11 +0300
+Subject: [PATCH 13/95] mod/hvp (patch) Add support for embedding h5p anywhere
+ (used by atto/hvp)
+
+---
+ mod/hvp/view.php | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/mod/hvp/view.php b/mod/hvp/view.php
+index 1bfe0ce..1e3334f 100644
+--- a/mod/hvp/view.php
++++ b/mod/hvp/view.php
+@@ -25,6 +25,7 @@ require_once("../../config.php");
+ require_once("locallib.php");
+ 
+ $id = required_param('id', PARAM_INT);
++$isembeded = optional_param('isembedded', false, PARAM_BOOL);  //  Support for lib/editor/atto/plugins/hvp
+ 
+ $url = new \moodle_url('/mod/hvp/view.php', array('id' => $id));
+ $PAGE->set_url($url);
+@@ -47,7 +48,10 @@ if ($content === null) {
+     print_error('invalidhvp');
+ }
+ 
+-// Log view.
++// If this H5P activity was embedded by using the atto plugin, use embedded layout.
++if ($isembeded) {
++    $PAGE->set_pagelayout('embedded');
++}
+ new \mod_hvp\event(
+         'content', null,
+         $content['id'], $content['title'],
+-- 
+1.8.3.1
+

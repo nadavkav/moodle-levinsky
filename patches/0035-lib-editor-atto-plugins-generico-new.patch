@@ -1,0 +1,1312 @@
+From daa22dca899ea9a6f688585881d71d1ce3d22a35 Mon Sep 17 00:00:00 2001
+From: Nadav Kavalerchik <nadavkav@gmail.com>
+Date: Wed, 11 Oct 2017 21:21:34 +0300
+Subject: [PATCH 35/95] lib/editor/atto/plugins/generico (new)
+
+---
+ lib/editor/atto/plugins/generico/CHANGES.txt       |  15 +
+ lib/editor/atto/plugins/generico/README.txt        |  38 ++
+ lib/editor/atto/plugins/generico/db/access.php     |  41 ++
+ .../plugins/generico/lang/en/atto_generico.php     |  41 ++
+ lib/editor/atto/plugins/generico/lib.php           | 246 +++++++++++
+ .../atto/plugins/generico/pix/ed/iconone.png       | Bin 0 -> 612 bytes
+ lib/editor/atto/plugins/generico/pix/icon.png      | Bin 0 -> 612 bytes
+ lib/editor/atto/plugins/generico/settings.php      |  39 ++
+ lib/editor/atto/plugins/generico/styles.css        |   8 +
+ lib/editor/atto/plugins/generico/version.php       |  34 ++
+ .../moodle-atto_generico-button-debug.js           | Bin 0 -> 13926 bytes
+ .../moodle-atto_generico-button-min.js             | Bin 0 -> 5292 bytes
+ .../moodle-atto_generico-button.js                 | Bin 0 -> 13926 bytes
+ .../plugins/generico/yui/src/button/build.json     |  10 +
+ .../plugins/generico/yui/src/button/js/button.js   | 451 +++++++++++++++++++++
+ .../generico/yui/src/button/meta/button.json       |   7 +
+ 16 files changed, 930 insertions(+)
+ create mode 100644 lib/editor/atto/plugins/generico/CHANGES.txt
+ create mode 100644 lib/editor/atto/plugins/generico/README.txt
+ create mode 100644 lib/editor/atto/plugins/generico/db/access.php
+ create mode 100644 lib/editor/atto/plugins/generico/lang/en/atto_generico.php
+ create mode 100644 lib/editor/atto/plugins/generico/lib.php
+ create mode 100644 lib/editor/atto/plugins/generico/pix/ed/iconone.png
+ create mode 100644 lib/editor/atto/plugins/generico/pix/icon.png
+ create mode 100644 lib/editor/atto/plugins/generico/settings.php
+ create mode 100644 lib/editor/atto/plugins/generico/styles.css
+ create mode 100644 lib/editor/atto/plugins/generico/version.php
+ create mode 100644 lib/editor/atto/plugins/generico/yui/build/moodle-atto_generico-button/moodle-atto_generico-button-debug.js
+ create mode 100644 lib/editor/atto/plugins/generico/yui/build/moodle-atto_generico-button/moodle-atto_generico-button-min.js
+ create mode 100644 lib/editor/atto/plugins/generico/yui/build/moodle-atto_generico-button/moodle-atto_generico-button.js
+ create mode 100644 lib/editor/atto/plugins/generico/yui/src/button/build.json
+ create mode 100644 lib/editor/atto/plugins/generico/yui/src/button/js/button.js
+ create mode 100644 lib/editor/atto/plugins/generico/yui/src/button/meta/button.json
+
+diff --git a/lib/editor/atto/plugins/generico/CHANGES.txt b/lib/editor/atto/plugins/generico/CHANGES.txt
+new file mode 100644
+index 0000000..3abc0bc
+--- /dev/null
++++ b/lib/editor/atto/plugins/generico/CHANGES.txt
+@@ -0,0 +1,15 @@
++Version 2016112701
++Fixed formatting of buttons for boost theme in Moodle 3.2
++
++Version 2016030900
++Added support for MOODLEPAGEID variable. This allows you to get the id parameter to the URL of the Moodle page
++
++Version 2016011101
++Fixed bug where datavars variable form fields were not being displayed in popup form
++
++Version 2016011100
++Added support for DATASET variable
++
++Version 2016011100
++Added a new field for instructions for each template in the Generico Filter. If not blank, this will be displayed in the popup dialog for each template when using the Generico Atto plugin.
++Also added the ability to upload a custom icon, in place of the nice grey G that is the current icon. Apparently G connotes "bold" in some languages so it can be confusing.
+\ No newline at end of file
+diff --git a/lib/editor/atto/plugins/generico/README.txt b/lib/editor/atto/plugins/generico/README.txt
+new file mode 100644
+index 0000000..c213b4f
+--- /dev/null
++++ b/lib/editor/atto/plugins/generico/README.txt
+@@ -0,0 +1,38 @@
++Generico for Moodle Atto
++
++This is a companion for the Moodle Generico filter. It will display a button and a form for each Generico filter template you have declared.
++It will not work without the Generico Filter. You *must* install that first or at the same time. The current version depends on a version of the Generico filter that only runs on Moodle 2.9 ad greater.
++If your version of Moodle is older than that, please visit https://moodle.org/plugins/filter_generico to get a version compatible with your version of Moodle.
++
++1. Download
++============
++Download the plugin from: https://github.com/justinhunt/moodle-atto_generico
++
++
++2 Unzip / Rename / Upload
++============
++Expand (unzip) the zip file. 
++
++Rename the main folder to "generico." It should contain all the files like "version.php." 
++
++Upload the "generico" folder into the folder
++
++[PATH TO MOODLE]/lib/editor/atto/plugins 
++
++
++3. Get Moodle to Install It 
++============
++Visit Settings > Site Administration > Notifications, and let Moodle guide you through the install.
++
++
++4. Configure it
++============
++Go to Site Administration > Plugins > Text Editors > Atto Toolbar Settings  
++
++Now add Generico to the menu structure near the bottom of the page
++
++  e.g style1 = title, bold, italic, generico
++
++  (where widget is the name of your atto plugin)
++
++Thats all. The Generico icon, a big grey G. should now appear on the Atto HTML editor toolbar. When you click it, Generico will give you a list of all the templates. Click the one you want and Generico will build a nice form for you to help you insert it.
+\ No newline at end of file
+diff --git a/lib/editor/atto/plugins/generico/db/access.php b/lib/editor/atto/plugins/generico/db/access.php
+new file mode 100644
+index 0000000..832983d
+--- /dev/null
++++ b/lib/editor/atto/plugins/generico/db/access.php
+@@ -0,0 +1,41 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++/**
++ * Plugin capabilities
++ *
++ * @package    atto_generico
++ * @copyright  COPYRIGHTINFO
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++defined('MOODLE_INTERNAL') || die();
++
++$capabilities = array(
++
++    'atto/generico:visible' => array(
++        'captype' => 'write',
++        'contextlevel' => CONTEXT_COURSE,
++        'archetypes' => array(
++			'coursecreator' => CAP_ALLOW,
++			'teacher' => CAP_ALLOW,
++            'editingteacher' => CAP_ALLOW,
++			'student' => CAP_ALLOW,
++            'manager' => CAP_ALLOW
++        )
++    )
++);
++
+diff --git a/lib/editor/atto/plugins/generico/lang/en/atto_generico.php b/lib/editor/atto/plugins/generico/lang/en/atto_generico.php
+new file mode 100644
+index 0000000..acf7725
+--- /dev/null
++++ b/lib/editor/atto/plugins/generico/lang/en/atto_generico.php
+@@ -0,0 +1,41 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++/**
++ * Strings for component 'atto_generico', language 'en'.
++ *
++ * @package    atto_generico
++ * @copyright  COPYRIGHTINFO
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++$string['creategenerico'] = 'Create generico';
++$string['pluginname'] = 'generico (Atto)';
++$string['settings'] = 'generico (Atto)';
++$string['browse'] = 'Browse';
++$string['visible'] = 'Visible';
++$string['nothingtoinsert'] = 'Nothing to insert!';
++$string['dialogtitle'] = 'Enter Preferences';
++$string['insert'] = 'Insert';
++$string['cancel'] = 'Cancel';
++$string['enterflavor'] = 'Enter Ice Cream Flavor';
++$string['defaultflavor'] = 'Default Ice Cream Flavor';
++$string['fieldsheader'] = 'Enter details for : ';
++$string['nofieldsheader'] = 'Insert : ';
++$string['chooseinsert'] = 'What do you want to insert?';
++$string['generico:visible'] = 'visible';
++$string['editoricon']='Editor Icon';
++$string['editoricon_desc']='The default icon on the Atto editor for Generico is a grey G. You can change this by uploading a more appropriate icon here if you wish. Make it 16x16 pixels png and grey on a transparent background.';
+\ No newline at end of file
+diff --git a/lib/editor/atto/plugins/generico/lib.php b/lib/editor/atto/plugins/generico/lib.php
+new file mode 100644
+index 0000000..57802b9
+--- /dev/null
++++ b/lib/editor/atto/plugins/generico/lib.php
+@@ -0,0 +1,246 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++/**
++ * Atto text editor integration version file.
++ *
++ * @package    atto_generico
++ * @copyright  COPYRIGHTINFO
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++defined('MOODLE_INTERNAL') || die();
++
++define('ATTO_GENERICO_CUSTOMICON_FILEAREA', 'editoricon');
++
++
++/**
++ * Initialise this plugin
++ * @param string $elementid
++ */
++function atto_generico_strings_for_js() {
++    global $PAGE;
++
++    $PAGE->requires->strings_for_js(array('insert',
++                                          'cancel',
++                                          'chooseinsert',
++                                          'fieldsheader',
++                                          'nofieldsheader',
++                                          'dialogtitle'),
++                                    'atto_generico');
++}
++
++/**
++ * Return the js params required for this module.
++ * @return array of additional params to pass to javascript init function for this module.
++ */
++function atto_generico_params_for_js($elementid, $options, $fpoptions)
++{
++	global $USER, $COURSE;
++	$config = get_config('atto_generico');
++
++	//coursecontext
++	$coursecontext = context_course::instance($COURSE->id);
++
++	//generico specific
++	$templates = get_object_vars(get_config('filter_generico'));
++
++	$instructions = array();
++	$keys = array();
++	$variables = array();
++	$defaults = array();
++	$ends = array();
++
++	//get the no. of templates
++	if (!array_key_exists('templatecount', $templates)) {
++		$templatecount = 21;
++	} else {
++		$templatecount = $templates['templatecount'] + 1;
++	}
++	//put our template into a form thats easy to process in JS
++	for ($tempindex = 1; $tempindex < $templatecount; $tempindex++) {
++		if (empty($templates['template_' . $tempindex]) && 
++			empty($templates['templatescript_' . $tempindex]) &&
++			empty($templates['templatestyle_' . $tempindex])
++			) {
++			continue;
++		}
++
++		//stash the key for this tempalte
++		$keys[] = $templates['templatekey_' . $tempindex];
++
++		//instructions
++		//stash the instructions for this template
++		$instructions[] = rawurlencode($templates['templateinstructions_' . $tempindex]);
++
++		//NB each of the $allvariables contains an array of variables (not a string)
++		//there might be duplicates where the variable is used multiple times in a template
++		//se we uniqu'ify it. That makes it look complicated. But we are just removing doubles
++		$allvariables = atto_generico_fetch_variables($templates['template_' . $tempindex] . $templates['templatescript_' . $tempindex] . $templates['datasetvars_' . $tempindex]);
++		$uniquevariables = array_unique($allvariables);
++		$usevariables = array();
++
++		//we need to reallocate array keys if the array size was changed in unique'ifying it
++		//we also take the opportunity to remove user variables, since they aren't needed here.
++		//NB DATASET can be referred to without the :
++		while (count($uniquevariables) > 0) {
++			$tempvar = array_shift($uniquevariables);
++			if (strpos($tempvar, 'COURSE:') === false
++				&& strpos($tempvar, 'USER:') === false
++				&& strpos($tempvar, 'DATASET:') === false
++				&& strpos($tempvar, 'URLPARAM:') === false
++				&& $tempvar != 'MOODLEPAGEID' 
++				&& $tempvar != 'WWWROOT' 
++				&& $tempvar != 'AUTOID') {
++				$usevariables[] = $tempvar;
++			}
++		}
++		$variables[] = $usevariables;
++
++		//stash the defaults for this template
++		//$defaults[] = $templates['templatedefaults_' . $tempindex];
++		$defaults[] = atto_generico_fetch_filter_properties($templates['templatedefaults_' . $tempindex]);
++
++		$ends[] = $templates['templateend_' . $tempindex];
++	}
++	if ($config->editoricon) {
++		$customicon = atto_generico_custom_icon_url();
++	}else{
++		$customicon =false;
++	}
++
++	
++	//config our array of data
++	$params = array();
++	$params['customicon']=rawurlencode($customicon);
++	$params['keys'] = $keys;
++	$params['instructions'] = $instructions;
++	$params['variables'] = $variables;
++	$params['defaults'] = $defaults;
++	$params['ends'] = $ends;
++
++	//If they don't have permission don't show it
++	$disabled = false;
++	if(!has_capability('atto/generico:visible', $coursecontext) ){
++		$disabled=true;
++	 }
++	
++	//add our disabled param
++	$params['disabled'] = $disabled;
++
++
++    return $params;
++}
++
++/**
++ * Return an array of variable names
++ * @param string template containing @@variable@@ variables 
++ * @return array of variable names parsed from template string
++ */
++function atto_generico_fetch_variables($template){
++	$matches = array();
++	$t = preg_match_all('/@@(.*?)@@/s', $template, $matches);
++	if(count($matches)>1){
++		return($matches[1]);
++	}else{
++		return array();
++	}
++}
++
++function atto_generico_fetch_filter_properties($propstring){
++	//Now we just have our properties string
++	//Lets run our regular expression over them
++	//string should be property=value,property=value
++	//got this regexp from http://stackoverflow.com/questions/168171/regular-expression-for-parsing-name-value-pairs
++	$regexpression='/([^=,]*)=("[^"]*"|[^,"]*)/';
++	$matches=array();
++
++	//here we match the filter string and split into name array (matches[1]) and value array (matches[2])
++	//we then add those to a name value array.
++	$itemprops = array();
++	if (preg_match_all($regexpression, $propstring,$matches,PREG_PATTERN_ORDER)){		
++		$propscount = count($matches[1]);
++		for ($cnt =0; $cnt < $propscount; $cnt++){
++			// echo $matches[1][$cnt] . "=" . $matches[2][$cnt] . " ";
++			$newvalue = $matches[2][$cnt];
++			//this could be done better, I am sure. WE are removing the quotes from start and end
++			//this wil however remove multiple quotes id they exist at start and end. NG really
++			$newvalue = trim($newvalue,'"');
++			$itemprops[trim($matches[1][$cnt])]=$newvalue;
++		}
++	}
++	return $itemprops;
++}
++
++
++function atto_generico_pluginfile($course, $cm, $context, $filearea, $args, $forcedownload, array $options = array()) {
++
++
++	if($filearea === 'editoricon') {
++		return atto_generico_setting_file_serve($filearea,$args,$forcedownload, $options);
++	}else {
++		send_file_not_found();
++	}
++}
++
++/**
++ * Returns URL to the stored file via pluginfile.php.
++ *
++ * @param string $setting
++ * @param string $filearea
++ * @return string protocol relative URL or null if not present
++ */
++function atto_generico_custom_icon_url() {
++	global $CFG;
++	$config = get_config('atto_generico');
++
++	$component = 'atto_generico';
++	$itemid = 0;
++	$syscontext = context_system::instance();
++	$filearea = ATTO_GENERICO_CUSTOMICON_FILEAREA;
++	$filepath = $config->editoricon;
++
++	$url = moodle_url::make_file_url("$CFG->wwwroot/pluginfile.php", "/$syscontext->id/$component/$filearea/$itemid".$filepath);
++	return $url;
++}
++
++
++function atto_generico_setting_file_serve($filearea, $args, $forcedownload, $options) {
++	global $CFG;
++	require_once("$CFG->libdir/filelib.php");
++
++	$syscontext = context_system::instance();
++	$component = 'atto_generico';
++
++	$revision = array_shift($args);
++	if ($revision < 0) {
++		$lifetime = 0;
++	} else {
++		$lifetime = 60*60*24*60;
++	}
++
++	$fs = get_file_storage();
++	$relativepath = implode('/', $args);
++
++	$fullpath = "/{$syscontext->id}/{$component}/{$filearea}/0/{$relativepath}";
++	$fullpath = rtrim($fullpath, '/');
++	if ($file = $fs->get_file_by_hash(sha1($fullpath))) {
++		send_stored_file($file, $lifetime, 0, $forcedownload, $options);
++		return true;
++	} else {
++		send_file_not_found();
++	}
++}
+\ No newline at end of file
+diff --git a/lib/editor/atto/plugins/generico/pix/ed/iconone.png b/lib/editor/atto/plugins/generico/pix/ed/iconone.png
+new file mode 100644
+index 0000000000000000000000000000000000000000..d4beb67ee5ee7acc9d00f95df96edc4fb49bcb65
+GIT binary patch
+literal 612
+zcmV-q0-ODbP)<h;3K|Lk000e1NJLTq000mG000mO1^@s6AM^iV00006VoOIv0RI60
+z0RN!9r;`8x010qNS#tmY3ljhU3ljkVnw%H_000McNliru-Uts410r}Jvqb;^03B&m
+zSad^gZEa<4bN~PV002XBWnpw>WFU8GbZ8()Nlj2>E@cM*00GEJL_t(I%dJu|h!a5+
+zeSaKgF&xT~B8iHva*B;uq*T&aT%iz9EJTY;LQJ#_7P75^g5i*?SDXiSgJ`WFVv)jD
+z3+*g)S*|eAgEJX-=Uccr_TnBW`l~<hzj^=t`2+l8&^+M#{@zllbd88E05}5RJAn59
+z)}km{_kBOvRiNMRAM`x$Ie?|SZp{4BT6?zJ?b;b8W=W&bkV>g10G9Yy+_KglolGW&
+z0o-I}CZaP+soS{@f*`mA;Bk7qp|!rBB@PCI6(VXg^VWDguJn4nZvY@OoXe@rFHsad
+zoVTAO$*Pp{5Hr6n6bfpGgL=I#YPH%|01M3gtl4ay`_nB*0H{{0`vEMZ*yqefC=A0r
+z^Or`Wku%1)Z2=<kGWGE+DHe;zDwWFHoW@s-F^{&lFdPmyn0YHL9{8J&Bmlq|<A~@(
+zik<L%p8%lK>Acfglh&G&Bv}ODas_6eBpv5uxm-T|8&QahS^kbkOa<-{(NzG8MD#QW
+zg6q@i^aT+)DdjQ|-ANsYTnDXID~#j#JTq?s*au+E^Sn<=sZa<JF!Lre-`#Zt0BE<{
+yui`j9?wor7;3G5t0I<Q#>(<&+&bc@E-|-XsXuC$s%-vf60000<MNUMnLSTYi+68I=
+
+literal 0
+HcmV?d00001
+
+diff --git a/lib/editor/atto/plugins/generico/pix/icon.png b/lib/editor/atto/plugins/generico/pix/icon.png
+new file mode 100644
+index 0000000000000000000000000000000000000000..d4beb67ee5ee7acc9d00f95df96edc4fb49bcb65
+GIT binary patch
+literal 612
+zcmV-q0-ODbP)<h;3K|Lk000e1NJLTq000mG000mO1^@s6AM^iV00006VoOIv0RI60
+z0RN!9r;`8x010qNS#tmY3ljhU3ljkVnw%H_000McNliru-Uts410r}Jvqb;^03B&m
+zSad^gZEa<4bN~PV002XBWnpw>WFU8GbZ8()Nlj2>E@cM*00GEJL_t(I%dJu|h!a5+
+zeSaKgF&xT~B8iHva*B;uq*T&aT%iz9EJTY;LQJ#_7P75^g5i*?SDXiSgJ`WFVv)jD
+z3+*g)S*|eAgEJX-=Uccr_TnBW`l~<hzj^=t`2+l8&^+M#{@zllbd88E05}5RJAn59
+z)}km{_kBOvRiNMRAM`x$Ie?|SZp{4BT6?zJ?b;b8W=W&bkV>g10G9Yy+_KglolGW&
+z0o-I}CZaP+soS{@f*`mA;Bk7qp|!rBB@PCI6(VXg^VWDguJn4nZvY@OoXe@rFHsad
+zoVTAO$*Pp{5Hr6n6bfpGgL=I#YPH%|01M3gtl4ay`_nB*0H{{0`vEMZ*yqefC=A0r
+z^Or`Wku%1)Z2=<kGWGE+DHe;zDwWFHoW@s-F^{&lFdPmyn0YHL9{8J&Bmlq|<A~@(
+zik<L%p8%lK>Acfglh&G&Bv}ODas_6eBpv5uxm-T|8&QahS^kbkOa<-{(NzG8MD#QW
+zg6q@i^aT+)DdjQ|-ANsYTnDXID~#j#JTq?s*au+E^Sn<=sZa<JF!Lre-`#Zt0BE<{
+yui`j9?wor7;3G5t0I<Q#>(<&+&bc@E-|-XsXuC$s%-vf60000<MNUMnLSTYi+68I=
+
+literal 0
+HcmV?d00001
+
+diff --git a/lib/editor/atto/plugins/generico/settings.php b/lib/editor/atto/plugins/generico/settings.php
+new file mode 100644
+index 0000000..69a4841
+--- /dev/null
++++ b/lib/editor/atto/plugins/generico/settings.php
+@@ -0,0 +1,39 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++/**
++ * PoodLL Anywhere settings.
++ *
++ * @package   atto_poodll
++ * @copyright 2014 Justin Hunt {@link http://www.poodll.com}
++ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++
++defined('MOODLE_INTERNAL') || die();
++
++$ADMIN->add('editoratto', new admin_category('atto_generico', new lang_string('pluginname', 'atto_generico')));
++
++$settings = new admin_settingpage('atto_generico_settings', new lang_string('settings', 'atto_generico'));
++if ($ADMIN->fulltree) {
++
++	//A customizable editor icon for Generico
++	$name = 'atto_generico/editoricon';
++	$title =get_string('editoricon', 'atto_generico');
++	$description = get_string('editoricon_desc', 'atto_generico');
++	$settings->add(new admin_setting_configstoredfile($name, $title, $description, 'editoricon'));
++
++}
+diff --git a/lib/editor/atto/plugins/generico/styles.css b/lib/editor/atto/plugins/generico/styles.css
+new file mode 100644
+index 0000000..d7a1b8e
+--- /dev/null
++++ b/lib/editor/atto/plugins/generico/styles.css
+@@ -0,0 +1,8 @@
++
++.atto_generico_field{
++	width: 200px;
++}
++div.atto_generico_buttons {
++    display: inline-block;
++    margin: 5px;
++}
+\ No newline at end of file
+diff --git a/lib/editor/atto/plugins/generico/version.php b/lib/editor/atto/plugins/generico/version.php
+new file mode 100644
+index 0000000..c2ea338
+--- /dev/null
++++ b/lib/editor/atto/plugins/generico/version.php
+@@ -0,0 +1,34 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++/**
++ * Atto generico  version file.
++ *
++ * @package    atto_generico
++ * @copyright  COPYRIGHTINFO
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++defined('MOODLE_INTERNAL') || die();
++
++$plugin->version   = 2016112701;        // The current plugin version (Date: YYYYMMDDXX).
++$plugin->requires  = 2013110500;        // Requires this Moodle version.
++$plugin->component = 'atto_generico';  // Full name of the plugin (used for diagnostics).
++$plugin->maturity  = MATURITY_STABLE;
++// Human readable version informatiomn
++$plugin->release   = '1.0.9 (Build 2016112701)';
++$plugin->dependencies = array('filter_generico' => 2016011800);
++
+diff --git a/lib/editor/atto/plugins/generico/yui/build/moodle-atto_generico-button/moodle-atto_generico-button-debug.js b/lib/editor/atto/plugins/generico/yui/build/moodle-atto_generico-button/moodle-atto_generico-button-debug.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..e2a449cc0eea525c6c18b7b6d8cdb733deca9744
+GIT binary patch
+literal 13926
+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
+L|5Zx;n(+S(T?8`6
+
+literal 0
+HcmV?d00001
+
+diff --git a/lib/editor/atto/plugins/generico/yui/build/moodle-atto_generico-button/moodle-atto_generico-button-min.js b/lib/editor/atto/plugins/generico/yui/build/moodle-atto_generico-button/moodle-atto_generico-button-min.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..be8cbf1b407f7e3cc2715f2d59e7b9b7f8492fb6
+GIT binary patch
+literal 5292
+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
+
+literal 0
+HcmV?d00001
+
+diff --git a/lib/editor/atto/plugins/generico/yui/build/moodle-atto_generico-button/moodle-atto_generico-button.js b/lib/editor/atto/plugins/generico/yui/build/moodle-atto_generico-button/moodle-atto_generico-button.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..e2a449cc0eea525c6c18b7b6d8cdb733deca9744
+GIT binary patch
+literal 13926
+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
+L|5Zx;n(+S(T?8`6
+
+literal 0
+HcmV?d00001
+
+diff --git a/lib/editor/atto/plugins/generico/yui/src/button/build.json b/lib/editor/atto/plugins/generico/yui/src/button/build.json
+new file mode 100644
+index 0000000..f4af3d4
+--- /dev/null
++++ b/lib/editor/atto/plugins/generico/yui/src/button/build.json
+@@ -0,0 +1,10 @@
++{
++    "name": "moodle-atto_generico-button",
++    "builds": {
++        "moodle-atto_generico-button": {
++            "jsfiles": [
++                "button.js"
++            ]
++        }
++    }
++}
+diff --git a/lib/editor/atto/plugins/generico/yui/src/button/js/button.js b/lib/editor/atto/plugins/generico/yui/src/button/js/button.js
+new file mode 100644
+index 0000000..bbf3653
+--- /dev/null
++++ b/lib/editor/atto/plugins/generico/yui/src/button/js/button.js
+@@ -0,0 +1,451 @@
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++/*
++ * @package    atto_generico
++ * @copyright  COPYRIGHTINFO
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++/**
++ * @module moodle-atto_generico-button
++ */
++
++/**
++ * Atto text editor generico plugin.
++ *
++ * @namespace M.atto_generico
++ * @class button
++ * @extends M.editor_atto.EditorPlugin
++ */
++
++var COMPONENTNAME = 'atto_generico';
++var LOGNAME = 'atto_generico';
++
++var CSS = {
++        INPUTSUBMIT: 'atto_media_urlentrysubmit',
++        INPUTCANCEL: 'atto_media_urlentrycancel',
++        KEYBUTTON: 'atto_generico_templatebutton',
++        HEADERTEXT: 'atto_generico_headertext',
++        INSTRUCTIONSTEXT: 'atto_generico_instructionstext',
++        TEMPLATEVARIABLE: 'atto_generico_templatevariable',
++        FLAVORCONTROL: 'flavorcontrol'
++    },
++    SELECTORS = {
++        FLAVORCONTROL: '.flavorcontrol'
++    };
++
++var FIELDSHEADERTEMPLATE = '' +
++        '<div id="{{elementid}}_{{innerform}}" class="mdl-align">' +
++            '<h4 class="' + CSS.HEADERTEXT + '">{{headertext}} {{key}}</h4>' +
++            '<div class="' + CSS.INSTRUCTIONSTEXT + '">{{instructions}}</div>' +
++        '</div>';
++
++var BUTTONSHEADERTEMPLATE = '' +
++        '<div id="{{elementid}}_{{innerform}}" class="mdl-align">' +
++            '<h4 class="' + CSS.HEADERTEXT + '">{{headertext}}</h4>' +
++        '</div>';
++        
++var BUTTONTEMPLATE = '' +
++        '<div id="{{elementid}}_{{innerform}}" class="atto_generico_buttons mdl-align">' +
++            '<button class="' + CSS.KEYBUTTON + '_{{templateindex}}">{{key}}</button>' +
++        '</div>';
++		
++var FIELDTEMPLATE = '' +
++        '<div id="{{elementid}}_{{innerform}}" class="mdl-align">{{variable}}' +
++            '&nbsp;<input type="text" class="' + CSS.TEMPLATEVARIABLE + '_{{variableindex}} atto_generico_field" value="{{defaultvalue}}"></input>' +
++        '</div>';
++var SELECTCONTAINERTEMPLATE = '' +
++            '<div id="{{elementid}}_{{innerform}}" class="mdl-align">{{variable}}</div>';
++			
++var SELECTTEMPLATE = '' +
++            '<select class="' + CSS.TEMPLATEVARIABLE + '_{{variableindex}} atto_generico_field"></select>';
++
++var OPTIONTEMPLATE ='' +
++		'<option value="{{option}}">{{option}}</option>';
++
++var SUBMITTEMPLATE = '' +
++  '<form class="atto_form">' +
++   '<div id="{{elementid}}_{{innerform}}" class="mdl-align">' +
++	'<button class="' + CSS.INPUTSUBMIT +'">{{inserttext}}</button>' +
++    '</div>' +
++	'</form>';
++
++Y.namespace('M.atto_generico').Button = Y.Base.create('button', Y.M.editor_atto.EditorPlugin, [], {
++
++    /**
++     * A reference to the current selection at the time that the dialogue
++     * was opened.
++     *
++     * @property _currentSelection
++     * @type Range
++     * @private
++     */
++    _currentSelection: null,
++
++    initializer: function() {
++        // If we don't have the capability to view then give up.
++        if (this.get('disabled')){
++            return;
++        }
++
++
++        if(this.get('customicon')) {
++            var iconurl = decodeURIComponent(this.get('customicon'));
++            var iconname = 'atto_generico';
++            // Add the generico icon/buttons
++            this.addButton({
++                iconurl: iconurl,
++                buttonName: iconname,
++                callback: this._displayDialogue,
++                callbackArgs: iconname
++            });
++
++        }else{
++            // Add the generico icon/buttons
++            var iconname = 'iconone';
++            this.addButton({
++                icon: 'ed/' + iconname,
++                iconComponent: 'atto_generico',
++                buttonName: iconname,
++                callback: this._displayDialogue,
++                callbackArgs: iconname
++            });
++        }
++    },
++
++
++     /**
++     * Display the generico dialog
++     *
++     * @method _displayDialogue
++     * @private
++     */
++    _displayDialogue: function(e, clickedicon) {
++        e.preventDefault();
++        var width=400;
++
++
++        var dialogue = this.getDialogue({
++            headerContent: M.util.get_string('dialogtitle', COMPONENTNAME),
++            width: width + 'px',
++            focusAfterHide: clickedicon
++        });
++		//dialog doesn't detect changes in width without this
++		//if you reuse the dialog, this seems necessary
++        if(dialogue.width !== width + 'px'){
++            dialogue.set('width',width+'px');
++        }
++        
++        //create content container
++        var bodycontent =  Y.Node.create('<div></div>');
++        
++        //create and append header
++        var template = Y.Handlebars.compile(BUTTONSHEADERTEMPLATE),
++            	content = Y.Node.create(template({
++                headertext: M.util.get_string('chooseinsert', COMPONENTNAME)
++            }));
++         bodycontent.append(content);
++
++        //get button nodes
++        var buttons = this._getButtonsForKeys(clickedicon);
++
++        
++         Y.Array.each(buttons, function(button) {  	 
++            //loop start
++                bodycontent.append(button);
++            //loop end
++        }, bodycontent);
++     
++
++        //set to bodycontent
++        dialogue.set('bodyContent', bodycontent);
++        dialogue.show();
++        this.markUpdated();
++    },
++
++	    /**
++     * Display the chosen generico template form
++     *
++     * @method _displayDialogue
++     * @private
++     */
++    _showTemplateForm: function(e,templateindex) {
++        e.preventDefault();
++        var width=400;
++
++		
++        var dialogue = this.getDialogue({
++            headerContent: M.util.get_string('dialogtitle', COMPONENTNAME),
++            width: width + 'px'
++        });
++		//dialog doesn't detect changes in width without this
++		//if you reuse the dialog, this seems necessary
++        if(dialogue.width !== width + 'px'){
++            dialogue.set('width',width+'px');
++        }
++
++        //get fields , 1 per variable
++        var fields = this._getTemplateFields(templateindex);
++        var instructions = this.get('instructions')[templateindex];
++            instructions = decodeURIComponent(instructions);
++	
++		//get header node. It will be different if we have no fields
++		if(fields && fields.length>0){
++			var useheadertext  = M.util.get_string('fieldsheader', COMPONENTNAME);
++		}else{
++			var useheadertext =  M.util.get_string('nofieldsheader', COMPONENTNAME);
++		}
++		var template = Y.Handlebars.compile(FIELDSHEADERTEMPLATE),
++            	content = Y.Node.create(template({
++                key: this.get('keys')[templateindex],
++                headertext: useheadertext,
++                instructions: instructions
++            }));
++        var header = content;
++		
++		//set container for our nodes (header, fields, buttons)
++        var bodycontent =  Y.Node.create('<div></div>');
++        
++        //add our header
++         bodycontent.append(header);
++        
++        //add fields
++         Y.Array.each(fields, function(field) {  	 
++            //loop start
++                bodycontent.append(field);
++            //loop end
++        }, bodycontent);
++     
++     	//add submit button
++     	var submitbuttons = this._getSubmitButtons(templateindex);
++     	bodycontent.append(submitbuttons)
++
++        //set to bodycontent
++        dialogue.set('bodyContent', bodycontent);
++        dialogue.show();
++        this.markUpdated();
++    },
++
++  /**
++     * Return the dialogue content for the tool, attaching any required
++     * events.
++     *
++     * @method _getSubmitButtons
++     * @return {Node} The content to place in the dialogue.
++     * @private
++     */
++    _getSubmitButtons: function(templateindex) {
++  
++        var template = Y.Handlebars.compile(SUBMITTEMPLATE),
++        	
++            content = Y.Node.create(template({
++                elementid: this.get('host').get('elementid'),
++                inserttext:  M.util.get_string('insert', COMPONENTNAME)
++            }));
++     
++		content.one('.' + CSS.INPUTSUBMIT).on('click', this._doInsert, this, templateindex);
++        return content;
++    },
++
++
++   /**
++     * Return a field (yui node) for each variable in the template
++     *
++     * @method _getDialogueContent
++     * @return {Node} The content to place in the dialogue.
++     * @private
++     */
++    _getTemplateFields: function(templateindex) {
++    
++    	var allcontent=[];
++    	var thekey=this.get('keys')[templateindex];
++    	var thevariables=this.get('variables')[templateindex];
++    	var thedefaults=this.get('defaults')[templateindex];
++    	
++    	//defaults array 
++    	//var defaultsarray=this._getDefArray(thedefaults);
++		var defaultsarray=thedefaults;
++		
++    	 Y.Array.each(thevariables, function(thevariable, currentindex) { 	 
++            //loop start
++			if((thevariable in defaultsarray) && defaultsarray[thevariable].indexOf('|')>-1){
++			
++				var containertemplate = Y.Handlebars.compile(SELECTCONTAINERTEMPLATE),
++					content = Y.Node.create(containertemplate({
++					elementid: this.get('host').get('elementid'),
++					variable: thevariable,
++					defaultvalue: defaultsarray[thevariable],
++					variableindex: currentindex
++				}));
++			
++				var selecttemplate = Y.Handlebars.compile(SELECTTEMPLATE),
++					selectbox = Y.Node.create(selecttemplate({
++					variable: thevariable,
++					defaultvalue: defaultsarray[thevariable],
++					variableindex: currentindex
++				}));
++			
++				var opts = defaultsarray[thevariable].split('|');
++				var htmloptions="";
++				var opttemplate = Y.Handlebars.compile(OPTIONTEMPLATE);
++				Y.Array.each(opts, function(opt, optindex) {
++					var optcontent = Y.Node.create(opttemplate({
++							option: opt
++						}));
++					selectbox.appendChild(optcontent);
++				});
++				content.appendChild(selectbox);
++				
++			}else{
++			
++				 var template = Y.Handlebars.compile(FIELDTEMPLATE),
++					content = Y.Node.create(template({
++					elementid: this.get('host').get('elementid'),
++					variable: thevariable,
++					defaultvalue: defaultsarray[thevariable],
++					variableindex: currentindex
++				}));
++			}
++			
++			
++            allcontent.push(content);
++            //loop end
++        }, this);
++
++
++        return allcontent;
++    },
++
++
++     /**
++     * Return the dialogue content for the tool, attaching any required
++     * events.
++     *
++     * @method _getDialogueContent
++     * @return {Node} The content to place in the dialogue.
++     * @private
++     */
++    _getButtonsForKeys: function(clickedicon) {
++    
++    	var allcontent=[];
++    	 Y.Array.each(this.get('keys'), function(thekey, currentindex) { 	 
++            //loop start
++             var template = Y.Handlebars.compile(BUTTONTEMPLATE),
++            	content = Y.Node.create(template({
++            	elementid: this.get('host').get('elementid'),
++                key: thekey,
++                templateindex: currentindex
++            }));
++            this._form = content;
++            content.one('.' + CSS.KEYBUTTON + '_' + currentindex).on('click', this._showTemplateForm, this,currentindex);
++            allcontent.push(content);
++            //loop end
++        }, this);
++
++        return allcontent;
++    },
++    
++    _getDefArray: function(thedefaults){
++    	//defaults array 
++    	var defaultsarray=[];
++    	var defaultstemparray = thedefaults.match(/([^=,]*)=("[^"]*"|[^,"]*)/g);//thedefaults.split(',');
++    	Y.Array.each(defaultstemparray, function(defset){
++    		//loop start
++    		var defsetarray = defset.split('=');
++    		if(defsetarray && defsetarray.length>1){
++    			defaultsarray[defsetarray[0]] = defsetarray[1].replace(/"/g,'');
++    		}
++    	 //loop end
++        }, this);
++        return defaultsarray;
++    
++    },
++
++    /**
++     * Inserts the users input onto the page
++     * @method _getDialogueContent
++     * @private
++     */
++    _doInsert : function(e,templateindex){
++        e.preventDefault();
++        this.getDialogue({
++            focusAfterHide: null
++        }).hide();
++        
++        var retstring = "{GENERICO:type=";
++        var thekey = this.get('keys')[templateindex];
++        var thevariables=this.get('variables')[templateindex];
++        var thedefaults=this.get('defaults')[templateindex];
++        var theend=this.get('ends')[templateindex];
++      //  var defaultsarray=this._getDefArray(thedefaults);
++          var defaultsarray=thedefaults;
++        
++        //add key to return string
++        retstring += '"' + thekey + '"';
++        
++        //add variables to return string
++         Y.Array.each(thevariables, function(variable, currentindex) {
++        //loop start
++        	var thefield = Y.one('.' + CSS.TEMPLATEVARIABLE + '_' + currentindex);
++        	var thevalue = thefield.get('value');
++        	if(thevalue && thevalue!=defaultsarray[variable]){
++        		retstring += ',' + variable + '="' + thevalue + '"';
++        	}
++        //loop end
++        }, this);
++        
++        //close out return string
++        retstring += "}";
++        
++        //add an end tag, if we need to
++        if(theend){
++        	retstring += '<br/>{GENERICO:type="' + thekey + '_end"}';
++        }
++        
++
++        this.editor.focus();
++        this.get('host').insertContentAtFocusPoint(retstring);
++        this.markUpdated();
++
++    }
++}, { ATTRS: {
++    disabled: {
++        value: false
++    },
++
++    keys: {
++        value: null
++    },
++
++	variables: {
++        value: null
++    },
++
++    defaults: {
++        value: null
++    }
++    ,
++    instructions: {
++        value: null
++    },
++    customicon: {
++        value: null
++    },
++    ends: {
++        value: null
++    }
++ }
++});
+diff --git a/lib/editor/atto/plugins/generico/yui/src/button/meta/button.json b/lib/editor/atto/plugins/generico/yui/src/button/meta/button.json
+new file mode 100644
+index 0000000..1fb0011
+--- /dev/null
++++ b/lib/editor/atto/plugins/generico/yui/src/button/meta/button.json
+@@ -0,0 +1,7 @@
++{
++    "moodle-atto_generico-button": {
++        "requires": [
++            "moodle-editor_atto-plugin"
++        ]
++    }
++}
+-- 
+1.8.3.1
+

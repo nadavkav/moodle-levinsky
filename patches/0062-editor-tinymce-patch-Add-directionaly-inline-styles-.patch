@@ -1,0 +1,36 @@
+From 74ce14415d9f374a6a10ffcf80b9d7e0ad8d0083 Mon Sep 17 00:00:00 2001
+From: Nadav Kavalerchik <nadavkav@gmail.com>
+Date: Sat, 14 Oct 2017 12:54:35 +0300
+Subject: [PATCH 62/95] editor/tinymce (patch) Add directionaly inline styles
+ when editor initiate (RTL)
+
+---
+ lib/editor/tinymce/module.js | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
+
+diff --git a/lib/editor/tinymce/module.js b/lib/editor/tinymce/module.js
+index d3118ef..b473713 100644
+--- a/lib/editor/tinymce/module.js
++++ b/lib/editor/tinymce/module.js
+@@ -80,6 +80,18 @@ M.editor_tinymce.init_editor = function(Y, editorid, options) {
+             });
+         };
+     }
++    // Turn Directionality & Alignment based on Moodle's language settings, on current page.
++    options.setup = function(editor) {
++        editor.onInit.add(function(ed) {
++           if (ed.settings.directionality === 'rtl') {
++                ed.execCommand('mceDirectionRTL');
++                ed.execCommand('JustifyRight');
++            } else {
++                ed.execCommand('mceDirectionLTR');
++                ed.execCommand('JustifyLeft');
++            }
++        });
++    };
+     tinyMCE.init(options);
+ 
+     var item = document.getElementById(editorid+'_filemanager');
+-- 
+1.8.3.1
+

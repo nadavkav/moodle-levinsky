@@ -1,0 +1,747 @@
+From b2502be2aeb6aface4ba73a3ce0a75e65f118d4e Mon Sep 17 00:00:00 2001
+From: Nadav Kavalerchik <nadavkav@gmail.com>
+Date: Mon, 16 Oct 2017 10:09:44 +0300
+Subject: [PATCH 68/95] auto/saml (patch) Fix M33 settings page + code cleanup
+ to php7
+
+---
+ auth/saml/auth.php        |  93 ++++++++++++-----------
+ auth/saml/config.php      | 173 +++++-------------------------------------
+ auth/saml/saml_config.php |   2 +-
+ auth/saml/settings.php    | 189 ++++++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 257 insertions(+), 200 deletions(-)
+ create mode 100644 auth/saml/settings.php
+
+diff --git a/auth/saml/auth.php b/auth/saml/auth.php
+index 11c0e58..748720f 100755
+--- a/auth/saml/auth.php
++++ b/auth/saml/auth.php
+@@ -29,7 +29,7 @@ class auth_plugin_saml extends auth_plugin_base {
+     /**
+     * Constructor.
+     */
+-    function __construct() {
++    public function __construct() {
+ 		$this->authtype = 'saml';
+ 		$this->config = get_config('auth/saml');
+     }
+@@ -42,15 +42,15 @@ class auth_plugin_saml extends auth_plugin_base {
+     * @param string $password The password (with system magic quotes)
+     * @return bool Authentication success or failure.
+     */
+-    function user_login($username, $password) {
++    public function user_login($username, $password) {
+         global $SESSION;
+ 	    // if true, user_login was initiated by saml/index.php
+ 	    if(isset($SESSION->auth_saml_login) && $SESSION->auth_saml_login) {
+ 	        unset($SESSION->auth_saml_login);
+-	        return TRUE;
++	        return true;
+ 	    }
+ 
+-	    return FALSE;
++	    return false;
+     }
+ 
+ 
+@@ -60,7 +60,7 @@ class auth_plugin_saml extends auth_plugin_base {
+     *
+     * @return array $result Associative array of user data
+     */
+-    function get_userinfo($username) {
++    public function get_userinfo($username) {
+         global $SESSION;
+ 	    if($login_attributes = $SESSION->auth_saml_login_attributes) {
+ 	        $attributemap = $this->get_attributes();
+@@ -80,13 +80,13 @@ class auth_plugin_saml extends auth_plugin_base {
+ 	        return $result;
+ 	    }
+ 
+-	    return FALSE;
++        return false;
+     }
+ 
+     /*
+     * Returns array containg attribute mappings between Moodle and Identity Provider.
+     */
+-    function get_attributes() {
++    public function get_attributes() {
+         $configarray = (array) $this->config;
+ 
+         if(isset($this->userfields)) {
+@@ -104,7 +104,7 @@ class auth_plugin_saml extends auth_plugin_base {
+         $moodleattributes = array();
+         foreach ($fields as $field) {
+             if (isset($configarray["field_map_$field"])) {
+-	        $moodleattributes[$field] = $configarray["field_map_$field"];
++                $moodleattributes[$field] = trim($configarray["field_map_$field"]);
+             }
+         }
+ 
+@@ -116,7 +116,7 @@ class auth_plugin_saml extends auth_plugin_base {
+     *
+     * @return bool
+     */
+-    function is_internal() {
++    public function is_internal() {
+ 	    return false;
+     }
+ 
+@@ -126,11 +126,11 @@ class auth_plugin_saml extends auth_plugin_base {
+     *
+     * @return bool
+     */
+-    function can_change_password() {
++    public function can_change_password() {
+ 	    return false;
+     }
+ 
+-    function pre_loginpage_hook() {
++    public function pre_loginpage_hook() {
+         // If Force Login is on then we can safely jump directly to the SAML IdP
+         if (isset($this->config->autologin) && $this->config->autologin) {
+             global $CFG, $SESSION;
+@@ -139,7 +139,7 @@ class auth_plugin_saml extends auth_plugin_base {
+         }
+     }
+ 
+-    function loginpage_hook() {
++    public function loginpage_hook() {
+ 	    global $CFG;
+ 
+         if (empty($CFG->alternateloginurl) && !(isset($_GET['saml']) && $_GET['saml'] === 'false')) {
+@@ -150,7 +150,7 @@ class auth_plugin_saml extends auth_plugin_base {
+ 	    $CFG->nolastloggedin = true;
+     }
+ 
+-    function logoutpage_hook() {
++    public function logoutpage_hook() {
+         global $CFG;
+ 
+ 	    if(isset($this->config->dosinglelogout) && $this->config->dosinglelogout) {
+@@ -169,13 +169,14 @@ class auth_plugin_saml extends auth_plugin_base {
+     * @param array $page An object containing all the data for this page.
+     */
+ 
+-    function config_form($config, $err, $user_fields) {
++    /*
++    public function config_form($config, $err, $user_fields) {
+ 	    global $CFG, $DB;
+ 
+         $dbman = $DB->get_manager();
+ 
+         $table_course_mapping = $this->get_course_mapping_xmldb();
+-        $table_role_mapping = $this->get_role_mapping_xmldb();        
++        $table_role_mapping = $this->get_role_mapping_xmldb();
+ 
+ 	    if(isset($config->supportcourses) &&  $config->supportcourses == 'internal') {
+ 	        if(!$dbman->table_exists($table_course_mapping)) {
+@@ -198,11 +199,13 @@ class auth_plugin_saml extends auth_plugin_base {
+ 	    }
+ 	    require_once ($CFG->dirroot . "/auth/saml/config.php");
+     }
++*/
+ 
+     /**
+      * A chance to validate form data, and last chance to
+      * do stuff before it is inserted in config_plugin
+      */
++    /*
+     function validate_form($form, &$err) {
+ 
+ 	    if(!isset($form->auth_saml_db_reset) && !isset($form->initialize_roles)) {
+@@ -216,9 +219,9 @@ class auth_plugin_saml extends auth_plugin_base {
+ 	        }
+ 
+ 	        if ($form->supportcourses == 'external') {
+-		        if ($form->externalcoursemappingdsn == '' || $form->externalcoursemappingsql == '' || $form->externalrolemappingdsn == '' || $form->externalrolemappingsql == '') {   
++		        if ($form->externalcoursemappingdsn == '' || $form->externalcoursemappingsql == '' || $form->externalrolemappingdsn == '' || $form->externalrolemappingsql == '') {
+ 		            $err['samlexternal'] = get_string('auth_saml_errorsamlexternal', 'auth_saml', $form->samllib);
+-		        }		 
++		        }
+ 	        }
+ 	        else if($form->supportcourses == 'internal') {
+ 
+@@ -228,7 +231,7 @@ class auth_plugin_saml extends auth_plugin_base {
+ 		            if (isset($form->update_courses_id)) {
+ 			            foreach ($form->update_courses_id as $course_id) {
+ 			                $course = $form->{'course_' . $course_id};
+-			                if (!empty($course[1]) && !empty($course[2])) {			    
++			                if (!empty($course[1]) && !empty($course[2])) {
+ 				                $lms_course_form_id[$course_id] = $course[0];
+ 				                $saml_course_form_id[$course_id] = $course[1] . '_' . $course[2];
+ 			                }
+@@ -244,7 +247,7 @@ class auth_plugin_saml extends auth_plugin_base {
+ 				                $lms_course_form_id[$i] = $new_course[0];
+ 				                $saml_course_form_id[$i] = $new_course[1] . '_' . $new_course[2];
+ 			                }
+-			            }		 
++			            }
+ 		            }
+ 		            //Comment the next line if you want let duplicate lms mapping
+ 		            $err['course_mapping']['lms'] = array_diff_key($lms_course_form_id, array_unique($lms_course_form_id));
+@@ -291,13 +294,13 @@ class auth_plugin_saml extends auth_plugin_base {
+             }
+ 	    }
+     }
+-
++*/
+     /**
+     * Processes and stores configuration data for this authentication plugin.
+     *
+-    *
+     * @param object $config Configuration object
+     */
++    /*
+     function process_config($config) {
+         global $err, $DB, $CFG;
+ 
+@@ -366,8 +369,8 @@ class auth_plugin_saml extends auth_plugin_base {
+ 	    if (!isset ($config->samllogoinfo)) {
+ 	        $config->samllogoinfo = '';//'SAML login';
+ 	    }
+-	    if (!isset ($config->autologin)) { 
+-            $config->autologin = false; 
++	    if (!isset ($config->autologin)) {
++            $config->autologin = false;
+         }
+ 	    if (!isset ($config->samllogfile)) {
+ 	        $config->samllogfile = '';
+@@ -382,16 +385,16 @@ class auth_plugin_saml extends auth_plugin_base {
+ 	        $config->ignoreinactivecourses = '';
+ 	    }
+ 	    if (!isset ($config->externalcoursemappingdsn)) {
+-	        $config->externalcoursemappingdsn = ''; 
++	        $config->externalcoursemappingdsn = '';
+ 	    }
+ 	    if (!isset ($config->externalrolemappingdsn)) {
+-	        $config->externalrolemappingdsn = ''; 
++	        $config->externalrolemappingdsn = '';
+ 	    }
+ 	    if (!isset ($config->externalcoursemappingsql)) {
+-	        $config->externalcoursemappingsql = ''; 
++	        $config->externalcoursemappingsql = '';
+ 	    }
+ 	    if (!isset ($config->externalrolemappingsql)) {
+-	        $config->externalrolemappingsql = ''; 
++	        $config->externalrolemappingsql = '';
+ 	    }
+             if (!isset ($config->disablejit)) {
+                 $config->disablejit = false;
+@@ -402,29 +405,29 @@ class auth_plugin_saml extends auth_plugin_base {
+         file_put_contents($CFG->dataroot.'/saml_config.php', $saml_param_encoded);
+ 
+         // Also adding this parameters in database but no need it really.
+-	    set_config('samllib',	      $saml_param->samllib,	'auth/saml');
+-	    set_config('sp_source',  $saml_param->sp_source,	'auth/saml');
++	    set_config('samllib',	     trim($saml_param->samllib),	'auth/saml');
++	    set_config('sp_source',  trim($saml_param->sp_source),	'auth/saml');
+ 	    set_config('dosinglelogout',  $saml_param->dosinglelogout,	'auth/saml');
+ 
+         // Save plugin settings
+-	    set_config('username',	      $config->username,	'auth/saml');
++	    set_config('username',	      trim($config->username),	'auth/saml');
+ 	    set_config('supportcourses',  $config->supportcourses,	'auth/saml');
+ 	    set_config('syncusersfrom',   $config->syncusersfrom,	'auth/saml');
+ 	    set_config('samlcourses',     $config->samlcourses,	'auth/saml');
+ 	    set_config('samllogoimage',   $config->samllogoimage,	'auth/saml');
+ 	    set_config('samllogoinfo',    $config->samllogoinfo,	'auth/saml');
+ 	    set_config('autologin',       $config->autologin,  'auth/saml');
+-	    set_config('samllogfile',         $config->samllogfile,	'auth/saml');
+-	    set_config('samlhookfile',        $config->samlhookfile,	'auth/saml');
+-	    set_config('moodlecoursefieldid',   $config->moodlecoursefieldid,   'auth/saml');
++	    set_config('samllogfile',         trim($config->samllogfile),	'auth/saml');
++	    set_config('samlhookfile',        trim($config->samlhookfile),	'auth/saml');
++	    set_config('moodlecoursefieldid',   trim($config->moodlecoursefieldid),   'auth/saml');
+ 	    set_config('ignoreinactivecourses', $config->ignoreinactivecourses, 'auth/saml');
+-            set_config('disablejit', $config->disablejit, 'auth/saml');
++        set_config('disablejit', $config->disablejit, 'auth/saml');
+ 
+ 	    if($config->supportcourses == 'external') {
+-	        set_config('externalcoursemappingdsn',  $config->externalcoursemappingdsn,	'auth/saml');
+-	        set_config('externalrolemappingdsn',    $config->externalrolemappingdsn,	'auth/saml');
+-	        set_config('externalcoursemappingsql',  $config->externalcoursemappingsql,	'auth/saml');
+-	        set_config('externalrolemappingsql',    $config->externalrolemappingsql,	'auth/saml');
++	        set_config('externalcoursemappingdsn',  trim($config->externalcoursemappingdsn),	'auth/saml');
++	        set_config('externalrolemappingdsn',    trim($config->externalrolemappingdsn),	'auth/saml');
++	        set_config('externalcoursemappingsql',  trim($config->externalcoursemappingsql),	'auth/saml');
++	        set_config('externalrolemappingsql',    trim($config->externalrolemappingsql),	'auth/saml');
+ 	    }
+ 	    else if($config->supportcourses == 'internal') {
+ 
+@@ -499,13 +502,13 @@ class auth_plugin_saml extends auth_plugin_base {
+ 			            }
+ 			        }
+ 		        }
+-		    } 
++		    }
+             else {
+ 		        //Updating roles
+ 		        if (isset($config->update_roles_id) && empty($err['roles_mapping'])) {
+ 			        foreach($config->update_roles_id as $role_id) {
+ 			            $role = $config->{'role_' . $role_id};
+-			            $sql = "UPDATE ".$DB->get_prefix() ."role_mapping SET lms_role='" . $role[0] . "', saml_role='" . $role[1] . "' where saml_role='" . $role_id . "'"; 
++			            $sql = "UPDATE ".$DB->get_prefix() ."role_mapping SET lms_role='" . $role[0] . "', saml_role='" . $role[1] . "' where saml_role='" . $role_id . "'";
+                         try {
+     			            $DB->execute($sql);
+                         }
+@@ -534,12 +537,12 @@ class auth_plugin_saml extends auth_plugin_base {
+ 		    if(isset($err['role_mapping_db']) || isset($err['course_mapping_db'])) {
+ 		        return false;
+ 		    }
+-	
++
+ 		    //END-COURSE MAPPINGS
+ 	    }
+ 	    return true;
+     }
+-
++*/
+     /**
+     * Cleans and returns first of potential many values (multi-valued attributes)
+     *
+@@ -590,7 +593,7 @@ class auth_plugin_saml extends auth_plugin_base {
+             $dbman->create_table($table);
+ 	        echo '<span class="notifysuccess">';
+ 	        print_string("auth_saml_sucess_creating_role_mapping", "auth_saml");
+-	        echo '</span><br>';	
++	        echo '</span><br>';
+         }
+         catch (Exception $e) {
+ 	        $err['role_mapping_db'][] = get_string("auth_saml_error_creating_role_mapping", "auth_saml");
+@@ -600,7 +603,7 @@ class auth_plugin_saml extends auth_plugin_base {
+ 
+     function get_course_mapping_xmldb() {
+ 
+-        $table = new xmldb_table('course_mapping');   
++        $table = new xmldb_table('course_mapping');
+ 
+         $table->add_field('course_mapping_id', XMLDB_TYPE_INTEGER, '10', XMLDB_UNSIGNED, XMLDB_NOTNULL, XMLDB_SEQUENCE, null, null);
+ 		$table->add_field('saml_course_id', XMLDB_TYPE_CHAR, '100', null, XMLDB_NOTNULL, null, null, null);
+@@ -648,5 +651,5 @@ class auth_plugin_saml extends auth_plugin_base {
+ 	        }
+ 	    }
+ 	    return $sucess;
+-    }	   
++    }
+ }
+diff --git a/auth/saml/config.php b/auth/saml/config.php
+index 91ee63d..9672ff5 100755
+--- a/auth/saml/config.php
++++ b/auth/saml/config.php
+@@ -1,12 +1,12 @@
+-<script src="../auth/saml/resources/moodle_saml.js" type="text/javascript"></script>
++<!--<script src="../saml/resources/moodle_saml.js" type="text/javascript"></script>-->
+ 
+-<link rel="stylesheet" type="text/css" href="../auth/saml/resources/ui.theme.css" />
+-<link rel="stylesheet" type="text/css" href="../auth/saml/resources/ui.core.css" />
+-<link rel="stylesheet" type="text/css" href="../auth/saml/resources/ui.tabs.css" />
+-<link rel="stylesheet" type="text/css" href="../auth/saml/resources/moodle_saml.css" />
++<link rel="stylesheet" type="text/css" href="../saml/resources/ui.theme.css" />
++<link rel="stylesheet" type="text/css" href="../saml/resources/ui.core.css" />
++<link rel="stylesheet" type="text/css" href="../saml/resources/ui.tabs.css" />
++<link rel="stylesheet" type="text/css" href="../saml/resources/moodle_saml.css" />
+ 
+-<script type="text/javascript" src="../auth/saml/resources/jquery-1.3.2.min.js"></script>
+-<script type="text/javascript" src="../auth/saml/resources/jquery-ui-1.7.2.custom.min.js"></script>
++<script type="text/javascript" src="../saml/resources/jquery-1.3.2.min.js"></script>
++<script type="text/javascript" src="../saml/resources/jquery-ui-1.7.2.custom.min.js"></script>
+ 
+ 
+ <?php
+@@ -25,6 +25,7 @@
+  * 2008-10  Created
+  * 2009-07  Added new configuration options
+ **/
++include_once("../../config.php");
+ 
+     global $CFG, $OUTPUT;
+ 
+@@ -104,17 +105,17 @@
+     if (!isset ($config->ignoreinactivecourses)) {
+         $config->ignoreinactivecourses = true;
+     }
+-    if (!isset ($config->externalcoursemappingdsn)) { 
+-        $config->externalcoursemappingdsn = ''; 
++    if (!isset ($config->externalcoursemappingdsn)) {
++        $config->externalcoursemappingdsn = '';
+     }
+-    if (!isset ($config->externalrolemappingdsn)) { 
+-        $config->externalrolemappingdsn = ''; 
++    if (!isset ($config->externalrolemappingdsn)) {
++        $config->externalrolemappingdsn = '';
+     }
+-    if (!isset ($config->externalcoursemappingsql)) { 
+-        $config->externalcoursemappingsql = ''; 
++    if (!isset ($config->externalcoursemappingsql)) {
++        $config->externalcoursemappingsql = '';
+     }
+-    if (!isset ($config->externalrolemappingsql)) { 
+-        $config->externalrolemappingsql = ''; 
++    if (!isset ($config->externalrolemappingsql)) {
++        $config->externalrolemappingsql = '';
+     }
+ 
+     if (!isset ($config->disablejit)) {
+@@ -237,29 +238,11 @@ if (isset($err) && !empty($err)) {
+        ?>
+ 
+     </td>
+-    <td><?php print_string("auth_saml_samlhookfile_description", "auth_saml"); ?></td>
+-</tr>
+ 
+-<tr valign="top">
+-    <td class="right"><?php print_string("auth_saml_supportcourses", "auth_saml"); ?>:</td>
+-    <td>
+-       <select name="supportcourses" onchange="javascript:{
+-    document.getElementById('coursemapping_li').style.display = (this.value == 'internal') ? 'inline' : 'none';
+-    document.getElementById('rolemapping_li').style.display = (this.value == 'internal') ? 'inline' : 'none';
+-    document.getElementById('externalmapping_li').style.display = (this.value == 'external') ? 'inline' : 'none';
+-    document.getElementById('samlcourses_tr').style.display = (this.value == 'nosupport') ? 'none' : '';
+-    document.getElementById('moodlecoursefieldid_tr').style.display = (this.value == 'nosupport') ? 'none' : '';
+-    document.getElementById('ignoreinactivecourses_tr').style.display = (this.value == 'nosupport') ? 'none' : '';
+-
+-    $('#tabdiv').tabs('select', 0);}" >
+-            <option name="nosupport" value="nosupport" <?php if($config->supportcourses == 'nosupport') echo 'selected="selected"'; ?> >No Support</option>
+-            <option name="internal" value="internal" <?php if($config->supportcourses == 'internal') echo 'selected="selected"'; ?> >Internal</option>
+-            <option name="external" value="external" <?php if($config->supportcourses == 'external') echo 'selected="selected"'; ?> >External</option>
+-        </select>
+-    </td>
+-    <td><?php print_string("auth_saml_supportcourses_description", "auth_saml"); ?></td>
++    <td><?php print_string("auth_saml_samlhookfile_description", "auth_saml"); ?></td>
+ </tr>
+ 
++    <!-- support for saml courses sync removed -->
+ <tr valign="top">
+     <td class="right"><?php print_string("auth_saml_disablejit", "auth_saml"); ?>:</td>
+     <td>
+@@ -315,122 +298,4 @@ if (isset($err) && !empty($err)) {
+ 
+ </table>
+ 
+-<script type="text/javascript">
+-
+-$(document).ready(function() {
+-    $("#tabdiv").tabs();
+-});
+-
+-
+-</script>
+-
+-<div id="mapping_container">
+-<div id="tabdiv">
+-<ul>
+-    <li><a href="#datamapping">User Data Mapping</a></li>
+-    <li id="coursemapping_li" <?php if($config->supportcourses != 'internal') echo 'style="display:none;"'; ?> ><a <?php echo (isset($err['course_mapping'])  || isset($err['missed_course_mapping']) || isset($err['course_mapping_db']) ? 'style="color:red;"' : ''); ?> href="#coursemapping">Course Mapping</a></li>
+-    <li id="rolemapping_li" <?php if($config->supportcourses  != 'internal') echo 'style="display:none;"' ?> ><a <?php echo (isset($err['role_mapping'])  || isset($err['missed_role_mapping']) || isset($err['role_mapping_db']) ? 'style="color:red;"' : ''); ?> href="#rolemapping">Role Mapping</a></li>
+-    <li id="externalmapping_li" <?php if($config->supportcourses  != 'external') echo 'style="display:none;"'; ?> ><a <?php echo ($config->supportcourses  == 'external' && isset($err['samlexternal']) ? 'style="color:red;"' : ''); ?> href="#externalmapping">External Mapping Info</a></li>
+-</ul>
+-
+-<div id="datamapping">
+-    <table class="center">
+-    <?php
+-    print_auth_lock_options('saml', $user_fields, '<!-- empty help -->', true, false, $this->get_custom_user_profile_fields());
+-    ?>
+-    </table>
+-</div>
+-
+-<div id="coursemapping">
+-
+-<?php 
+-
+-if(isset($err['course_mapping_db']) && in_array("error_creating_course_mapping", $err['course_mapping_db'])) {
+-    echo '<span class="error">';
+-    print_string("auth_saml_error_creating_course_mapping", "auth_saml");
+-    echo '</span>';
+-}
+-else {
+-    echo '<table id="newcourses" class="center">';
+-        print_course_mapping_options($course_mapping, $config, $err);
+-    echo '
+-        </table>
+-        <div style="padding-left: 44%;"><input type="submit" name="deletecourses" value="Delete selected" /></div>
+-         ';
+-}
+-?>
+-</div>
+-
+-<div id="rolemapping">
+-<?php
+-if(isset($err['role_mapping_db']) && in_array("error_creating_role_mapping", $err['role_mapping_db'])) {
+-    echo '<span class="error">';
+-    print_string("auth_saml_error_creating_role_mapping", "auth_saml");
+-    echo '</span>';
+-}
+-else {
+-    echo '<table id="newroles" class="center">';
+-          print_role_mapping_options($role_mapping, $config, $err);
+-    echo '</table>
+-          <div style="padding-top: 10px; padding-left: 44%;"><input type="submit" name="deleteroles" value="Delete selected" /></div>';
+-
+-    if($config->supportcourses == 'internal') {
+-        echo  '<div align="left">
+-                <input type="submit" name="initialize_roles" value="';
+-                print_string('auth_saml_initialize_roles', 'auth_saml');
+-        echo '" />
+-              </div>
+-             ';
+-    }
+-}
+-?>
+-</div>
+-
+-<div id="externalmapping">
+-    <?php
+-        if (isset($err['samlexternal'])) {
+-            echo $OUTPUT->error_text($err['samlexternal']);
+-        }
+-    ?>
+-    <table id="externalmappinginfo" class="center">
+-        <tr valign="top">
+-            <td colspan="2"><?php print_string("auth_saml_mapping_dsn_description", "auth_saml"); ?></td>
+-        </tr>
+-        <tr valign="top" class="required">
+-            <td class="right"><?php print_string("auth_saml_course_mapping_dsn", "auth_saml"); ?>:</td>
+-            <td>
+-               <input name="externalcoursemappingdsn" type="text" size="55" value="<?php echo $config->externalcoursemappingdsn; ?>" />
+-            </td>
+-        </tr>
+-        <tr class="required">    
+-            <td class="right" valign="top"><?php print_string("auth_saml_course_mapping_sql", "auth_saml"); ?>:</td>
+-            <td>
+-               <textarea name="externalcoursemappingsql" type="text" size="55" rows="3" cols="55"><?php echo $config->externalcoursemappingsql; ?></textarea>            
+-            </td>
+-        </tr>
+-        <tr valign="top">
+-            <td colspan="2"></td>
+-        </tr>
+-        <tr class="required">    
+-            <td class="right"><?php print_string("auth_saml_role_mapping_dsn", "auth_saml"); ?>:</td>
+-            <td>
+-               <input name="externalrolemappingdsn" type="text" size="55" value="<?php echo $config->externalrolemappingdsn; ?>" />
+-            </td>
+-        </tr>
+-        <tr class="required">    
+-            <td class="right" valign="top"><?php print_string("auth_saml_role_mapping_sql", "auth_saml"); ?>:</td>
+-            <td>
+-               <textarea name="externalrolemappingsql" type="text" size="55" rows="3" cols="55"><?php echo htmlspecialchars($config->externalrolemappingsql); ?></textarea>
+-            </td>
+-        </tr>
+-    </table>
+-    <p>DSN and SQL examples:</p> 
+-<?php
+-    echo "<p>" . htmlspecialchars(get_string("auth_saml_mapping_dsn_examples", "auth_saml")) . "</p>";
+-    echo "<p>" . htmlspecialchars(get_string("auth_saml_mapping_sql_examples", "auth_saml")) . "</p>";
+-    echo "<p>" . htmlspecialchars(get_string("auth_saml_mapping_external_warning", "auth_saml")) . "</p>";
+-?>
+-</div>
+-
+-</div>
+-</div>
++<!-- support for saml courses sync removed -->
+\ No newline at end of file
+diff --git a/auth/saml/saml_config.php b/auth/saml/saml_config.php
+index 8551fe3..2c6a320 100755
+--- a/auth/saml/saml_config.php
++++ b/auth/saml/saml_config.php
+@@ -1 +1 @@
+-{"samllib":"\/var\/www\/apps\/moodle31\/simplesamlphp\/lib","sp_source":"default-sp","dosinglelogout":"on"}
++{"samllib":"\/var\/www\/apps\/moodle33\/simplesamlphp\/lib","sp_source":"default-sp","dosinglelogout":"on"}
+diff --git a/auth/saml/settings.php b/auth/saml/settings.php
+new file mode 100644
+index 0000000..37fc84b
+--- /dev/null
++++ b/auth/saml/settings.php
+@@ -0,0 +1,189 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++/**
++ * Admin settings and defaults.
++ *
++ * @package auth_saml
++ * @author Erlend Strømsvik - Ny Media AS
++ * @author Piers Harding - made quite a number of changes
++ * @license http://www.gnu.org/copyleft/gpl.html GNU Public License
++ *
++ * Authentication Plugin: SAML based SSO Authentication
++ *
++ * Authentication using SAML2 with SimpleSAMLphp.
++ *
++ * Based on plugins made by Sergio Gómez (moodle_ssp) and Martin Dougiamas (Shibboleth).
++ *
++ * 2008-10  Created
++ * 2009-07  Added new configuration options
++ * 2017-10  Added new Moodle 3.3 configuration settings.php file support
++ **/
++
++defined('MOODLE_INTERNAL') || die;
++
++if ($ADMIN->fulltree) {
++
++    global $CFG, $OUTPUT;
++
++    require_once("courses.php");
++    require_once("roles.php");
++
++    // Get saml paramters stored in the saml_config.php
++    if(file_exists($CFG->dataroot.'/saml_config.php')) {
++        $contentfile = file_get_contents($CFG->dataroot.'/saml_config.php');
++        $saml_param = json_decode($contentfile);
++    } else if (file_exists('saml_config.php')) {
++        $contentfile = file_get_contents('saml_config.php');
++        $saml_param = json_decode($contentfile);
++    } else {
++        $saml_param = new stdClass();
++    }
++
++    $config = get_config('auth_saml');
++    //var_dump($config);die;
++    //var_dump($saml_param);die;
++
++    // Set to defaults if undefined
++    if (!isset ($saml_param->samllib)) {
++        if (isset ($config->samllib)) {
++            $saml_param->samllib = $config->samllib;
++        } else {
++            $saml_param->samllib = '/var/www/sp/simplesamlphp/lib';
++        }
++    }
++    if (!isset ($saml_param->sp_source)) {
++        if(isset ($config->sp_source)) {
++            $saml_param->sp_source = $config->sp_source;
++        }
++        else {
++            $saml_param->sp_source = 'saml';
++        }
++    }
++    if (!isset ($saml_param->dosinglelogout)) {
++        if(isset ($config->dosinglelogout)) {
++            $saml_param->dosinglelogout = $config->dosinglelogout;
++        }
++        else {
++            $saml_param->dosinglelogout = false;
++        }
++    }
++    if (!isset ($config->username)) {
++        $config->username = 'eduPersonPrincipalName';
++    }
++    if (!isset ($config->notshowusername)) {
++        $config->notshowusername = 'none';
++    }
++    if (!isset ($config->supportcourses)) {
++        $config->supportcourses = 'nosupport';
++    }
++    if (!isset ($config->syncusersfrom)) {
++        $config->syncusersfrom = '';
++    }
++    if (!isset ($config->samlcourses)) {
++        $config->samlcourses = 'schacUserStatus';
++    }
++    if (!isset ($config->samllogoimage)) {
++        //$config->samllogoimage = 'logo.gif';
++        $config->samllogoimage = 'portal-login.jpg';
++    }
++    if (!isset ($config->samllogoinfo)) {
++        $config->samllogoinfo = 'SAML login';
++    }
++    if (!isset ($config->autologin)) {
++        $config->autologin = false;
++    }
++    if (!isset ($config->samllogfile)) {
++        $config->samllogfile = '';
++    }
++    if (!isset ($config->samlhookfile)) {
++        $config->samlhookfile = $CFG->dirroot . '/auth/saml/custom_hook.php';
++    }
++    if (!isset ($config->moodlecoursefieldid)) {
++        $config->moodlecoursefieldid = 'shortname';
++    }
++    if (!isset ($config->ignoreinactivecourses)) {
++        $config->ignoreinactivecourses = true;
++    }
++    if (!isset ($config->externalcoursemappingdsn)) {
++        $config->externalcoursemappingdsn = '';
++    }
++    if (!isset ($config->externalrolemappingdsn)) {
++        $config->externalrolemappingdsn = '';
++    }
++    if (!isset ($config->externalcoursemappingsql)) {
++        $config->externalcoursemappingsql = '';
++    }
++    if (!isset ($config->externalrolemappingsql)) {
++        $config->externalrolemappingsql = '';
++    }
++
++    if (!isset ($config->disablejit)) {
++        $config->disablejit = false;
++    }
++
++    // Introductory explanation.
++    $settings->add(new admin_setting_heading('auth_saml/pluginname', '',
++        new lang_string('auth_samldescription', 'auth_saml')));
++
++    $settings->add(new admin_setting_configempty('linktoconfig', 'config', '<a href="../auth/saml/config.php">Old config setting page</a>'));
++
++    // samllib folder.
++    $settings->add(new admin_setting_configtext('auth_saml/samllib', get_string('auth_saml_samllib', 'auth_saml'),
++        get_string('auth_saml_samllib_description', 'auth_saml') , $saml_param->samllib));
++
++    // sp_source.
++    $settings->add(new admin_setting_configtext('auth_saml/sp_source', get_string('auth_saml_sp_source', 'auth_saml'),
++        get_string('auth_saml_sp_source_description', 'auth_saml') , $saml_param->sp_source));
++
++    // username.
++    $settings->add(new admin_setting_configtext('auth_saml/username', get_string('auth_saml_username', 'auth_saml'),
++        get_string('auth_saml_username_description', 'auth_saml') , $saml_param->username));
++
++    // dosinglelogout.
++    $settings->add(new admin_setting_configcheckbox('auth_saml/dosinglelogout', get_string('auth_saml_dosinglelogout', 'auth_saml'),
++        get_string('auth_saml_dosinglelogout_description', 'auth_saml') , $saml_param->dosinglelogout));
++
++    // samllogoimage.
++    $settings->add(new admin_setting_configtext('auth_saml/samllogoimage', get_string('auth_saml_logo_path', 'auth_saml'),
++        get_string('auth_saml_logo_path_description', 'auth_saml') , $saml_param->samllogoimage));
++
++    // samllogoinfo.
++    $settings->add(new admin_setting_configtextarea('auth_saml/samllogoinfo', get_string('auth_saml_logo_info', 'auth_saml'),
++        get_string('auth_saml_logo_info_description', 'auth_saml') , $saml_param->samllogoinfo));
++
++    // autologin.
++    $settings->add(new admin_setting_configcheckbox('auth_saml/autologin', get_string('auth_saml_autologin', 'auth_saml'),
++        get_string('auth_saml_autologin_description', 'auth_saml') , $saml_param->autologin));
++
++    // samllogfile.
++    $settings->add(new admin_setting_configtext('auth_saml/samllogfile', get_string('auth_saml_logfile', 'auth_saml'),
++        get_string('auth_saml_logfile_description', 'auth_saml') , $saml_param->samllogfile));
++
++    // samlhookfile.
++    $settings->add(new admin_setting_configtext('auth_saml/samlhookfile', get_string('auth_saml_samlhookfile', 'auth_saml'),
++        get_string('auth_saml_samlhookfile_description', 'auth_saml') , $saml_param->samlhookfile));
++
++    // disablejit.
++    $settings->add(new admin_setting_configcheckbox('auth_saml/disablejit', get_string('auth_saml_disablejit', 'auth_saml'),
++        get_string('auth_saml_disablejit_description', 'auth_saml') , $saml_param->disablejit));
++
++
++    // Display locking / mapping of profile fields.
++    $authplugin = get_auth_plugin('saml');
++    display_auth_lock_options($settings, $authplugin->authtype, $authplugin->userfields,
++            get_string('auth_fieldlocks_help', 'auth'), false, false);
++}
+-- 
+1.8.3.1
+

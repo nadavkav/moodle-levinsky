@@ -1,0 +1,199 @@
+From 0f916eef3156a62d151e0b7b86e40d78d1268aa3 Mon Sep 17 00:00:00 2001
+From: Nadav Kavalerchik <nadavkav@gmail.com>
+Date: Wed, 11 Oct 2017 16:42:12 +0300
+Subject: [PATCH 14/95] theme/fordson (update) new upstream version 1.5.8
+
+---
+ theme/fordson/README.md                        |  3 ++
+ theme/fordson/classes/output/core_renderer.php | 73 ++++++++++++++------------
+ theme/fordson/lib/fordson_lib.php              |  2 +-
+ theme/fordson/lib/scss_lib.php                 | 12 ++---
+ theme/fordson/version.php                      |  4 +-
+ 5 files changed, 51 insertions(+), 43 deletions(-)
+
+diff --git a/theme/fordson/README.md b/theme/fordson/README.md
+index f26dd43..f37517d 100755
+--- a/theme/fordson/README.md
++++ b/theme/fordson/README.md
+@@ -29,6 +29,9 @@ This means when Moodle updates the core Boost theme those changes will be applie
+ # Install from Github
+ Click on the button to "Clone or Download" https://github.com/dbnschools/moodle-theme_fordson . When downloaded to your computer, unzip it. It should create a folder named "moodle-theme_fordson-master". Rename the folder so that it is "fordson" (without quotes). You can FTP that folder to your moodle site in /moodle/theme/ directory. Or you can create a new ZIP file of the "fordson" folder and upload and install it via the Plugin Administration in Site Administration. 
+ 
++## Fordson Moodle 33 1.5.8
++* Fixed issue where site uses custom roles to define teacher and non-editing teacher roles.  This caused Fordson to not identify the teacher role to display contact information to the student in the student "This Course" panel. This caused Fordson to display all users of the course as teachers.  This fix will show no users as teachers.  In file classes/output/core_renderer.php you can find code comments on where you should change the teacher and non-editing teacher shortnames to match your customized roles around lines 775 and 797.
++
+ ## Fordson Moodle 33 1.5.7
+ * New Activity Completion Report Link was added to the teacher dashboard panel just below Participants link. 
+ * Unique CSS classes for student buttons in This Course dashboard.  Can be used to hide the Course Administration button for students if not needed.
+diff --git a/theme/fordson/classes/output/core_renderer.php b/theme/fordson/classes/output/core_renderer.php
+index f16c4e6..4986eba 100755
+--- a/theme/fordson/classes/output/core_renderer.php
++++ b/theme/fordson/classes/output/core_renderer.php
+@@ -771,44 +771,49 @@ class core_renderer extends \theme_boost\output\core_renderer {
+             );
+             $courseteachers = array();
+             $courseother = array();
++            //If you created custom roles, please change the shortname value to match the name of your role.  This is teacher.
+             $role = $DB->get_record('role', array('shortname' => 'editingteacher'));
+-            $context = context_course::instance($PAGE->course->id);
+-            $teachers = get_role_users($role->id, $context, false,
+-                'u.id, u.firstname, u.middlename, u.lastname, u.alternatename,
+-                u.firstnamephonetic, u.lastnamephonetic, u.email, u.picture,
+-                u.imagealt');
+-
+-            foreach ($teachers as $staff) {
+-                $picture = $OUTPUT->user_picture($staff, array('size' => 50));
+-                $messaging = new moodle_url('/message/index.php', array('id' => $staff->id));
+-                $hasmessaging = $CFG->messaging==1;
+-                $courseteachers[] = array (
+-                    'name' => $staff->firstname . ' ' . $staff->lastname . ' ' . $staff->alternatename,
+-                    'email' => $staff->email,
+-                    'picture' => $picture,
+-                    'messaging' => $messaging,
+-                    'hasmessaging' => $hasmessaging
+-                );
++            if($role){
++                $context = context_course::instance($PAGE->course->id);
++                $teachers = get_role_users($role->id, $context, false,
++                    'u.id, u.firstname, u.middlename, u.lastname, u.alternatename,
++                    u.firstnamephonetic, u.lastnamephonetic, u.email, u.picture,
++                    u.imagealt');
++
++                foreach ($teachers as $staff) {
++                    $picture = $OUTPUT->user_picture($staff, array('size' => 50));
++                    $messaging = new moodle_url('/message/index.php', array('id' => $staff->id));
++                    $hasmessaging = $CFG->messaging==1;
++                    $courseteachers[] = array (
++                        'name' => $staff->firstname . ' ' . $staff->lastname . ' ' . $staff->alternatename,
++                        'email' => $staff->email,
++                        'picture' => $picture,
++                        'messaging' => $messaging,
++                        'hasmessaging' => $hasmessaging
++                    );
++                }
+             }
++            //If you created custom roles, please change the shortname value to match the name of your role.  This is non-editing teacher.
+             $role = $DB->get_record('role', array('shortname' => 'teacher'));
+-            $context = context_course::instance($PAGE->course->id);
+-            $teachers = get_role_users($role->id, $context, false,
+-                'u.id, u.firstname, u.middlename, u.lastname, u.alternatename,
+-                u.firstnamephonetic, u.lastnamephonetic, u.email, u.picture,
+-                u.imagealt');
+-            foreach ($teachers as $staff) {
+-                $picture = $OUTPUT->user_picture($staff, array('size' => 50));
+-                $messaging = new moodle_url('/message/index.php', array('id' => $staff->id));
+-                $hasmessaging = $CFG->messaging==1;
+-                $courseother[] = array (
+-                    'name' => $staff->firstname . ' ' . $staff->lastname,
+-                    'email' => $staff->email,
+-                    'picture' => $picture,
+-                    'messaging' => $messaging,
+-                    'hasmessaging' => $hasmessaging
+-                );
++            if($role){
++                $context = context_course::instance($PAGE->course->id);
++                $teachers = get_role_users($role->id, $context, false,
++                    'u.id, u.firstname, u.middlename, u.lastname, u.alternatename,
++                    u.firstnamephonetic, u.lastnamephonetic, u.email, u.picture,
++                    u.imagealt');
++                foreach ($teachers as $staff) {
++                    $picture = $OUTPUT->user_picture($staff, array('size' => 50));
++                    $messaging = new moodle_url('/message/index.php', array('id' => $staff->id));
++                    $hasmessaging = $CFG->messaging==1;
++                    $courseother[] = array (
++                        'name' => $staff->firstname . ' ' . $staff->lastname,
++                        'email' => $staff->email,
++                        'picture' => $picture,
++                        'messaging' => $messaging,
++                        'hasmessaging' => $hasmessaging
++                    );
++                }
+             }
+-
+             $activitylinkstitle = get_string('activitylinkstitle', 'theme_fordson');
+             $activitylinkstitle_desc = get_string('activitylinkstitle_desc', 'theme_fordson');
+             $mygradestext = get_string('mygradestext', 'theme_fordson');
+diff --git a/theme/fordson/lib/fordson_lib.php b/theme/fordson/lib/fordson_lib.php
+index 76abeff..8d9fe2a 100755
+--- a/theme/fordson/lib/fordson_lib.php
++++ b/theme/fordson/lib/fordson_lib.php
+@@ -347,7 +347,7 @@ function fordson_navigation_custom_menu_item(custom_menu_item $menunode, $parent
+             $url = null;
+         }
+         if ($parent) {
+-            $childnode = $pmasternode->add(navigation_get_string($menunode->get_text()), $url, navigation_node::TYPE_CUSTOM);
++            $childnode = $pmasternode->add(fordson_local_navigation_get_string($menunode->get_text()), $url, navigation_node::TYPE_CUSTOM);
+             $childnode->title($menunode->get_title());
+         } else {
+             $masternode = $PAGE->navigation->add(fordson_local_navigation_get_string($menunode->get_text()), $url, navigation_node::TYPE_CONTAINER);
+diff --git a/theme/fordson/lib/scss_lib.php b/theme/fordson/lib/scss_lib.php
+index 38446e7..bac0ac0 100755
+--- a/theme/fordson/lib/scss_lib.php
++++ b/theme/fordson/lib/scss_lib.php
+@@ -174,42 +174,42 @@ function theme_fordson_get_pre_scss($theme) {
+         $prescss .= 'body#page-login-index {background-image: url("'.$loginbg.'") !important; background-size:cover; background-position:center;}';
+     }
+ 
+-    // Set the default image for the header.
++    // Set the image.
+     $marketing1image = $theme->setting_file_url('marketing1image', 'marketing1image');
+     if (isset($marketing1image)) {
+         // Add a fade in transition to avoid the flicker on course headers ***.
+         $prescss .= '.marketing1image {background-image: url("'.$marketing1image.'"); background-size:cover; background-position:center;}';
+     }
+ 
+-    // Set the default image for the header.
++    // Set the image.
+     $marketing2image = $theme->setting_file_url('marketing2image', 'marketing2image');
+     if (isset($marketing2image)) {
+         // Add a fade in transition to avoid the flicker on course headers ***.
+         $prescss .= '.marketing2image {background-image: url("'.$marketing2image.'"); background-size:cover; background-position:center;}';
+     }
+ 
+-    // Set the default image for the header.
++    // Set the image.
+     $marketing3image = $theme->setting_file_url('marketing3image', 'marketing3image');
+     if (isset($marketing3image)) {
+         // Add a fade in transition to avoid the flicker on course headers ***.
+         $prescss .= '.marketing3image {background-image: url("'.$marketing3image.'"); background-size:cover; background-position:center;}';
+     }
+ 
+-    // Set the default image for the header.
++    // Set the image.
+     $marketing4image = $theme->setting_file_url('marketing4image', 'marketing4image');
+     if (isset($marketing4image)) {
+         // Add a fade in transition to avoid the flicker on course headers ***.
+         $prescss .= '.marketing4image {background-image: url("'.$marketing4image.'"); background-size:cover; background-position:center;}';
+     }
+ 
+-    // Set the default image for the header.
++    // Set the image.
+     $marketing5image = $theme->setting_file_url('marketing5image', 'marketing5image');
+     if (isset($marketing5image)) {
+         // Add a fade in transition to avoid the flicker on course headers ***.
+         $prescss .= '.marketing5image {background-image: url("'.$marketing5image.'"); background-size:cover; background-position:center;}';
+     }
+ 
+-    // Set the default image for the header.
++    // Set the image.
+     $marketing6image = $theme->setting_file_url('marketing6image', 'marketing6image');
+     if (isset($marketing6image)) {
+         // Add a fade in transition to avoid the flicker on course headers ***.
+diff --git a/theme/fordson/version.php b/theme/fordson/version.php
+index a0b3dce..303ac9b 100755
+--- a/theme/fordson/version.php
++++ b/theme/fordson/version.php
+@@ -25,8 +25,8 @@
+ 
+ defined('MOODLE_INTERNAL') || die();
+ 
+-$plugin->version   = 2017082300;
+-$plugin->release  = 'Moodle 3.3 Fordson v1.5.7';
++$plugin->version   = 2017092500;
++$plugin->release  = 'Moodle 3.3 Fordson v1.5.8';
+ $plugin->maturity  = MATURITY_STABLE;
+ $plugin->requires  = 2017042000;
+ $plugin->component = 'theme_fordson';
+-- 
+1.8.3.1
+

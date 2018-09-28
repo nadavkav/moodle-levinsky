@@ -1,0 +1,1220 @@
+From 1b81b70e168a8e3e52d9109870355604a8866095 Mon Sep 17 00:00:00 2001
+From: Nadav Kavalerchik <nadavkav@gmail.com>
+Date: Wed, 11 Oct 2017 21:23:07 +0300
+Subject: [PATCH 37/95] lib/editor/atto/plugins/morebackcolors (new)
+
+---
+ lib/editor/atto/plugins/morebackcolors/README.md   |  21 ++
+ .../morebackcolors/lang/en/atto_morebackcolors.php |  40 +++
+ lib/editor/atto/plugins/morebackcolors/lib.php     |  64 ++++
+ .../plugins/morebackcolors/pix/e/colorwheel.png    | Bin 0 -> 9481 bytes
+ .../atto/plugins/morebackcolors/pix/e/rail-x.png   | Bin 0 -> 3639 bytes
+ .../atto/plugins/morebackcolors/settings.php       |  46 +++
+ lib/editor/atto/plugins/morebackcolors/styles.css  |  80 +++++
+ .../tests/behat/morebackcolors.feature             |  32 ++
+ lib/editor/atto/plugins/morebackcolors/version.php |  34 +++
+ .../moodle-atto_morebackcolors-button-debug.js     | Bin 0 -> 11497 bytes
+ .../moodle-atto_morebackcolors-button-min.js       | Bin 0 -> 4837 bytes
+ .../moodle-atto_morebackcolors-button.js           | Bin 0 -> 11497 bytes
+ .../morebackcolors/yui/src/button/build.json       |  10 +
+ .../morebackcolors/yui/src/button/js/button.js     | 332 +++++++++++++++++++++
+ .../morebackcolors/yui/src/button/meta/editor.js   |   5 +
+ 15 files changed, 664 insertions(+)
+ create mode 100644 lib/editor/atto/plugins/morebackcolors/README.md
+ create mode 100644 lib/editor/atto/plugins/morebackcolors/lang/en/atto_morebackcolors.php
+ create mode 100644 lib/editor/atto/plugins/morebackcolors/lib.php
+ create mode 100644 lib/editor/atto/plugins/morebackcolors/pix/e/colorwheel.png
+ create mode 100644 lib/editor/atto/plugins/morebackcolors/pix/e/rail-x.png
+ create mode 100644 lib/editor/atto/plugins/morebackcolors/settings.php
+ create mode 100644 lib/editor/atto/plugins/morebackcolors/styles.css
+ create mode 100644 lib/editor/atto/plugins/morebackcolors/tests/behat/morebackcolors.feature
+ create mode 100644 lib/editor/atto/plugins/morebackcolors/version.php
+ create mode 100644 lib/editor/atto/plugins/morebackcolors/yui/build/moodle-atto_morebackcolors-button/moodle-atto_morebackcolors-button-debug.js
+ create mode 100644 lib/editor/atto/plugins/morebackcolors/yui/build/moodle-atto_morebackcolors-button/moodle-atto_morebackcolors-button-min.js
+ create mode 100644 lib/editor/atto/plugins/morebackcolors/yui/build/moodle-atto_morebackcolors-button/moodle-atto_morebackcolors-button.js
+ create mode 100644 lib/editor/atto/plugins/morebackcolors/yui/src/button/build.json
+ create mode 100644 lib/editor/atto/plugins/morebackcolors/yui/src/button/js/button.js
+ create mode 100644 lib/editor/atto/plugins/morebackcolors/yui/src/button/meta/editor.js
+
+diff --git a/lib/editor/atto/plugins/morebackcolors/README.md b/lib/editor/atto/plugins/morebackcolors/README.md
+new file mode 100644
+index 0000000..8b74b1b
+--- /dev/null
++++ b/lib/editor/atto/plugins/morebackcolors/README.md
+@@ -0,0 +1,21 @@
++# More font background colors for Atto
++
++Modification of the backcolor plugin allowing the Moodle admin to define colors
++
++
++## New in version 1.2 (2015101200)
++
++ - you can now have several rows of colors, not just one single column : in the plugin settings, just enter several space-separated hex color codes per line -- thanks to Abu Zakaria!
++
++ - if allowed in the plugin settings, users can now use a color wheel to set their own colors -- thanks to jinhofer
++
++
++## Installation
++
++Install the plugin directory as usual in lib/editor/atto/plugins.
++
++Then visit Site Administration > Plugins > Atto > More font background colors to define the colors you want your users to be able to chose from.
++
++Finally, enable the plugin by adding 'morebackcolors' (without the quotes) in the Atto toolbar settings.
++
++
+diff --git a/lib/editor/atto/plugins/morebackcolors/lang/en/atto_morebackcolors.php b/lib/editor/atto/plugins/morebackcolors/lang/en/atto_morebackcolors.php
+new file mode 100644
+index 0000000..77d597d
+--- /dev/null
++++ b/lib/editor/atto/plugins/morebackcolors/lang/en/atto_morebackcolors.php
+@@ -0,0 +1,40 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++/**
++ * Atto text editor integration version file.
++ *
++ * @package    atto_morebackcolors
++ * @copyright  2014-2015 Université de Lausanne
++ * @author     Nicolas Dunand <nicolas.dunand@unil.ch>
++ * @author     Rossiani Wijaya  <rwijaya@moodle.com>
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++$string['pluginname'] = 'More font background colors';
++$string['availablecolors'] = 'Available colors';
++$string['availablecolors_desc'] = 'You may define available colors by listing them here, as you want them displayed in the font background color drop-down menu. If you want to display a 4x4 matrix of colors, enter 4 lines of 4 hex color codes, separared by spaces.<br><br>Note that changing these values only affects the appearance of the Font background Color menu but does not affect existing colored texts.';
++$string['customcolor'] = 'Custom font background color';
++$string['submit'] = 'Submit';
++$string['custom'] = 'Custom font background color (in hex)';
++$string['setting_custom'] = 'Allow custom background color';
++$string['setting_custom_desc'] = 'Allow the users to chose a custom background color by using a color picker';
++$string['hsl'] = 'HSL:';
++$string['rgb'] = 'RGB:';
++$string['hexadecimal'] = 'Hexadecimal:';
++$string['saturation'] = 'Saturation: ';
++$string['luminance'] = 'Luminance: ';
++
+diff --git a/lib/editor/atto/plugins/morebackcolors/lib.php b/lib/editor/atto/plugins/morebackcolors/lib.php
+new file mode 100644
+index 0000000..8660b8c
+--- /dev/null
++++ b/lib/editor/atto/plugins/morebackcolors/lib.php
+@@ -0,0 +1,64 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++/**
++ * Atto text editor integration version file.
++ *
++ * @package    atto_morebackcolors
++ * @copyright  2014-2015 Université de Lausanne
++ * @author     Nicolas Dunand <nicolas.dunand@unil.ch>
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++
++/**
++ * Set params for this plugin
++ * @param string $elementid
++ */
++function atto_morebackcolors_params_for_js($elementid, $options, $fpoptions) {
++    // Pass the number of visible groups as a param.
++    $availablecolors = get_config('atto_morebackcolors', 'availablecolors');
++    $possiblecolors = explode("\n", (str_replace("\r", '', $availablecolors)));
++    $colors = array();
++    foreach($possiblecolors as $color) {
++        if (preg_match('/^#?([0-9a-fA-F]{3})|([0-9a-fA-F]{6})$/', $color, $matches)) {
++            $colors[] = $color;
++        }
++    }
++    $allowcustom = get_config ('atto_morebackcolors', 'allowcustom');
++    return array(
++        'colors' => $colors,
++        'allowcustom' => $allowcustom
++    );
++}
++
++/**
++ * Initialise the js strings required for this module.
++ */
++function atto_morebackcolors_strings_for_js() {
++    global $PAGE;
++
++    $PAGE->requires->strings_for_js(array('custom',
++                                          'customcolor',
++                                          'submit',
++                                          'rgb',
++                                          'hsl',
++                                          'hexadecimal',
++                                          'saturation',
++                                          'luminance'),
++                                    'atto_morebackcolors');
++}
++
+diff --git a/lib/editor/atto/plugins/morebackcolors/pix/e/colorwheel.png b/lib/editor/atto/plugins/morebackcolors/pix/e/colorwheel.png
+new file mode 100644
+index 0000000000000000000000000000000000000000..181fd34e846794cc41be6757018c89781c08e3ec
+GIT binary patch
+literal 9481
+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
+I6s*Jk2gi_QnE(I)
+
+literal 0
+HcmV?d00001
+
+diff --git a/lib/editor/atto/plugins/morebackcolors/pix/e/rail-x.png b/lib/editor/atto/plugins/morebackcolors/pix/e/rail-x.png
+new file mode 100644
+index 0000000000000000000000000000000000000000..b99e1049e2ae12bb3e2b879f2c6af0f1b455b733
+GIT binary patch
+literal 3639
+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
+JPDHLkV1jPj-~a#s
+
+literal 0
+HcmV?d00001
+
+diff --git a/lib/editor/atto/plugins/morebackcolors/settings.php b/lib/editor/atto/plugins/morebackcolors/settings.php
+new file mode 100644
+index 0000000..19ea120
+--- /dev/null
++++ b/lib/editor/atto/plugins/morebackcolors/settings.php
+@@ -0,0 +1,46 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++/**
++ * Atto text editor integration version file.
++ *
++ * @package    atto_morebackcolors
++ * @copyright  2014-2015 Université de Lausanne
++ * @author     Nicolas Dunand <nicolas.dunand@unil.ch>
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++defined('MOODLE_INTERNAL') || die();
++
++$ADMIN->add('editoratto', new admin_category('atto_morebackcolors', new lang_string('pluginname', 'atto_morebackcolors')));
++
++$settings = new admin_settingpage('atto_morebackcolors_settings', new lang_string('pluginname', 'atto_morebackcolors'));
++if ($ADMIN->fulltree) {
++    $name = new lang_string('availablecolors', 'atto_morebackcolors');
++    $desc = new lang_string('availablecolors_desc', 'atto_morebackcolors');
++    $default = '#3366FF #6633FF #CC33FF #FF33CC
++#33CCFF #003DF5 #002EB8 #FF3366
++#33FFCC #B88A00 #F5B800 #FF6633
++#33FF66 #66FF33 #CCFF33 #FFCC33';
++    $setting = new admin_setting_configtextarea('atto_morebackcolors/availablecolors', $name, $desc, $default);
++    $settings->add($setting);
++
++    $name = new lang_string ('setting_custom', 'atto_morebackcolors');
++    $desc = new lang_string ('setting_custom_desc', 'atto_morebackcolors');
++    $default = 0;
++    $setting = new admin_setting_configcheckbox ('atto_morebackcolors/allowcustom', $name, $desc, $default);
++    $settings->add ($setting);
++}
+diff --git a/lib/editor/atto/plugins/morebackcolors/styles.css b/lib/editor/atto/plugins/morebackcolors/styles.css
+new file mode 100644
+index 0000000..1b93c83
+--- /dev/null
++++ b/lib/editor/atto/plugins/morebackcolors/styles.css
+@@ -0,0 +1,80 @@
++.atto_morebackcolors_button .dropdown-menu {
++    min-width: inherit;
++}
++
++.atto_morebackcolors_button #atto_morebackcolors_customicon {
++    background-image: url('[[pix:i/edit]]');
++    background-size: 20px 20px;
++}
++
++/** HSL Color Picker **/
++#atto_morebackcolors_dialogue .picker {
++    padding: 15px;
++    background: #efefef;
++    border: 1px solid #ddd;
++}
++
++#atto_morebackcolors_dialogue .yui3-slider {
++    background-image: url('[[pix:atto_morebackcolors|e/rail-x]]');
++    background-repeat: repeat-x;
++}
++
++#atto_morebackcolors_dialogue #atto_morebackcolors_dialogue_hue-dial, #atto_morebackcolors_dialogue .sliders, #atto_morebackcolors_dialogue .color {
++    display: inline-block;
++    zoom: 1; *display: inline;
++    vertical-align: middle;
++}
++
++#atto_morebackcolors_dialogue #atto_morebackcolors_dialogue_hue-dial .yui3-dial-ring {
++    background: url('[[pix:atto_morebackcolors|e/colorwheel]]') -25px -25px no-repeat;
++}
++
++#atto_morebackcolors_dialogue .sliders {
++    margin: 0 30px;
++}
++
++#atto_morebackcolors_dialogue .sliders strong {
++    font-weight: 600;
++    display: block;
++}
++#atto_morebackcolors_dialogue .sliders strong span {
++    font-weight: 300;
++}
++#atto_morebackcolors_dialogue .sliders div + div {
++    margin-top: 1em;
++}
++
++#atto_morebackcolors_dialogue .color {
++    width: 100px;
++    height: 100px;
++    border: 1px solid rgba(0, 0, 0, 0.5);
++    -webkit-box-shadow: 1px 1px 2px 0px rgba(0, 0, 0, 0.3);
++    -moz-box-shadow: 1px 1px 2px 0px rgba(0, 0, 0, 0.3);
++    box-shadow: 1px 1px 2px 0px rgba(0, 0, 0, 0.3);
++}
++
++/** Output Styles **/
++#atto_morebackcolors_dialogue .picker-output {
++    padding: 20px 10px 10px;
++    background: #efefef;
++    border: 1px solid #ddd;
++    border-top: none;
++    -webkit-box-shadow: inset 0px 6px 10px -5px rgba(0, 0, 0, 0.3);
++    -moz-box-shadow: inset 0px 6px 10px -5px rgba(0, 0, 0, 0.3);
++    box-shadow: inset 0px 6px 10px -5px rgba(0, 0, 0, 0.3);
++}
++
++#atto_morebackcolors_dialogue .picker-output strong {
++    font-weight: bold;
++    display: block;
++}
++
++.atto_morebackcolors_button .atto_menuentry {
++    list-style-type: none;
++}
++
++.atto_morebackcolors_button .atto_menuentry a[role="menuitem"]{
++    display: flex;
++    display: -webkit-flex;
++}
++
+diff --git a/lib/editor/atto/plugins/morebackcolors/tests/behat/morebackcolors.feature b/lib/editor/atto/plugins/morebackcolors/tests/behat/morebackcolors.feature
+new file mode 100644
+index 0000000..2679d55
+--- /dev/null
++++ b/lib/editor/atto/plugins/morebackcolors/tests/behat/morebackcolors.feature
+@@ -0,0 +1,32 @@
++@editor @editor_atto @atto @atto_morebackcolors
++Feature: Atto more font background colours button
++  To format text in Atto, I need to spray random colours all over my text like some maniacal Monet.
++
++  Background:
++    # Set up toolbar to add this button
++    Given the following config values are set as admin:
++      | toolbar         | style1 = bold, morebackcolors | editor_atto         |
++      | availablecolors | #123456 #654321               | atto_morebackcolors |
++
++  @javascript
++  Scenario: Change colour of some text
++    # Go to an Atto editor
++    Given I log in as "admin"
++    And I follow "Profile" in the user menu
++    And I follow "Edit profile"
++
++    # Set up initial text and select it
++    And I set the field "Description" to "Water lillies"
++    And I select the text in the "Description" Atto editor
++
++    # Click button and check the menu appears and lists both colours
++    When I click on ".atto_morebackcolors_button" "css_element"
++    Then ".atto_morebackcolors_button.atto_menu" "css_element" should be visible
++    And "//div[@data-color='#123456']" "xpath_element" should exist in the ".atto_morebackcolors_button.atto_menu" "css_element"
++    And "//div[@data-color='#654321']" "xpath_element" should exist in the ".atto_morebackcolors_button.atto_menu" "css_element"
++
++    # Click on a menu option, save it and verify the HTML code was updated to add the colour.
++    When I click on "//div[@data-color='#123456']" "xpath_element"
++    And I press "Update profile"
++    Then "//span[normalize-space(.)='Water lillies' and contains(@style, '18,52,86')]" "xpath_element" should exist
++
+diff --git a/lib/editor/atto/plugins/morebackcolors/version.php b/lib/editor/atto/plugins/morebackcolors/version.php
+new file mode 100644
+index 0000000..e4c6570
+--- /dev/null
++++ b/lib/editor/atto/plugins/morebackcolors/version.php
+@@ -0,0 +1,34 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++/**
++ * Atto text editor integration version file.
++ *
++ * @package    atto_morebackcolors
++ * @copyright  2014-2015 Université de Lausanne
++ * @author     Nicolas Dunand <nicolas.dunand@unil.ch>
++ * @author     Rossiani Wijaya  <rwijaya@moodle.com>
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++defined('MOODLE_INTERNAL') || die();
++
++$plugin->version   = 2017050100;
++$plugin->requires  = 2014050800;
++$plugin->component = 'atto_morebackcolors';
++$plugin->maturity = MATURITY_STABLE;
++$plugin->release = '1.2.5 for Moodle 2.7-3.3 (build 2017050100)';
++
+diff --git a/lib/editor/atto/plugins/morebackcolors/yui/build/moodle-atto_morebackcolors-button/moodle-atto_morebackcolors-button-debug.js b/lib/editor/atto/plugins/morebackcolors/yui/build/moodle-atto_morebackcolors-button/moodle-atto_morebackcolors-button-debug.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..0a2903098447cb3ebc151425cad9d6f1c8c5d56b
+GIT binary patch
+literal 11497
+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
+
+literal 0
+HcmV?d00001
+
+diff --git a/lib/editor/atto/plugins/morebackcolors/yui/build/moodle-atto_morebackcolors-button/moodle-atto_morebackcolors-button-min.js b/lib/editor/atto/plugins/morebackcolors/yui/build/moodle-atto_morebackcolors-button/moodle-atto_morebackcolors-button-min.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..630085db34ac279e269cfda48254782127343b7f
+GIT binary patch
+literal 4837
+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
+
+literal 0
+HcmV?d00001
+
+diff --git a/lib/editor/atto/plugins/morebackcolors/yui/build/moodle-atto_morebackcolors-button/moodle-atto_morebackcolors-button.js b/lib/editor/atto/plugins/morebackcolors/yui/build/moodle-atto_morebackcolors-button/moodle-atto_morebackcolors-button.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..0a2903098447cb3ebc151425cad9d6f1c8c5d56b
+GIT binary patch
+literal 11497
+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
+
+literal 0
+HcmV?d00001
+
+diff --git a/lib/editor/atto/plugins/morebackcolors/yui/src/button/build.json b/lib/editor/atto/plugins/morebackcolors/yui/src/button/build.json
+new file mode 100644
+index 0000000..c6b6ef4
+--- /dev/null
++++ b/lib/editor/atto/plugins/morebackcolors/yui/src/button/build.json
+@@ -0,0 +1,10 @@
++{
++    "name": "moodle-atto_morebackcolors-button",
++    "builds": {
++        "moodle-atto_morebackcolors-button": {
++            "jsfiles": [
++                "button.js"
++            ]
++        }
++    }
++}
+diff --git a/lib/editor/atto/plugins/morebackcolors/yui/src/button/js/button.js b/lib/editor/atto/plugins/morebackcolors/yui/src/button/js/button.js
+new file mode 100644
+index 0000000..92b7d8b
+--- /dev/null
++++ b/lib/editor/atto/plugins/morebackcolors/yui/src/button/js/button.js
+@@ -0,0 +1,332 @@
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++/**
++ * Atto text editor integration version file.
++ *
++ * @package    atto_morebackcolors
++ * @copyright  2014-2015 Université de Lausanne
++ * @author     Nicolas Dunand <nicolas.dunand@unil.ch>
++ * @author     Rossiani Wijaya  <rwijaya@moodle.com>
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++/**
++ * @module moodle-atto_morebackcolors-button
++ */
++
++/**
++ * Atto text editor morebackcolors plugin.
++ *
++ * @namespace M.atto_morebackcolors
++ * @class button
++ * @extends M.editor_atto.EditorPlugin
++ */
++
++
++var TEMPLATE = '' +
++    '<form id="atto_morebackcolors_dialogue">' +
++        '<div class="picker">' +
++            '<div id="atto_morebackcolors_dialogue_hue-dial"></div>' +
++            '<div class="sliders">' +
++                '<div id="atto_morebackcolors_dialogue_sat-slider"><strong>{{get_string "saturation" component}}<span></span></strong></div>' +
++                '<div id="atto_morebackcolors_dialogue_lum-slider"><strong>{{get_string "luminance" component}}<span></span></strong></div>' +
++            '</div>' +
++            '<div class="color"></div>' +
++        '</div>' +
++        '<div class="yui3-g picker-output">' +
++            '<div class="yui3-u-1-3">' +
++                '<strong>{{get_string "hexadecimal" component}}</strong>' +
++                '<input type="text" id="atto_morebackcolors_dialogue_hex-output">' +
++            '</div>' +
++            '<div class="yui3-u-1-3">' +
++               '<strong>{{get_string "rgb" component}}</strong>' +
++               '<input type="text" id="atto_morebackcolors_dialogue_rgb-output">' +
++            '</div>' +
++            '<div class="yui3-u-1-3">' +
++                '<strong>{{get_string "hsl" component}}</strong>' +
++                '<input type="text" id="atto_morebackcolors_dialogue_hsl-output">' +
++            '</div>' +
++        '</div>' +
++        '<div class="mdl-align">' +
++            '<button type="submit" class="submit">{{get_string "submit" component}}</button>' +
++        '</div>' +
++    '</form>';
++Y.namespace('M.atto_morebackcolors').Button = Y.Base.create('button', Y.M.editor_atto.EditorPlugin, [], {
++    /**
++     * A reference to the current selection at the time that the dialogue
++     * was opened.
++     *
++     * @property _currentSelection
++     * @type Range
++     * @private
++     */
++    _currentSelection: null,
++
++    /**
++     * A reference to the HTMl of the dialuge content
++     *
++     * @property _content
++     * @type String
++     * @private
++     */
++    _content: null,
++
++    initializer: function(config) {
++        var items = [];
++        var colors = this.get('colors');
++        Y.Array.each(colors, function(colors) {
++            if (colors.trim()) {
++                var color_array = colors.split(/\s+/);
++                var stringOfDiv = "";
++                for (var i = 0; i < color_array.length; i++) {
++                    var color = color_array[i].trim();
++                    if (/(^#[0-9A-F]{6}$)|(^#[0-9A-F]{3}$)/i.test(color)) {
++                        stringOfDiv = stringOfDiv +
++                        '<div style="width: 20px; margin-right: 5px; height: 20px; border: 1px solid #CCC; background-color: ' +
++                        color +
++                        '" data-color="' + color + '"></div>';
++                    }
++                }
++                items.push({
++                    text: stringOfDiv,
++                    callback: this._changeStyle
++                });
++            }
++        });
++        if (config.allowcustom === '1') {
++            items.push({
++                text: '<div style="width: 20px; height: 20px; border: 1px solid #CCC;" id="atto_morebackcolors_customicon"></div>',
++                callbackArgs: 'custom',
++                callback: this._changeStyle
++            });
++        }
++        this.addToolbarMenu({
++            icon: 'e/text_highlight',
++            overlayWidth: '4',
++            menuColor: '#333333',
++            globalItemConfig: {
++                inlineFormat: true,
++                callback: this._changeStyle
++            },
++            items: items
++        });
++    },
++
++    /**
++     * Change the font background color to the specified color.
++     *
++     * @method _changeStyle
++     * @param {EventFacade} e
++     * @param {string} color The new font background color
++     * @private
++     */
++    _changeStyle: function(e, color) {
++        if (color === 'custom') {
++            this._customColor();
++        } else {
++            this.get('host').formatSelectionInlineStyle({
++                'background-color': e.target.getAttribute("data-color")
++            });
++        }
++    },
++
++    /**
++     * Change the font background color to the custom color
++     *
++     * @method _customColor
++     * @param {EventFacade} e
++     * @private
++     */
++    _customColor: function() {
++        var template = Y.Handlebars.compile(TEMPLATE),
++            dialogue = this.getDialogue({
++                headerContent: M.util.get_string('customcolor', "atto_morebackcolors"),
++                width: '470px',
++                focusAfterHide: true
++            });
++
++        this._currentSelection = this.get('host').getSelection();
++
++        this._content = Y.Node.create(template({
++            component: "atto_morebackcolors"
++        }));
++
++        dialogue.set('bodyContent', this._content).show();
++
++        this._initiateColorPicker();
++
++        this._content.one('.submit').on('click', function(e) {
++            e.preventDefault();
++            // Hide the dialogue.
++            this.getDialogue({
++                focusAfterHide: null
++            }).hide();
++
++            var color = Y.one('#atto_morebackcolors_dialogue_rgb-output').get('value');
++
++            this.get('host').setSelection(this._currentSelection);
++
++            this.get('host').formatSelectionInlineStyle({
++                'background-color': color
++            });
++        }, this);
++    },
++
++    /**
++     * Initialize the color picker dialogue
++     *
++     * @method _initalizeColorPicker
++     * @private
++     */
++    _initiateColorPicker: function() {
++        YUI().use('dial', 'slider', 'event-valuechange', 'color', function (Y) {
++            Y.one('#atto_morebackcolors_dialogue .picker').addClass('yui3-skin-sam');
++            var hue = new Y.Dial({
++                min: 0,
++                max: 360,
++                stepsPerRevolution: 360,
++                continuous: true,
++                centerButtonDiameter: 0.4,
++                render: '#atto_morebackcolors_dialogue_hue-dial'
++            }),
++            sat = new Y.Slider({
++                min: 0,
++                max: 100,
++                value: 100,
++                render: '#atto_morebackcolors_dialogue_sat-slider'
++            }),
++            lum = new Y.Slider({
++                min: 0,
++                max: 100,
++                value: 50,
++                render: '#atto_morebackcolors_dialogue_lum-slider'
++            }),
++            satValue = Y.one('#atto_morebackcolors_dialogue #atto_morebackcolors_dialogue_sat-slider span'),
++            lumValue = Y.one('#atto_morebackcolors_dialogue #atto_morebackcolors_dialogue_lum-slider span'),
++            color = Y.one('#atto_morebackcolors_dialogue .color'),
++            hexOutput = Y.one('#atto_morebackcolors_dialogue #atto_morebackcolors_dialogue_hex-output'),
++            rgbOutput = Y.one('#atto_morebackcolors_dialogue #atto_morebackcolors_dialogue_rgb-output'),
++            hslOutput = Y.one('#atto_morebackcolors_dialogue #atto_morebackcolors_dialogue_hsl-output'),
++            focused = null,
++            setFocused = function(e) {
++                focused = e.currentTarget;
++            },
++            unsetFocused = function (e) {
++                if (focused === e.currentTarget) {
++                    focused = null;
++                }
++            },
++            updateOutput = function(hslString) {
++                if (hexOutput !== focused) {
++                    hexOutput.set('value', Y.Color.toHex(hslString));
++                }
++                if (rgbOutput !== focused) {
++                    rgbOutput.set('value', Y.Color.toRGB(hslString));
++                }
++                if (hslOutput !== focused) {
++                    hslOutput.set('value', hslString);
++                }
++            },
++            setPickerUI = function(hsl) {
++                if (typeof hsl.h !== 'undefined') {
++                    hue.set('value', +hsl.h);
++                }
++                if (typeof hsl.s !== 'undefined') {
++                    sat.set('value', +hsl.s);
++                }
++               if (typeof hsl.l !== 'undefined') {
++                    lum.set('value', +hsl.l);
++                }
++            },
++            updatePickerFromValue = function(e) {
++                var val = e.newVal,
++                    hsl = [];
++                if (Y.Color.toArray(val)) {
++                    hsl = Y.Color.toArray(Y.Color.toHSL(val));
++                    setPickerUI({
++                        h: hsl[0],
++                        s: hsl[1],
++                        l: hsl[2]
++                    });
++               }
++            },
++            updatePickerUI = function() {
++                var h = hue.get('value'),
++                    s = sat.get('value'),
++                    l = lum.get('value'),
++                    hslString = Y.Color.fromArray([h, s, l], Y.Color.TYPES.HSL),
++                    hexString = Y.Color.toHex(hslString);
++                satValue.set('text', s + '%');
++                lumValue.set('text', l + '%');
++                color.setStyle('backgroundColor', hexString);
++                updateOutput(hslString);
++            };
++
++        hexOutput.on('focus', setFocused);
++        hexOutput.on('blur', unsetFocused);
++        hexOutput.on('valueChange', updatePickerFromValue);
++
++        rgbOutput.on('focus', setFocused);
++        rgbOutput.on('blur', unsetFocused);
++        rgbOutput.on('valueChange', updatePickerFromValue);
++
++        hslOutput.on('focus', setFocused);
++        hslOutput.on('blur', unsetFocused);
++        hslOutput.on('valueChange', updatePickerFromValue);
++
++        hue.after('valueChange', function() {
++            updatePickerUI();
++        });
++
++        sat.after('thumbMove', function() {
++            updatePickerUI();
++        });
++
++        lum.after('thumbMove', function() {
++            lumValue.set('text', lum.get('value') + '%');
++            updatePickerUI();
++        });
++
++        updatePickerUI();
++    });
++    }
++}, {
++    ATTRS: {
++        /**
++         * The list of available colors
++         *
++         * @attribute colors
++         * @type array
++         * @default {}
++         */
++        colors: {
++            value: {}
++        }
++    }
++}, {
++    ATTRS: {
++        /**
++         * The list of available colors
++         *
++         * @attribute colors
++         * @type array
++         * @default {}
++         */
++        colors: {
++            value: {}
++        }
++    }
++});
+diff --git a/lib/editor/atto/plugins/morebackcolors/yui/src/button/meta/editor.js b/lib/editor/atto/plugins/morebackcolors/yui/src/button/meta/editor.js
+new file mode 100644
+index 0000000..bde2463
+--- /dev/null
++++ b/lib/editor/atto/plugins/morebackcolors/yui/src/button/meta/editor.js
+@@ -0,0 +1,5 @@
++{
++    "moodle-atto_morebackcolors-button": {
++        "requires": ["node"]
++    }
++}
+-- 
+1.8.3.1
+

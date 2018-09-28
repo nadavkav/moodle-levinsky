@@ -1,0 +1,163 @@
+From e54f57bbf3969565e6b31f0d6e52b031eb4b6df8 Mon Sep 17 00:00:00 2001
+From: Nadav Kavalerchik <nadavkav@gmail.com>
+Date: Sat, 14 Oct 2017 11:45:55 +0300
+Subject: [PATCH 58/95] editor/atto (patch) Add RTL inline styles when editor
+ initiate (MDL-45227)
+
+---
+ .../moodle-editor_atto-editor-debug.js              | Bin 92109 -> 93231 bytes
+ .../moodle-editor_atto-editor-min.js                | Bin 22833 -> 23468 bytes
+ .../moodle-editor_atto-editor.js                    | Bin 90919 -> 92041 bytes
+ lib/editor/atto/yui/src/editor/js/clean.js          |   6 +++++-
+ lib/editor/atto/yui/src/editor/js/editor.js         |  11 +++++++++++
+ lib/editor/atto/yui/src/editor/js/styling.js        |   9 +++++++--
+ lib/editor/atto/yui/src/editor/js/textarea.js       |   9 +++++++--
+ 7 files changed, 30 insertions(+), 5 deletions(-)
+
+diff --git a/lib/editor/atto/yui/build/moodle-editor_atto-editor/moodle-editor_atto-editor-debug.js b/lib/editor/atto/yui/build/moodle-editor_atto-editor/moodle-editor_atto-editor-debug.js
+index 90e0996d255b01bd9c33df710cde58c259cbfcb3..7d37c2c0795b89076dbbc4073281affd7a8ddaff 100644
+GIT binary patch
+delta 1044
+zcmbV~&ubGw6vr7chDHi%wB3W?%OXzJ(nK#6n`~myQxEkZ7`!N(-RbV&bT-aTz-l%4
+z4|tiwLeHLUB?l2t-bC<6ZXOl?0loI3GmTAYNZZgk4e!1Ayzl$Y`}{St@jbKIo4mBZ
+zf%1U*o{R;=%OE2Hep?8_rB1Zk5&|kn`nQRu)Ro^8Sw9x!78U8%X;jFUbD+=v5b-6A
+zxq5NZ>h>n*PIT^&{#)tmFnGQ$3n&jk#)AeeFC@S`9=7$Rv<)*r8PTM)hYBv-E5)1?
+zaWf89u~Uk?<R<fyq=>b=Ss@vApbpqvU>-1&;ux-UxAN!b(r-DGSsJ3bZok%nr-QDh
+zv&U%2SIq3XAd#z#xV9vZ<?ME19s~^|S+Uhm-RrPgMwWFcP78Hpsj0=Q*Nl^{jbUcg
+zfHQz?Fu7f<4%MpVmikdIsF&}uH*mFeBt%mfObx3)zb<xPEq=VM9<G-=YioNZFGg~O
+zfoqJ}X`{`wVSf|)P#EICn4AtDxLK?2D0GHtBUI_H9jU5s_t>JG!#D#?>cgk$?#B9;
+z_vvd3O-%2zNvh|Zy}bK(2d)pU<kX`Fd3FEInQ^yBEnrJ+2FKH9chQsUM_L230_pPx
+XveI)6bRi2xKcXx!y5BA}Q0LS?#r{qG
+
+delta 102
+zcmZ2~gZ1or)(sbVH)ryhv2E5B<u{xB&fAdH&PKn$ZgRi3!eoJY96UA!b~Z^xU@`US
+z395|Bn;-g|^q;(Xj^1Xbd5?EbUme9*#Ripr5X~qty)2qhe!6=cqtx~d(Tw#10GqTV
+A_W%F@
+
+diff --git a/lib/editor/atto/yui/build/moodle-editor_atto-editor/moodle-editor_atto-editor-min.js b/lib/editor/atto/yui/build/moodle-editor_atto-editor/moodle-editor_atto-editor-min.js
+index 22df82bad3581652419f04906c33c4844d2748e6..acefce1f0bed982a10fc0d1ed01a69ade102fa19 100644
+GIT binary patch
+delta 765
+zcmdnEiE+(##tmF7yvg}RsV<pCsmUdo`FWdJSoSelqX^li>gDI9YA7Y;r&KCw>SZJr
+zJLe=87i%b`WESZbmE<UC+AD!5E2W&0BBjlH*sAy@Pq1gLM>WLO7OcoVF()%UFE=%>
+z#8$nyq%tSfR;eVlqC^)gY^6|?nVwN%t)y;+Us+CS8c3B+s$Qt0US_JA8kAvUXkf2y
+zQ=kBJnQgR^x^_uMX0aZMJG9l66x6lhrfVzN+2|M8DOtgE5vOT$xF{zhBiH5xF=@ul
+zHR60i^))qlwzjr#Q$XRNfZKmyOVvr$lT?INA1Ktru~`NQC7gQjX@Oa_xl6N*nUQOg
+z?pwyq@AO(knYlD|Ca<zn*gVDM2IJ%j+#-_?m~(9IbgSX3#|&#=fY2b$OM&UpFFz$!
+XFS#f+u_RRk8s_S@L`I!Ns3Z#jW@-Tc
+
+delta 150
+zcmZ3popIwP#tmF7n`K#cFl`oNFX2;6)eCjh%S=^MgEDLk4eXU{3hZq33+$AvfUM1#
+zVw{YV@5*y-t`QevWaQf1C&4GQxk$T=dGkxXw?Ki(tF^s1D;ipgZjN^Q#mK~^GkJr&
+q=;myXCO(-`+f+Tj{FGF^<f7EXl2i@2!J0amlMN$OHXjIo!wdk3cP}si
+
+diff --git a/lib/editor/atto/yui/build/moodle-editor_atto-editor/moodle-editor_atto-editor.js b/lib/editor/atto/yui/build/moodle-editor_atto-editor/moodle-editor_atto-editor.js
+index 1b88fea7a6ba42efe241444a6b5e58d354f37657..1b8d0a0184111caa372ec5afe4c5fbd0dd9dcd20 100644
+GIT binary patch
+delta 968
+zcmZ2}jJ5MT>xPTGs*ZUInRzLh$%!TTMGE<83MCn-3dyBKMX7luK#79V5`~n^qUjUl
+z8O0|jm~-+b=NF~AWEQ0+mt^MWO<owTh$hm=EwT9`?*`WT;8d{A)RJVNLWRU+pvIKU
+zymW<<e7NxiiRq~dIf;4cr9g%rmjV=&WMmfWq1dBfs}QM|pO>nko|K<bsjjJ)kyz}U
+zlUQ7=p$>GMZc#~&x~77?f;xzyV5Oj*Q&PmFZoRog__j$1Hq&fvA!;=hs^PYREKkhI
+zOwY>&`5dUAxTG>C)mEt_wW359EMcWkl$oAUVy&b;xlu!2osi<3)HIOVNm(M(H>fbO
+zO!oIMGzNvGt&+NeHZYhmJgKdquA~5xLzoN{n%v-_PmaFL>pgh<ChwZ2?^siV;z^B+
+zlH42xTTmF-6hIsV3^yeO-2R<>FiyOlWL<VPNkw)x`UQ5txFPHWV3c8X0wfgeY$hL$
+z6Scy010iiNCrnN}F0uLFw41vWGSd_^umnChJV5DZ^2EI&nur*{pAf94Z_r>=BQ_~a
+nUU*k#@;@K8>30JeOUQ}S>48Cvwu}nX?L!%*wyy|ctQP<Pc-uaF
+
+delta 75
+zcmV-R0JQ&!&jqK(1+dW#vuO^n1+%9V&NP!JN->j*N-wkRN(@eu`j{@024W7Auu2HC
+hXPVf$mjzY<dY7_R0X>(YSpgcCJx>7&w-i?abr8;q9l!tp
+
+diff --git a/lib/editor/atto/yui/src/editor/js/clean.js b/lib/editor/atto/yui/src/editor/js/clean.js
+index 1763547..21cea5d 100644
+--- a/lib/editor/atto/yui/src/editor/js/clean.js
++++ b/lib/editor/atto/yui/src/editor/js/clean.js
+@@ -55,7 +55,11 @@ EditorClean.prototype = {
+         html = editorClone.get('innerHTML');
+ 
+         // Revert untouched editor contents to an empty string.
+-        if (html === '<p></p>' || html === '<p><br></p>') {
++        if ((html === '<p></p>' || html === '<p><br></p>') ||
++            (html === '<p dir="rtl" style="text-align: right;"></p>' ||
++             html === '<p dir="rtl" style="text-align: right;"><br></p>') ||
++            (html === '<p dir="ltr" style="text-align: left;"></p>' ||
++             html === '<p dir="ltr" style="text-align: left;"><br></p>')) {
+             return '';
+         }
+ 
+diff --git a/lib/editor/atto/yui/src/editor/js/editor.js b/lib/editor/atto/yui/src/editor/js/editor.js
+index a28e936..5aefb70 100644
+--- a/lib/editor/atto/yui/src/editor/js/editor.js
++++ b/lib/editor/atto/yui/src/editor/js/editor.js
+@@ -149,6 +149,14 @@ Y.extend(Editor, Y.Base, {
+     plugins: null,
+ 
+     /**
++     * An indicator of the current input direction.
++     *
++     * @property coreDirection
++     * @type string
++     */
++    coreDirection: null,
++
++    /**
+      * Event Handles to clear on editor destruction.
+      *
+      * @property _eventHandles
+@@ -194,6 +202,9 @@ Y.extend(Editor, Y.Base, {
+             this.editor.setAttribute('aria-labelledby', this.textareaLabel.get("id"));
+         }
+ 
++        // Set diretcion according to current page language.
++        this.coreDirection = Y.one('body').hasClass('dir-rtl') ? 'rtl' : 'ltr';
++
+         // Add everything to the wrapper.
+         this.setupToolbar();
+ 
+diff --git a/lib/editor/atto/yui/src/editor/js/styling.js b/lib/editor/atto/yui/src/editor/js/styling.js
+index dcf6fb8..89877bc 100644
+--- a/lib/editor/atto/yui/src/editor/js/styling.js
++++ b/lib/editor/atto/yui/src/editor/js/styling.js
+@@ -175,9 +175,14 @@ EditorStyling.prototype = {
+ 
+         // No valid block element - make one.
+         if (!nearestblock) {
++            if (this.coreDirection === 'rtl') {
++                alignment = 'style="text-align: right;"';
++            } else {
++                alignment = 'style="text-align: left;"';
++            }
+             // There is no block node in the content, wrap the content in a p and use that.
+-            newcontent = Y.Node.create('<p></p>');
+-            boundary.get('childNodes').each(function(child) {
++            newcontent = Y.Node.create('<p dir="' + this.coreDirection + '" ' + alignment + '></p>');
++            boundary.get('childNodes').each(function (child) {
+                 newcontent.append(child.remove());
+             });
+             boundary.append(newcontent);
+diff --git a/lib/editor/atto/yui/src/editor/js/textarea.js b/lib/editor/atto/yui/src/editor/js/textarea.js
+index 1e24287..d386158 100644
+--- a/lib/editor/atto/yui/src/editor/js/textarea.js
++++ b/lib/editor/atto/yui/src/editor/js/textarea.js
+@@ -45,10 +45,15 @@ EditorTextArea.prototype = {
+      * @private
+      */
+     _getEmptyContent: function() {
++        if (this.coreDirection === 'rtl') {
++            alignment = 'style="text-align: right;"';
++        } else {
++            alignment = 'style="text-align: left;"';
++        }
+         if (Y.UA.ie && Y.UA.ie < 10) {
+-            return '<p></p>';
++            return '<p dir="' + this.coreDirection + '" ' + alignment + '></p>';
+         } else {
+-            return '<p><br></p>';
++            return '<p dir="' + this.coreDirection + '" ' + alignment + '><br></p>';
+         }
+     },
+ 
+-- 
+1.8.3.1
+

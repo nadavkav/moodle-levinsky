@@ -1,0 +1,371 @@
+From bed3ab45dc4cd855162a4db29e7dc5a22313d3dc Mon Sep 17 00:00:00 2001
+From: Nadav Kavalerchik <nadavkav@gmail.com>
+Date: Mon, 16 Oct 2017 10:14:42 +0300
+Subject: [PATCH 70/95] local/ws_rashim (update) new upstream version 3.1.0.49
+ (+ php code leanup + Special redirect to bypass RASHIM login)
+
+---
+ local/ws_rashim/changelog.txt               |  19 ++++-
+ local/ws_rashim/lang/en/local_ws_rashim.php |   3 +
+ local/ws_rashim/lang/he/local_ws_rashim.php |   3 +
+ local/ws_rashim/lib.php                     |  25 ++++---
+ local/ws_rashim/login.php                   | 106 ++++++++++++++++++----------
+ local/ws_rashim/service.php                 |   2 -
+ local/ws_rashim/settings.php                |   6 +-
+ local/ws_rashim/update.php                  |   2 -
+ local/ws_rashim/version.php                 |   8 +--
+ local/ws_rashim/wsdl.xml                    |   2 +
+ 10 files changed, 116 insertions(+), 60 deletions(-)
+
+diff --git a/local/ws_rashim/changelog.txt b/local/ws_rashim/changelog.txt
+index 9e06f46..1413e20 100755
+--- a/local/ws_rashim/changelog.txt
++++ b/local/ws_rashim/changelog.txt
+@@ -83,4 +83,21 @@ CHANGES
+ VERSION	3.1.0.41 - 2017040400.1625
+ CHANGES
+ 	* Rashat - Login directly to resource in knowledge tree...
+-		
+\ No newline at end of file
++--------------------------------------------------------------------------------
++VERSION	3.1.0.43 - 2017051700.1055
++CHANGES
++	* Login from Michlol - enable without authentication...
++	* Set maturity to STABLE
++--------------------------------------------------------------------------------
++VERSION	3.1.0.45 - 2017060700.0915
++CHANGES
++	* Add option to set enrolment start and end times...
++--------------------------------------------------------------------------------
++VERSION	3.1.0.47 - 2017072600.1145
++CHANGES
++	* Add more details (reason of failure) for loginf page, when comming from Michlol, including record in the log...
++--------------------------------------------------------------------------------
++VERSION	3.1.0.49 - 2017080700.1015
++CHANGES
++	* Fit code to work with PHP 7.1 too
++	
+\ No newline at end of file
+diff --git a/local/ws_rashim/lang/en/local_ws_rashim.php b/local/ws_rashim/lang/en/local_ws_rashim.php
+index 4c6c615..03b793e 100755
+--- a/local/ws_rashim/lang/en/local_ws_rashim.php
++++ b/local/ws_rashim/lang/en/local_ws_rashim.php
+@@ -15,6 +15,9 @@ $string ['michlol_course_visible'] = 'Default state of course created from Michl
+ $string ['def_city'] = 'Default city for user created from Michlol';
+ $string ['def_country'] = 'Default country for user created from Michlol';
+ 
++$string ['michlol_login_header'] = 'Settings for login from Michlol';
++$string ['michlol_login'] = 'Enable access without authentication';
++
+ $string ['michlol_api'] = 'Settings for Michlol API';
+ $string ['michlolurl'] = 'URL to Michlol API';
+ $string ['michloluser'] = 'User name';
+diff --git a/local/ws_rashim/lang/he/local_ws_rashim.php b/local/ws_rashim/lang/he/local_ws_rashim.php
+index 119e47c..9d5f2f2 100755
+--- a/local/ws_rashim/lang/he/local_ws_rashim.php
++++ b/local/ws_rashim/lang/he/local_ws_rashim.php
+@@ -15,6 +15,9 @@ $string ['michlol_course_visible'] = 'סטטוס ברירת מחדל עבור ק
+ $string ['def_city'] = 'עיר ברירת מחדל עבור משתמש הנוצר ממכלול';
+ $string ['def_country'] = 'ארץ ברירת מחדל עבור משתמש הנוצר ממכלול';
+ 
++$string ['michlol_login_header'] = 'הגדרות כניסה ממכלול';
++$string ['michlol_login'] = 'אפשר כניסה ללא אימות נוסף';
++
+ $string ['michlol_api'] = 'הגדרות עבור API של מכלול';
+ $string ['michlolurl'] = 'כתובת';
+ $string ['michloluser'] = 'משתמש';
+diff --git a/local/ws_rashim/lib.php b/local/ws_rashim/lib.php
+index d90e542..cf53dbc 100755
+--- a/local/ws_rashim/lib.php
++++ b/local/ws_rashim/lib.php
+@@ -177,7 +177,7 @@ class server {
+ 		$event->trigger ();
+ 	}
+ 
+-	protected function user_enroll($course, $user, $role) {
++	protected function user_enroll($course, $user, $role, $role_start = 0, $role_end = 0) {
+ 		$auth = 'manual';
+ 		
+ 		$manualenrol = enrol_get_plugin ( $auth );
+@@ -186,7 +186,7 @@ class server {
+ 				'status' => ENROL_INSTANCE_ENABLED,
+ 				'enrol' => $auth 
+ 		), '*', MUST_EXIST );
+-		$manualenrol->enrol_user ( $enrolinstance, $user, $role );
++		$manualenrol->enrol_user ( $enrolinstance, $user, $role, $role_start, $role_end );
+ 		
+ 		$event = \local_ws_rashim\event\user_enrolment_created::create ( array (
+ 				'userid' => $this->admin->id,
+@@ -306,13 +306,18 @@ class server {
+ 			return $this->error ( 5035 );
+ 		}
+ 		
+-		$section->name = $section_name;
+-		$section->visible = $visible;
+-		
+ 		// pre 3.1 hack
+ 		if (function_exists ( 'course_update_section' )) {
+-			course_update_section ( $course_id, $section );
++			$new = array (
++					'name' => $section_name,
++					'visible' => $visible
++			);
++			
++			course_update_section ( $course_id, $section, $new );
+ 		} else {
++			$section->name = $section_name;
++			$section->visible = $visible;
++				
+ 			$this->DB->update_record ( 'course_sections', $section );
+ 			rebuild_course_cache ( $course_id, true );
+ 		}
+@@ -1232,7 +1237,7 @@ class server {
+ 		}
+ 	}
+ 
+-	public function user_add($admin_name, $admin_psw, $session_key, $user_id, $user_name, $user_psw, $user_firstname, $user_lastname, $user_email, $user_phone1, $user_phone2, $user_address, $user_lang, $user_extra, $course_id, $course_role, $group_id, $group_name) {
++	public function user_add($admin_name, $admin_psw, $session_key, $user_id, $user_name, $user_psw, $user_firstname, $user_lastname, $user_email, $user_phone1, $user_phone2, $user_address, $user_lang, $user_extra, $course_id, $course_role, $group_id, $group_name, $role_start, $role_end) {
+ 		if ($this->valid_login ( $session_key, $admin_name, $admin_psw )) {
+ 			$user = $this->add_user ( $user_id, $user_name, $user_psw, $user_firstname, $user_lastname, $user_email, $user_phone1, $user_phone2, $user_address, $user_lang, $user_extra );
+ 			
+@@ -1250,7 +1255,7 @@ class server {
+ 						return $this->error ( 5043 );
+ 					}
+ 					
+-					$this->user_enroll ( $course->id, $user->id, $role->id );
++					$this->user_enroll ( $course->id, $user->id, $role->id, $role_start, $role_end );
+ 				}
+ 				
+ 				if (isset ( $group_id ) && isset ( $group_name )) {
+@@ -1519,7 +1524,7 @@ class server {
+ 			
+ 			if ($xml) {
+ 				$conditions = array (
+-						'idnumber' => $course->idnumber 
++						'idnumber' => "{$xml->DATA->SNL}_{$xml->DATA->SHL}_{$xml->DATA->MIS}" 
+ 				);
+ 				if ($course = $this->DB->get_record ( 'course', $conditions )) {
+ 					$course->fullname = ( string ) $xml->DATA->SHM;
+@@ -2043,5 +2048,3 @@ class server {
+ 		return true;
+ 	}
+ }
+-
+-?>
+diff --git a/local/ws_rashim/login.php b/local/ws_rashim/login.php
+index 074bd05..01708a2 100755
+--- a/local/ws_rashim/login.php
++++ b/local/ws_rashim/login.php
+@@ -11,6 +11,26 @@ function print_err($target, $error, $module = null) {
+ 	echo $target->box_end ();
+ }
+ 
++function log_error($target, $username, $course, $reason) {
++	$event = \local_ws_rashim\event\user_login_failed::create ( array (
++			'userid' => - 1,
++			'other' => array (
++					'username' => $username,
++					'reason' => $reason 
++			) 
++	) );
++	
++	$event->trigger ();
++	
++	echo $target->box_start ( 'loginpanel' );
++	echo '<br /><span>Details: ' . $reason . ' (' . $username;
++	if ($course != '') {
++		echo ', ' . $course;
++	}
++	echo ')</span>';
++	echo $target->box_end ();
++}
++
+ global $CFG;
+ global $DB;
+ 
+@@ -46,59 +66,71 @@ $conditions = array (
+ if (! $login_user = $DB->get_record ( 'user', $conditions )) {
+ 	echo $OUTPUT->header ();
+ 	print_err ( $OUTPUT, 'invalidlogin' );
++	log_error ( $OUTPUT, $user, null, 'user not found' );
+ 	echo $OUTPUT->footer ();
+ 	die ();
+ }
+ 
+-// we do not use this function in the first place
+-// because the functon creates the user if does not exists!
+-$login_user = authenticate_user_login ( $user, $psw );
+-
+-if (($login_user === false) || ($login_user && $login_user->id == 0)) {
+-	echo $OUTPUT->header ();
+-	print_err ( $OUTPUT, 'invalidlogin' );
+-	echo $OUTPUT->footer ();
+-	die ();
++if (isset ( $config->michlol_login ) && $config->michlol_login) {
++	if ($course != '') {
++		redirect ( "$CFG->httpswwwroot/course/view.php?idnumber={$course}" );
++	} else {
++		redirect ( "$CFG->httpswwwroot/login/index.php" );
++	}
+ } else {
+-	complete_user_login ( $login_user );
++	// we do not use this function in the first place
++	// because the functon creates the user if does not exists!
++	$login_user = authenticate_user_login ( $user, $psw );
+ 	
+-	$url = "$CFG->httpswwwroot/login/index.php";
+-	
+-	if ($course != '') {
+-		if (isset ( $config->michlol_useid ) && $config->michlol_useid) {
+-			$conditions = array (
+-					"id" => $course 
+-			);
+-		} else {
+-			$conditions = array (
+-					"idnumber" => $course 
+-			);
+-		}
++	if (($login_user === false) || ($login_user && $login_user->id == 0)) {
++		echo $OUTPUT->header ();
++		print_err ( $OUTPUT, 'invalidlogin' );
++		log_error ( $OUTPUT, $user, null, 'unable to authenticate' );
++		echo $OUTPUT->footer ();
++		die ();
++	} else {
++		complete_user_login ( $login_user );
+ 		
+-		if (isset ( $resource_type ) && ! empty ( $resource_type )) {
+-			$url = "$CFG->httpswwwroot/mod/{$resource_type}/view.php?id={$resource_id}";
+-		} else {
+-			if (! $courseget = $DB->get_record ( 'course', $conditions )) {
+-				echo $OUTPUT->header ();
+-				print_err ( $OUTPUT, 'invalidlogin' );
+-				echo $OUTPUT->footer ();
+-				die ();
++		$url = "$CFG->httpswwwroot/login/index.php";
++		
++		if ($course != '') {
++			if (isset ( $config->michlol_useid ) && $config->michlol_useid) {
++				$conditions = array (
++						"id" => $course 
++				);
+ 			} else {
+ 				$conditions = array (
+-						"krs" => $mfgs_krs,
+-						"mfgs" => $mfgs_sid,
+-						"course_id" => $courseget->id 
++						"idnumber" => $course 
+ 				);
+-				
+-				if (! $meetings = $DB->get_record ( 'meetings', $conditions )) {
+-					$url = "$CFG->httpswwwroot/course/view.php?id={$courseget->id}";
++			}
++			
++			if (isset ( $resource_type ) && ! empty ( $resource_type )) {
++				$url = "$CFG->httpswwwroot/mod/{$resource_type}/view.php?id={$resource_id}";
++			} else {
++				if (! $courseget = $DB->get_record ( 'course', $conditions )) {
++					echo $OUTPUT->header ();
++					print_err ( $OUTPUT, 'invalidlogin' );
++					log_error ( $OUTPUT, $user, $course, 'course not found' );
++					echo $OUTPUT->footer ();
++					die ();
+ 				} else {
+-					$url = "$CFG->httpswwwroot/course/view.php?id={$courseget->id}&section={$meetings->section_num}";
++					$conditions = array (
++							"krs" => $mfgs_krs,
++							"mfgs" => $mfgs_sid,
++							"course_id" => $courseget->id 
++					);
++					
++					if (! $meetings = $DB->get_record ( 'meetings', $conditions )) {
++						$url = "$CFG->httpswwwroot/course/view.php?id={$courseget->id}";
++					} else {
++						$url = "$CFG->httpswwwroot/course/view.php?id={$courseget->id}&section={$meetings->section_num}";
++					}
+ 				}
+ 			}
+ 		}
+ 	}
+ }
++
+ echo $OUTPUT->header ();
+ ?>
+ 	<form id="formLogin" name="formLogin" method="post"
+diff --git a/local/ws_rashim/service.php b/local/ws_rashim/service.php
+index c54a8d2..e50b48f 100755
+--- a/local/ws_rashim/service.php
++++ b/local/ws_rashim/service.php
+@@ -12,5 +12,3 @@ if ($_SERVER ["REQUEST_METHOD"] == "POST") {
+ 	header ( "Location: ../../local/ws_rashim/wsdl.php" );
+ 	exit ();
+ }
+-
+-?>
+diff --git a/local/ws_rashim/settings.php b/local/ws_rashim/settings.php
+index e9ff33d..12c718e 100755
+--- a/local/ws_rashim/settings.php
++++ b/local/ws_rashim/settings.php
+@@ -37,6 +37,10 @@ if ($hassiteconfig) {
+ 	$settings->add ( new admin_setting_configtext ( 'local_ws_rashim/api_user', get_string ( 'michloluser', 'local_ws_rashim' ), NULL, NULL ) );
+ 	
+ 	$settings->add ( new admin_setting_configpasswordunmask ( 'local_ws_rashim/api_psw', get_string ( 'michlolpsw', 'local_ws_rashim' ), NULL, NULL ) );
++
++	$settings->add ( new admin_setting_heading ( 'local_ws_rashim/michlol_login_header', '<h2>' . get_string ( 'michlol_login_header', 'local_ws_rashim' ) . '</h2>', '' ) );
++	
++	$settings->add ( new admin_setting_configcheckbox ( 'local_ws_rashim/michlol_login', get_string ( 'michlol_login', 'local_ws_rashim' ), null, 0 ) );
+ 	
+ 	$settings->add ( new admin_setting_heading ( 'local_ws_rashim/michlol_obsolate', '<h2>' . get_string ( 'michlol_obsolate', 'local_ws_rashim' ) . '</h2>', '' ) );
+ 	
+@@ -52,5 +56,3 @@ if ($hassiteconfig) {
+ 		}
+ 	}
+ }
+-
+-?>
+diff --git a/local/ws_rashim/update.php b/local/ws_rashim/update.php
+index cd5b452..be70a62 100755
+--- a/local/ws_rashim/update.php
++++ b/local/ws_rashim/update.php
+@@ -91,5 +91,3 @@ if ($dbman->table_exists ( 'assignment' ) && count ( $rows ) > 0) {
+ }
+ 
+ echo $OUTPUT->footer ();
+-
+-?>
+\ No newline at end of file
+diff --git a/local/ws_rashim/version.php b/local/ws_rashim/version.php
+index 808cfe5..c2751a1 100755
+--- a/local/ws_rashim/version.php
++++ b/local/ws_rashim/version.php
+@@ -1,10 +1,8 @@
+ <?php
+ defined ( 'MOODLE_INTERNAL' ) || die ();
+ 
+-$plugin->version = 2017040400.1625;
+-$plugin->release = '3.1.0.41';
++$plugin->version = 2017080700.1015;
++$plugin->release = '3.1.0.49';
+ $plugin->requires = 2014051200;
+ $plugin->component = 'local_ws_rashim';
+-$plugin->maturity = MATURITY_RC; // MATURITY_STABLE
+-
+-?>
+\ No newline at end of file
++$plugin->maturity = MATURITY_STABLE;
+diff --git a/local/ws_rashim/wsdl.xml b/local/ws_rashim/wsdl.xml
+index 279029f..d7dc56a 100755
+--- a/local/ws_rashim/wsdl.xml
++++ b/local/ws_rashim/wsdl.xml
+@@ -43,6 +43,8 @@
+ 		<part name="Course_Role" type="xsd:string" />
+ 		<part name="Group_ID" type="xsd:string" />
+ 		<part name="Group_Name" type="xsd:string" />
++		<part name="Role_Start" type="xsd:string" />
++		<part name="Role_End" type="xsd:string" />
+ 	</message>
+ 
+ 	<message name="User_AddResponse">
+-- 
+1.8.3.1
+

@@ -1,0 +1,26 @@
+From 46da463e60c412d0139ce9ca67379d45195d42c7 Mon Sep 17 00:00:00 2001
+From: Nadav Kavalerchik <nadavkav@gmail.com>
+Date: Wed, 11 Oct 2017 21:10:05 +0300
+Subject: [PATCH 20/95] lib/enrolllib.php (patch) add support for displaying
+ course summary on MY page
+
+---
+ lib/enrollib.php | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/lib/enrollib.php b/lib/enrollib.php
+index 25f7c3f..487370c 100644
+--- a/lib/enrollib.php
++++ b/lib/enrollib.php
+@@ -560,7 +560,7 @@ function enrol_get_my_courses($fields = null, $sort = 'visible DESC,sortorder AS
+     $basefields = array('id', 'category', 'sortorder',
+                         'shortname', 'fullname', 'idnumber',
+                         'startdate', 'visible',
+-                        'groupmode', 'groupmodeforce', 'cacherev');
++                        'groupmode', 'groupmodeforce', 'cacherev', 'summary');
+ 
+     if (empty($fields)) {
+         $fields = $basefields;
+-- 
+1.8.3.1
+

@@ -1,0 +1,1304 @@
+From 702cef8e8bf25c3c9bb4dd147f70e1055849ee45 Mon Sep 17 00:00:00 2001
+From: Nadav Kavalerchik <nadavkav@gmail.com>
+Date: Wed, 11 Oct 2017 21:20:05 +0300
+Subject: [PATCH 31/95] lib/editor/atto/plugins/bsgrid (new)
+
+---
+ lib/editor/atto/plugins/bsgrid/.travis.yml         |  75 +++++++
+ lib/editor/atto/plugins/bsgrid/README.md           |  17 ++
+ lib/editor/atto/plugins/bsgrid/db/access.php       |  41 ++++
+ .../atto/plugins/bsgrid/lang/en/atto_bsgrid.php    |  50 +++++
+ lib/editor/atto/plugins/bsgrid/lib.php             |  74 +++++++
+ lib/editor/atto/plugins/bsgrid/pix/ed/col1x3.png   | Bin 0 -> 354 bytes
+ lib/editor/atto/plugins/bsgrid/pix/ed/col1x3.svg   |  11 +
+ lib/editor/atto/plugins/bsgrid/pix/ed/col2.png     | Bin 0 -> 355 bytes
+ lib/editor/atto/plugins/bsgrid/pix/ed/col3.png     | Bin 0 -> 340 bytes
+ lib/editor/atto/plugins/bsgrid/pix/ed/col3.svg     |   8 +
+ lib/editor/atto/plugins/bsgrid/pix/ed/col3x1.png   | Bin 0 -> 354 bytes
+ lib/editor/atto/plugins/bsgrid/pix/ed/col3x1.svg   |  11 +
+ lib/editor/atto/plugins/bsgrid/pix/ed/col4.png     | Bin 0 -> 389 bytes
+ lib/editor/atto/plugins/bsgrid/pix/ed/col4.svg     |   8 +
+ lib/editor/atto/plugins/bsgrid/pix/ed/col6.png     | Bin 0 -> 395 bytes
+ lib/editor/atto/plugins/bsgrid/pix/ed/col6.svg     |   9 +
+ lib/editor/atto/plugins/bsgrid/pix/ed/cols2.svg    |  11 +
+ lib/editor/atto/plugins/bsgrid/pix/ed/iconone.png  | Bin 0 -> 133 bytes
+ lib/editor/atto/plugins/bsgrid/pix/ed/icontwo.png  | Bin 0 -> 834 bytes
+ lib/editor/atto/plugins/bsgrid/pix/icon.png        | Bin 0 -> 133 bytes
+ lib/editor/atto/plugins/bsgrid/settings.php        |  54 +++++
+ lib/editor/atto/plugins/bsgrid/styles.css          |  35 +++
+ .../atto/plugins/bsgrid/tests/behat/bsgrid.feature | 138 ++++++++++++
+ lib/editor/atto/plugins/bsgrid/version.php         |  33 +++
+ .../moodle-atto_bsgrid-button-debug.js             | Bin 0 -> 8485 bytes
+ .../moodle-atto_bsgrid-button-min.js               | Bin 0 -> 4525 bytes
+ .../moodle-atto_bsgrid-button.js                   | Bin 0 -> 8485 bytes
+ .../atto/plugins/bsgrid/yui/src/button/build.json  |  10 +
+ .../plugins/bsgrid/yui/src/button/js/button.js     | 237 +++++++++++++++++++++
+ .../plugins/bsgrid/yui/src/button/meta/button.json |   7 +
+ 30 files changed, 829 insertions(+)
+ create mode 100644 lib/editor/atto/plugins/bsgrid/.travis.yml
+ create mode 100644 lib/editor/atto/plugins/bsgrid/README.md
+ create mode 100644 lib/editor/atto/plugins/bsgrid/db/access.php
+ create mode 100644 lib/editor/atto/plugins/bsgrid/lang/en/atto_bsgrid.php
+ create mode 100644 lib/editor/atto/plugins/bsgrid/lib.php
+ create mode 100644 lib/editor/atto/plugins/bsgrid/pix/ed/col1x3.png
+ create mode 100644 lib/editor/atto/plugins/bsgrid/pix/ed/col1x3.svg
+ create mode 100644 lib/editor/atto/plugins/bsgrid/pix/ed/col2.png
+ create mode 100644 lib/editor/atto/plugins/bsgrid/pix/ed/col3.png
+ create mode 100644 lib/editor/atto/plugins/bsgrid/pix/ed/col3.svg
+ create mode 100644 lib/editor/atto/plugins/bsgrid/pix/ed/col3x1.png
+ create mode 100644 lib/editor/atto/plugins/bsgrid/pix/ed/col3x1.svg
+ create mode 100644 lib/editor/atto/plugins/bsgrid/pix/ed/col4.png
+ create mode 100644 lib/editor/atto/plugins/bsgrid/pix/ed/col4.svg
+ create mode 100644 lib/editor/atto/plugins/bsgrid/pix/ed/col6.png
+ create mode 100644 lib/editor/atto/plugins/bsgrid/pix/ed/col6.svg
+ create mode 100644 lib/editor/atto/plugins/bsgrid/pix/ed/cols2.svg
+ create mode 100644 lib/editor/atto/plugins/bsgrid/pix/ed/iconone.png
+ create mode 100644 lib/editor/atto/plugins/bsgrid/pix/ed/icontwo.png
+ create mode 100644 lib/editor/atto/plugins/bsgrid/pix/icon.png
+ create mode 100644 lib/editor/atto/plugins/bsgrid/settings.php
+ create mode 100644 lib/editor/atto/plugins/bsgrid/styles.css
+ create mode 100644 lib/editor/atto/plugins/bsgrid/tests/behat/bsgrid.feature
+ create mode 100644 lib/editor/atto/plugins/bsgrid/version.php
+ create mode 100644 lib/editor/atto/plugins/bsgrid/yui/build/moodle-atto_bsgrid-button/moodle-atto_bsgrid-button-debug.js
+ create mode 100644 lib/editor/atto/plugins/bsgrid/yui/build/moodle-atto_bsgrid-button/moodle-atto_bsgrid-button-min.js
+ create mode 100644 lib/editor/atto/plugins/bsgrid/yui/build/moodle-atto_bsgrid-button/moodle-atto_bsgrid-button.js
+ create mode 100644 lib/editor/atto/plugins/bsgrid/yui/src/button/build.json
+ create mode 100644 lib/editor/atto/plugins/bsgrid/yui/src/button/js/button.js
+ create mode 100644 lib/editor/atto/plugins/bsgrid/yui/src/button/meta/button.json
+
+diff --git a/lib/editor/atto/plugins/bsgrid/.travis.yml b/lib/editor/atto/plugins/bsgrid/.travis.yml
+new file mode 100644
+index 0000000..14725e22
+--- /dev/null
++++ b/lib/editor/atto/plugins/bsgrid/.travis.yml
+@@ -0,0 +1,75 @@
++language: php
++
++php:
++ - 5.5
++
++env:
++ global:
++  - MOODLE_BRANCH=MOODLE_28_STABLE
++ matrix:
++#  - DB=pgsql
++  - DB=mysqli
++
++before_install:
++# set up headless browser for behat tests early as it can take a while to start up
++# - curl -o selenium.jar http://selenium-release.storage.googleapis.com/2.45/selenium-server-standalone-2.45.0.jar
++# - xvfb-run java -jar selenium.jar > /dev/null 2> /dev/null &
++ - phantomjs --webdriver=4444 > /dev/null 2> /dev/null &
++ 
++ - sudo apt-get update -qq
++
++before_script:
++ - git clone --depth=1 --branch $MOODLE_BRANCH git://github.com/moodle/moodle ../moodle
++ - cd ../moodle
++
++ - php -S localhost:8000 > /dev/null 2> /dev/null &
++
++# this prevents github blocking you if it sees too much download traffic
++ - composer config -g github-oauth.github.com $GITHUB_API_TOKEN
++ - composer self-update
++ - composer install
++
++ - mv ../moodle-atto_bsgrid lib/editor/atto/plugins/bsgrid
++
++# slice off the end of config so we can insert more settings before they are used
++ - head -n -8 config-dist.php > config.php
++ - tail -n 8 config-dist.php > config-end.php
++
++# convert $HOME into a PHP variable, to avoid ugly escaping
++ - echo '$HOME = "'$HOME'";' >> config.php
++
++ - echo '$CFG->dbuser = "postgres";' >> config.php
++ - echo '$CFG->dbpass = "";' >> config.php
++
++ - echo '$CFG->wwwroot = "http://localhost/moodle";' >> config.php
++ - echo '$CFG->dataroot = "$HOME/moodledata";' >> config.php
++
++ - echo '$CFG->phpunit_prefix = "phpu_";' >> config.php
++ - echo '$CFG->phpunit_dataroot = "$HOME/phpu_moodledata";' >> config.php
++
++ - echo '$CFG->behat_prefix = "bht_";' >> config.php
++ - echo '$CFG->behat_wwwroot = "http://localhost:8000";' >> config.php
++ - echo '$CFG->behat_dataroot = "$HOME/bht_moodledata";' >> config.php
++
++ - if [[ "$DB" == "pgsql" ]]; then psql -c 'create database moodle;' -U postgres; fi
++
++ - if [[ "$DB" == "mysqli" ]]; then mysql -e 'create database moodle default character set UTF8 collate UTF8_bin;'; fi
++ - if [[ "$DB" == "mysqli" ]]; then echo '$CFG->dbtype = "mysqli";' >> config.php; fi
++ - if [[ "$DB" == "mysqli" ]]; then echo '$CFG->dbuser = "root";' >> config.php; fi
++
++# re-attach end of config file
++ - cat config-end.php >> config.php
++
++ - mkdir -m777 $HOME/moodledata
++
++# COMMENTED OUT AS NOT RELEVANT TO ATTO TESTS
++# intialize phpunit
++# - php admin/tool/phpunit/cli/init.php
++# - php admin/tool/phpunit/cli/util.php --buildcomponentconfigs
++
++# intialize behat
++ - php admin/tool/behat/cli/init.php
++
++script:
++# - vendor/bin/phpunit -c mod/atto_bsgrid
++ - vendor/bin/behat --config $HOME/bht_moodledata/behat/behat.yml --tags @atto_bsgrid
+diff --git a/lib/editor/atto/plugins/bsgrid/README.md b/lib/editor/atto/plugins/bsgrid/README.md
+new file mode 100644
+index 0000000..0510ea6
+--- /dev/null
++++ b/lib/editor/atto/plugins/bsgrid/README.md
+@@ -0,0 +1,17 @@
++[![Build Status](https://travis-ci.org/academic-moodle-cooperation/moodle-atto_bsgrid.svg)](https://travis-ci.org/academic-moodle-cooperation/moodle-atto_bsgrid)
++# moodle-atto_bsgrid
++
++### Credits
++
++Peter Feigl - Lead Developer - Javascript / php
++
++Guy Thomas - Javascript, localisation and behat tests
++
++Miriam Kunst - Icons
++
++Stuart Lamour - Javascript + Bootstrap 3 support
++
++Bob Gilmore - Tracker #17 fix - 25/75 and 75/25 templates aligned incorrectly.
++
++This plugin was based off the template for atto plugins by Justin Hunt
++https://github.com/justinhunt/moodle-atto_newtemplate
+diff --git a/lib/editor/atto/plugins/bsgrid/db/access.php b/lib/editor/atto/plugins/bsgrid/db/access.php
+new file mode 100644
+index 0000000..e294f10
+--- /dev/null
++++ b/lib/editor/atto/plugins/bsgrid/db/access.php
+@@ -0,0 +1,41 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++/**
++ * Plugin capabilities
++ *
++ * @package    atto_bsgrid
++ * @copyright  2015 Peter Feigl <peter.feigl@nexoid.at>
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++defined('MOODLE_INTERNAL') || die();
++
++$capabilities = array(
++
++    'atto/bsgrid:visible' => array(
++        'captype' => 'write',
++        'contextlevel' => CONTEXT_COURSE,
++        'archetypes' => array(
++			'coursecreator' => CAP_ALLOW,
++			'teacher' => CAP_ALLOW,
++            'editingteacher' => CAP_ALLOW,
++			'student' => CAP_ALLOW,
++            'manager' => CAP_ALLOW
++        )
++    )
++);
++
+diff --git a/lib/editor/atto/plugins/bsgrid/lang/en/atto_bsgrid.php b/lib/editor/atto/plugins/bsgrid/lang/en/atto_bsgrid.php
+new file mode 100644
+index 0000000..4aace3c
+--- /dev/null
++++ b/lib/editor/atto/plugins/bsgrid/lang/en/atto_bsgrid.php
+@@ -0,0 +1,50 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++/**
++ * Strings for component 'atto_bsgrid', language 'en'.
++ *
++ * @package    atto_bsgrid
++ * @copyright  2015 Peter Feigl <peter.feigl@nexoid.at>,
++ *             Guy Thomas <gthomas@moodlerooms.com>
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++$string['column1'] = 'Column 1';
++$string['column2'] = 'Column 2';
++$string['column3'] = 'Column 3';
++$string['column4'] = 'Column 4';
++$string['column5'] = 'Column 5';
++$string['column6'] = 'Column 6';
++$string['col2'] = '50% Columns';
++$string['col3'] = '33% Columns';
++$string['col1x3'] = "25%, 75% Columns";
++$string['col3x1'] = "75%, 25% Columns";
++$string['col4'] = '25% Columns';
++$string['col6'] = '16% Columns';
++$string['createbsgrid'] = 'Create bsgrid';
++$string['pluginname'] = 'Bootstrap Grid';
++$string['settings'] = 'bsgrid (Atto)';
++$string['browse'] = 'Browse';
++$string['visible'] = 'Visible';
++$string['nothingtoinsert'] = 'Nothing to insert!';
++$string['dialogtitle'] = 'Select grid';
++$string['insert'] = 'Insert';
++$string['cancel'] = 'Cancel';
++$string['enabled_templates'] = 'Enabled templates:';
++$string['enabled_templates_desc'] = 'Which templates to show.';
++$string['bsgrid:visible'] = 'Visible';
++
+diff --git a/lib/editor/atto/plugins/bsgrid/lib.php b/lib/editor/atto/plugins/bsgrid/lib.php
+new file mode 100644
+index 0000000..28017b0
+--- /dev/null
++++ b/lib/editor/atto/plugins/bsgrid/lib.php
+@@ -0,0 +1,74 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++/**
++ * Atto text editor integration version file.
++ *
++ * @package    atto_bsgrid
++ * @copyright  2015 Peter Feigl <peter.feigl@nexoid.at>,
++ *             Guy Thomas <gthomas@moodlerooms.com>
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++defined('MOODLE_INTERNAL') || die();
++
++
++/**
++ * Initialise this plugin
++ * @param string $elementid
++ */
++function atto_bsgrid_strings_for_js() {
++    global $PAGE;
++
++    $PAGE->requires->strings_for_js(
++        [
++            'insert',
++            'cancel',
++            'column1',
++            'column2',
++            'column3',
++            'column4',
++            'column5',
++            'column6',
++            'col2',
++            'col3',
++            'col1x3',
++            'col3x1',
++            'col4',
++            'col6',
++            'dialogtitle'
++        ],
++        'atto_bsgrid'
++    );
++}
++
++/**
++ * Return the js params required for this module.
++ * @return array of additional params to pass to javascript init function for this module.
++ */
++function atto_bsgrid_params_for_js($elementid, $options, $fpoptions) {
++    // Get config
++    $config = get_config('atto_bsgrid', 'enabled_templates');
++
++    // Explode settings csv values
++    $attributes = explode(',', $config);
++
++    // Return object
++    return array(
++        'enabled_templates' => $attributes
++    );
++}
++
+diff --git a/lib/editor/atto/plugins/bsgrid/pix/ed/col1x3.png b/lib/editor/atto/plugins/bsgrid/pix/ed/col1x3.png
+new file mode 100644
+index 0000000000000000000000000000000000000000..af97aebb020441ae160062be032e688873efda6d
+GIT binary patch
+literal 354
+zcmeAS@N?(olHy`uVBq!ia0vp^DIm<j1|$m}O$`B3k|nMYCBgY=CFO}lsSJ)O`AMk?
+zp1FzXsX?iUDV2pMQ*9U+7+E}B978H@y}5dkv)Mqz;bN4`5#KXv|8}{ScK0lv{8C$D
+z!lQKNZF9K!<?2i(FlSCKz9+ZK*FU^q{jJOUj;s+qCy}%(d4BBA)LNfkERn|x=j^Ku
+zvgxd4T>0_$|A0FeLmX@(|2ea;bTlvs3Meo!xj4|1-S8sJ)bjb;8`EcOJtXPuQ~qYN
+w_Wm{fp6{31*7`h6J{tG#-sG>rZ<%-)mRg8e)z5TQ2L>90r>mdKI;Vst0M1fzlmGw#
+
+literal 0
+HcmV?d00001
+
+diff --git a/lib/editor/atto/plugins/bsgrid/pix/ed/col1x3.svg b/lib/editor/atto/plugins/bsgrid/pix/ed/col1x3.svg
+new file mode 100644
+index 0000000..94aa39b
+--- /dev/null
++++ b/lib/editor/atto/plugins/bsgrid/pix/ed/col1x3.svg
+@@ -0,0 +1,11 @@
++<?xml version="1.0" encoding="utf-8"?>
++<!-- Generator: Adobe Illustrator 18.0.0, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
++<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
++<svg version="1.1" id="Ebene_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
++	 viewBox="0 0 100 100" enable-background="new 0 0 100 100" xml:space="preserve">
++<rect x="24.4" fill="#989898" width="2.5" height="100"/>
++<rect fill="#989898" width="2.5" height="100"/>
++<rect y="0" fill="#989898" width="100" height="2.5"/>
++<rect y="97.5" fill="#989898" width="100" height="2.5"/>
++<rect x="97.5" fill="#989898" width="2.5" height="100"/>
++</svg>
+diff --git a/lib/editor/atto/plugins/bsgrid/pix/ed/col2.png b/lib/editor/atto/plugins/bsgrid/pix/ed/col2.png
+new file mode 100644
+index 0000000000000000000000000000000000000000..a8ddaa5befb595d29eac51fa6122ee244fffa08d
+GIT binary patch
+literal 355
+zcmeAS@N?(olHy`uVBq!ia0vp^DIm<j1|$m}O$`B3k|nMYCBgY=CFO}lsSJ)O`AMk?
+zp1FzXsX?iUDV2pMQ*9U+7+F1C978H@y}5djv)Mtw;iANw!$Eg~Y@*sy-&`zNv^1jA
+z&%v?i+`-20i3uOfDmP?it^MuY|MIPRMcCWi_@rws<|T%Qcb+$lJ|z8X#wYGgeUB|t
+zcdN|1Q^fr92(R}c>1EtUCO@@zacJP+5MX3fQgC3QC!3{1E;Km%?)lozNa1@Ij`BRW
+xJD$Ut|04NRd1k)+>92-`&FbFuZv_$<j?I>|{px=6G%(Z{JYD@<);T3K0RYjMacKYm
+
+literal 0
+HcmV?d00001
+
+diff --git a/lib/editor/atto/plugins/bsgrid/pix/ed/col3.png b/lib/editor/atto/plugins/bsgrid/pix/ed/col3.png
+new file mode 100644
+index 0000000000000000000000000000000000000000..ccd9885580a4bbbb45a1579cf28d08bb76578f34
+GIT binary patch
+literal 340
+zcmeAS@N?(olHy`uVBq!ia0vp^DIm<j1|$m}O$`B3k|nMYCBgY=CFO}lsSJ)O`AMk?
+zp1FzXsX?iUDV2pMQ*D5XzInPhhE&{obM+u+i-CZ{#nPMmw#e-6C^LLI<J27)r54=;
+z<M!{06J{T_>F{>BqrdcJF6+);Jl|K(wMuN;I(O~;^Pbfjk!1!=S8DI~*ZW_ZcjmEV
+z+OhAyc~npH*+l+RWMXo0XyD)wU}RKMpeNg5$|_Z*cXj)3trSj+xP9~2-#J^_C#AA0
+hci2S!daHea!Ngxt!FPAh5nu=~c)I$ztaD0e0sxPHXq*55
+
+literal 0
+HcmV?d00001
+
+diff --git a/lib/editor/atto/plugins/bsgrid/pix/ed/col3.svg b/lib/editor/atto/plugins/bsgrid/pix/ed/col3.svg
+new file mode 100644
+index 0000000..69891c3
+--- /dev/null
++++ b/lib/editor/atto/plugins/bsgrid/pix/ed/col3.svg
+@@ -0,0 +1,8 @@
++<?xml version="1.0" encoding="utf-8"?>
++<!-- Generator: Adobe Illustrator 18.0.0, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
++<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
++<svg version="1.1" id="Ebene_3" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
++	 viewBox="0 0 100 100" enable-background="new 0 0 100 100" xml:space="preserve">
++<path fill="#989898" d="M97.5,0h-30H65H35h-2.5h-30H0v2.5v95v2.5h2.5h30H35h30h2.5h30h2.5v-2.5v-95V0H97.5z M2.5,97.5v-95h30v95H2.5
++	z M35,97.5v-95h30v95H35z M97.5,97.5h-30v-95h30V97.5z"/>
++</svg>
+diff --git a/lib/editor/atto/plugins/bsgrid/pix/ed/col3x1.png b/lib/editor/atto/plugins/bsgrid/pix/ed/col3x1.png
+new file mode 100644
+index 0000000000000000000000000000000000000000..d408db2a0dc85c90c6318fca8fc7e203e71283d6
+GIT binary patch
+literal 354
+zcmeAS@N?(olHy`uVBq!ia0vp^DIm<j1|$m}O$`B3k|nMYCBgY=CFO}lsSJ)O`AMk?
+zp1FzXsX?iUDV2pMQ*9U+7+E}B978H@y}5djv)MqT;bD}_lG!gT@)jmPd8L*nY`$^*
+z0@W?wBm{o_{b2B9g0o$RuUF>omqvGE4{pus{wg#%_GIScf3eBWxSp3A{#EyoYfCKp
+ze*fs^e{3rY-3$MfG*oQ*<IKX+(ZC=mpuoiB;y_P!!;2tO&84~V`i3{B&M|v;-!yGq
+vL7n*J{bIQrZ_3a9b#w87k12nh{TbO9)@+iDx;rTw6q*d4u6{1-oD!M<peA%J
+
+literal 0
+HcmV?d00001
+
+diff --git a/lib/editor/atto/plugins/bsgrid/pix/ed/col3x1.svg b/lib/editor/atto/plugins/bsgrid/pix/ed/col3x1.svg
+new file mode 100644
+index 0000000..b72ba80
+--- /dev/null
++++ b/lib/editor/atto/plugins/bsgrid/pix/ed/col3x1.svg
+@@ -0,0 +1,11 @@
++<?xml version="1.0" encoding="utf-8"?>
++<!-- Generator: Adobe Illustrator 18.0.0, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
++<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
++<svg version="1.1" id="Ebene_7" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
++	 viewBox="0 0 100 100" enable-background="new 0 0 100 100" xml:space="preserve">
++<rect fill="#989898" width="2.5" height="100"/>
++<rect y="0" fill="#989898" width="100" height="2.5"/>
++<rect y="97.5" fill="#989898" width="100" height="2.5"/>
++<rect x="73.1" fill="#989898" width="2.5" height="100"/>
++<rect x="97.5" fill="#989898" width="2.5" height="100"/>
++</svg>
+diff --git a/lib/editor/atto/plugins/bsgrid/pix/ed/col4.png b/lib/editor/atto/plugins/bsgrid/pix/ed/col4.png
+new file mode 100644
+index 0000000000000000000000000000000000000000..1d24d11f6172662953d4cc3eb90ea7d3812adc5c
+GIT binary patch
+literal 389
+zcmeAS@N?(olHy`uVBq!ia0vp^DIm<j1|$m}O$`B3k|nMYCBgY=CFO}lsSJ)O`AMk?
+zp1FzXsX?iUDV2pMQ*9U+7}Y&p978H@y}5djx5+`kA<*>O!nqFWMN7DscH4TXU+4^L
+zDvscN_(nzMp1<0gO!ZGfHq(NpHJ4pJseL2-`PIs<nZjjvlGc5-QMps!`SR6I$<KZ_
+z3fG?xKQp7CUifmJ<FkG5<^SIknSbON_oR~g-At0n$ER#~%s%Ohv|PNve4YP_OiV5g
+z4ICT-jEqVO^kh41S>3mE%F=nuXILg4*L@as-uckq=`+^Nn{W8OMfUrznxj3O-^~r*
+iin-WD-ufn(z)(3y^Zu0gWqW|(%HZkh=d#Wzp$P!K^@0rm
+
+literal 0
+HcmV?d00001
+
+diff --git a/lib/editor/atto/plugins/bsgrid/pix/ed/col4.svg b/lib/editor/atto/plugins/bsgrid/pix/ed/col4.svg
+new file mode 100644
+index 0000000..8853649
+--- /dev/null
++++ b/lib/editor/atto/plugins/bsgrid/pix/ed/col4.svg
+@@ -0,0 +1,8 @@
++<?xml version="1.0" encoding="utf-8"?>
++<!-- Generator: Adobe Illustrator 18.0.0, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
++<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
++<svg version="1.1" id="Ebene_5" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
++	 viewBox="0 0 100 100" enable-background="new 0 0 100 100" xml:space="preserve">
++<path fill="#989898" d="M97.5,0H75.6h-2.5H51.3h-2.5H26.9h-2.5H2.5H0v2.5v95v2.5h2.5h21.9h2.5h21.9h2.5h21.9h2.5h21.9h2.5v-2.5v-95
++	V0H97.5z M2.5,97.5v-95h21.9v95H2.5z M26.9,97.5v-95h21.9v95H26.9z M51.3,97.5v-95h21.9v95H51.3z M97.5,97.5H75.6v-95h21.9V97.5z"/>
++</svg>
+diff --git a/lib/editor/atto/plugins/bsgrid/pix/ed/col6.png b/lib/editor/atto/plugins/bsgrid/pix/ed/col6.png
+new file mode 100644
+index 0000000000000000000000000000000000000000..f5ded088b7f52aab49e396448db989de73bb2f6f
+GIT binary patch
+literal 395
+zcmeAS@N?(olHy`uVBq!ia0vp^DIm<j1|$m}O$`B3k|nMYCBgY=CFO}lsSJ)O`AMk?
+zp1FzXsX?iUDV2pMQ*9U+7<D~e978H@y}7!P_mF{rLtxVl<(x@5OsU&Aavn|su_hl7
+zb?bVu<J8gLmpt=ooa%yJcxk?Gp7rtt=dD*;tk)YxCmmOPCiA%`Qs{g8jE(c&cmA$D
+zvvr=l;rb(eJExl8XwJE8a`)d|k@<Tb{!X6sJ^#M^<URK99H!mas8)7n?Vd*eY5xTn
+z8I=?qSXeq57zF9cR>)elZpx>1&rQ?3-|RRtCwZQs_oIIT#@9aE7VhugdF`|Ev#B=>
+mw|`=*7WkR+a(h1mGsC3+*7L7EeHRD}T?S8AKbLh*2~7YhrH-xu
+
+literal 0
+HcmV?d00001
+
+diff --git a/lib/editor/atto/plugins/bsgrid/pix/ed/col6.svg b/lib/editor/atto/plugins/bsgrid/pix/ed/col6.svg
+new file mode 100644
+index 0000000..bc974fe
+--- /dev/null
++++ b/lib/editor/atto/plugins/bsgrid/pix/ed/col6.svg
+@@ -0,0 +1,9 @@
++<?xml version="1.0" encoding="utf-8"?>
++<!-- Generator: Adobe Illustrator 18.0.0, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
++<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
++<svg version="1.1" id="Ebene_2" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
++	 viewBox="0 0 100 100" enable-background="new 0 0 100 100" xml:space="preserve">
++<path fill="#989898" d="M97.5,0H83.8h-2.5H67.5H65H51.3h-2.5H35h-2.5H18.8h-2.5H2.5H0v2.5v95v2.5h2.5h13.8h2.5h13.8H35h13.8h2.5H65
++	h2.5h13.8h2.5h13.8h2.5v-2.5v-95V0H97.5z M2.5,97.5v-95h13.8v95H2.5z M18.8,97.5v-95h13.8v95H18.8z M35,97.5v-95h13.8v95H35z
++	 M51.3,97.5v-95H65v95H51.3z M67.5,97.5v-95h13.8v95H67.5z M97.5,97.5H83.8v-95h13.8V97.5z"/>
++</svg>
+diff --git a/lib/editor/atto/plugins/bsgrid/pix/ed/cols2.svg b/lib/editor/atto/plugins/bsgrid/pix/ed/cols2.svg
+new file mode 100644
+index 0000000..3930540
+--- /dev/null
++++ b/lib/editor/atto/plugins/bsgrid/pix/ed/cols2.svg
+@@ -0,0 +1,11 @@
++<?xml version="1.0" encoding="utf-8"?>
++<!-- Generator: Adobe Illustrator 18.0.0, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
++<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
++<svg version="1.1" id="Ebene_4" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
++	 viewBox="0 0 100 100" enable-background="new 0 0 100 100" xml:space="preserve">
++<rect fill="#989898" width="2.5" height="100"/>
++<rect y="0" fill="#989898" width="100" height="2.5"/>
++<rect y="97.5" fill="#989898" width="100" height="2.5"/>
++<rect x="48.8" fill="#989898" width="2.5" height="100"/>
++<rect x="97.5" fill="#989898" width="2.5" height="100"/>
++</svg>
+diff --git a/lib/editor/atto/plugins/bsgrid/pix/ed/iconone.png b/lib/editor/atto/plugins/bsgrid/pix/ed/iconone.png
+new file mode 100644
+index 0000000000000000000000000000000000000000..ae0cdd0b03de6d0910b75b21c269bde340af615c
+GIT binary patch
+literal 133
+zcmeAS@N?(olHy`uVBq!ia0vp^0wB!61|;P_|4#%`k|nMYCBgY=CFO}lsSJ)O`AMk?
+zp1FzXsX?iUDV2pMQ*D5X)ID7sLn>}1%`r?qR?p_eV8-krn4GjgphwCe>%a;|fdd|y
+dWo#S<3_{@o$7h^~;RkAA@O1TaS?83{1OT(gB)I?p
+
+literal 0
+HcmV?d00001
+
+diff --git a/lib/editor/atto/plugins/bsgrid/pix/ed/icontwo.png b/lib/editor/atto/plugins/bsgrid/pix/ed/icontwo.png
+new file mode 100644
+index 0000000000000000000000000000000000000000..5b898db4ff4a2ddd32474b68df52677f661e2e11
+GIT binary patch
+literal 834
+zcmV-I1HJr-P)<h;3K|Lk000e1NJLTq000mG000mO1^@s6AM^iV0000PbVXQnQ*UN;
+zcVTj606}DLVr3vnZDD6+Qe|Oed2z{QJOBU!<Vi$9RCwB?Q`t*YVHE#;cQ$9y(b*iw
+zRJ2i)3bS0wtwpGi7J4a%9;&BkftF|gg+eHND2l)!f+X<44RQ@PBD9FXB}K`ZadK4L
+z#+kWG=euaovlo8%p8I|0{C?*<=X^|26zu0=-8Z#+_GLl^VN}D=rV((C>{GjY%Y;eN
+z8j*n&kzS&tpuR<fR;C2zR%GtvBc$jwh}%u9EhULvsJPSgfN#V$S0j<>ualu4gJW`Z
+z{Ua@n?Wt;$D1joEfZ&GWlZeMa|3)1Hsc>@L#N-qzPgJ-~_6&DgZpk5k$4i^I78WRW
+zgcAtlc#-hTX=V=z6pUt3R?JLqF-wUAs;jFY#$pIXBCxo#9NxOySD-ihC~><=@MlZ$
+zRos8^n7-w!I|@kkUP3~?!IqgW)1f&@f8PLF-n>I_DGZ~{<*<9p%0&sM)guJg<(^lK
+zcQeTDu^1Q>g;}Y9*Bsu`BU-&4iJcvkl@vpYi%7Snk)!}?W}$cXTklbdX%*s<@>;LK
+zS*L}4FzHcBs*Rq*we{AFylkz(fS%4?NTP`9+DgQ>w=vi^3}dPzH6bZkY6ecT0LE~g
+zX^l5h93CP+?saAtc#`dQ^mg=N;PVjDopxkpXMkxmsH!Q)YB0bkA-zf<svSgCX<b8&
+z)#XXm8I1@9mXTz!;8;l^oHi>w9;cdxmI$Jon^;>4Y{VsXHXtOZYJ~B{S^pAW_&p!Q
+z+vo2w^K(WG%FEADzp^Buzk3ML^>uJx9<$d*P}SRi`NyZ%!of|qD-{j5E+H$&4Oy14
+zO^V>-PUoyWQwHwCeR+&Zz=wyD2t}jO<}Y2X-y`ARR_?(As;WW+gI%Ml&ASm;nA_q$
+z+?U6wcj4)IrWSz{(E!!!4aP@#Ma2a<-XeRl)n+nMO~RqY?fDshWY#}16^})mv;u3V
+zR^v&h{67J&2Z?$p;j6TCl90VS@(YAv^87?&5YPz>{|NSbo&O3j0BgEkIS+(u>;M1&
+M07*qoM6N<$f<||V$p8QV
+
+literal 0
+HcmV?d00001
+
+diff --git a/lib/editor/atto/plugins/bsgrid/pix/icon.png b/lib/editor/atto/plugins/bsgrid/pix/icon.png
+new file mode 100644
+index 0000000000000000000000000000000000000000..ae0cdd0b03de6d0910b75b21c269bde340af615c
+GIT binary patch
+literal 133
+zcmeAS@N?(olHy`uVBq!ia0vp^0wB!61|;P_|4#%`k|nMYCBgY=CFO}lsSJ)O`AMk?
+zp1FzXsX?iUDV2pMQ*D5X)ID7sLn>}1%`r?qR?p_eV8-krn4GjgphwCe>%a;|fdd|y
+dWo#S<3_{@o$7h^~;RkAA@O1TaS?83{1OT(gB)I?p
+
+literal 0
+HcmV?d00001
+
+diff --git a/lib/editor/atto/plugins/bsgrid/settings.php b/lib/editor/atto/plugins/bsgrid/settings.php
+new file mode 100644
+index 0000000..c6f659a
+--- /dev/null
++++ b/lib/editor/atto/plugins/bsgrid/settings.php
+@@ -0,0 +1,54 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++/**
++ * bsgrid settings.
++ *
++ * @package   atto_bsgrid
++ * @copyright  2015 Peter Feigl <peter.feigl@nexoid.at>,
++ *             Guy Thomas <gthomas@moodlerooms.com>
++ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++
++defined('MOODLE_INTERNAL') || die();
++
++$ADMIN->add('editoratto', new admin_category('atto_bsgrid', new lang_string('pluginname', 'atto_bsgrid')));
++
++$settings = new admin_settingpage('atto_bsgrid_settings', new lang_string('settings', 'atto_bsgrid'));
++if ($ADMIN->fulltree) {
++	// An option setting
++	$settings->add(new admin_setting_configmulticheckbox(
++        'atto_bsgrid/enabled_templates',
++        get_string('enabled_templates', 'atto_bsgrid'),
++        get_string('enabled_templates_desc', 'atto_bsgrid'),
++        array(
++            'col2'   => 'checked',
++            'col3'   => 'checked',
++            'col1x3' => 'checked',
++            'col3x1' => 'checked',
++            'col4'   => 'checked',
++            'col6'   => 'checked'
++        ),
++        array(
++            'col2' => get_string('col2', 'atto_bsgrid'),
++            'col3' => get_string('col3', 'atto_bsgrid'),
++            'col1x3' => get_string('col1x3', 'atto_bsgrid'),
++            'col3x1' => get_string('col3x1', 'atto_bsgrid'),
++            'col4' => get_string('col4', 'atto_bsgrid'),
++            'col6' => get_string('col6', 'atto_bsgrid')
++        )));
++}
+diff --git a/lib/editor/atto/plugins/bsgrid/styles.css b/lib/editor/atto/plugins/bsgrid/styles.css
+new file mode 100644
+index 0000000..c15276a
+--- /dev/null
++++ b/lib/editor/atto/plugins/bsgrid/styles.css
+@@ -0,0 +1,35 @@
++
++/* Outline grid elements in atto */
++
++.editor_atto_content .span2,
++.editor_atto_content .span3,
++.editor_atto_content .span4,
++.editor_atto_content .span6,
++.editor_atto_content .span7,
++.editor_atto_content .span8,
++.editor_atto_content .span9,
++.editor_atto_content .span10,
++.editor_atto_content .span11,
++.editor_atto_content .span12 { border: 1px #ddd dashed; }
++
++/* Button to select grid */
++
++.bsgridtemplateicon img { width: 30px; height: 30px; }
++
++/* Button link wrapper */
++
++a.bsgridtemplateicon {
++    border: 1px solid #ccc;
++    border-radius: 0.5em;
++    display: inline-block;
++    margin: 1em;
++    padding: 0.5em;
++    /*background: -webkit-linear-gradient(#fff, #f2f2f2);
++    background: -o-linear-gradient(#fff, #f2f2f2);
++    background: -moz-linear-gradient(#fff, #f2f2f2);
++    background: linear-gradient(#fff, #f2f2f2);
++    -webkit-box-shadow: 0px 2px 2px 0px rgba(100,100,100,0.1);
++    -moz-box-shadow: 0px 2px 2px 0px rgba(100,100,100,0.1);
++    box-shadow: 0px 2px 2px 0px rgba(100,100,100,0.1);
++  */
++}
+diff --git a/lib/editor/atto/plugins/bsgrid/tests/behat/bsgrid.feature b/lib/editor/atto/plugins/bsgrid/tests/behat/bsgrid.feature
+new file mode 100644
+index 0000000..47a0093
+--- /dev/null
++++ b/lib/editor/atto/plugins/bsgrid/tests/behat/bsgrid.feature
+@@ -0,0 +1,138 @@
++# This file is part of Moodle - http://moodle.org/
++#
++# Moodle is free software: you can redistribute it and/or modify
++# it under the terms of the GNU General Public License as published by
++# the Free Software Foundation, either version 3 of the License, or
++# (at your option) any later version.
++#
++# Moodle is distributed in the hope that it will be useful,
++# but WITHOUT ANY WARRANTY; without even the implied warranty of
++# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++# GNU General Public License for more details.
++#
++# You should have received a copy of the GNU General Public License
++# along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++#
++# Tests for Bootstrap grid.
++#
++# @package    atto_bsgrid
++# @copyright  2015 Guy Thomas <gthomas@moodlerooms.com>
++# @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++
++
++@editor @editor_atto @atto @atto_bsgrid @_bug_phantomjs
++Feature: Atto bsgrid
++  To layout content in Atto, I need to insert bootstrap grids
++
++  Background: Ensure grid button in toolbar
++    Given the following config values are set as admin:
++      | toolbar  | "bootstrap = bsgrid" | editor_atto  |
++      | enabled_templates | col2,col3,col1x3,col3x1,col4,col6 | atto_bsgrid |
++
++  @javascript
++  Scenario: Create a 2 column grid
++    Given I log in as "admin"
++    And the following config values are set as admin:
++      | toolbar  | bsgrid = bsgrid | editor_atto |
++    And I am on homepage
++    And I follow "Courses"
++    And I click on "Add a new course" "button"
++    And I click on ".editor_atto_content" "css_element"
++    And I click on "Bootstrap Grid" "button"
++    When I click on "a[title='50% Columns']" "css_element"
++    Then ".editor_atto_content .container-fluid .row-fluid" "css_element" should be visible
++    And ".editor_atto_content .span2" "css_element" should not exist
++    And ".editor_atto_content .span3" "css_element" should not exist
++    And ".editor_atto_content .span4" "css_element" should not exist
++    And ".editor_atto_content .span6" "css_element" should be visible
++    And ".editor_atto_content .span8" "css_element" should not exist
++
++  @javascript
++  Scenario: Create a 3 column grid
++    Given I log in as "admin"
++    And the following config values are set as admin:
++      | toolbar  | bsgrid = bsgrid | editor_atto |
++    And I am on homepage
++    And I follow "Courses"
++    And I click on "Add a new course" "button"
++    And I click on ".editor_atto_content" "css_element"
++    And I click on "Bootstrap Grid" "button"
++    When I click on "a[title='33% Columns']" "css_element"
++    Then ".editor_atto_content .container-fluid .row-fluid" "css_element" should be visible
++    And ".editor_atto_content .span2" "css_element" should not exist
++    And ".editor_atto_content .span3" "css_element" should not exist
++    And ".editor_atto_content .span4" "css_element" should be visible
++    And ".editor_atto_content .span6" "css_element" should not exist
++    And ".editor_atto_content .span8" "css_element" should not exist
++
++  @javascript
++  Scenario: Create a 25% 75% column grid
++    Given I log in as "admin"
++    And the following config values are set as admin:
++      | toolbar  | bsgrid = bsgrid | editor_atto |
++    And I am on homepage
++    And I follow "Courses"
++    And I click on "Add a new course" "button"
++    And I click on ".editor_atto_content" "css_element"
++    And I click on "Bootstrap Grid" "button"
++    When I click on "a[title='25%, 75% Columns']" "css_element"
++    Then ".editor_atto_content .container-fluid .row-fluid" "css_element" should be visible
++    And ".editor_atto_content .span2" "css_element" should not exist
++    And ".editor_atto_content .span3" "css_element" should not exist
++    And ".editor_atto_content .span4" "css_element" should be visible
++    And ".editor_atto_content .span6" "css_element" should not exist
++    And ".editor_atto_content .span8" "css_element" should be visible
++
++  @javascript
++  Scenario: Create a 75% 25% column grid
++    Given I log in as "admin"
++    And the following config values are set as admin:
++      | toolbar  | bsgrid = bsgrid | editor_atto |
++    And I am on homepage
++    And I follow "Courses"
++    And I click on "Add a new course" "button"
++    And I click on ".editor_atto_content" "css_element"
++    And I click on "Bootstrap Grid" "button"
++    When I click on "a[title='75%, 25% Columns']" "css_element"
++    Then ".editor_atto_content .container-fluid .row-fluid" "css_element" should be visible
++    And ".editor_atto_content .span2" "css_element" should not exist
++    And ".editor_atto_content .span3" "css_element" should not exist
++    And ".editor_atto_content .span4" "css_element" should be visible
++    And ".editor_atto_content .span6" "css_element" should not exist
++    And ".editor_atto_content .span8" "css_element" should be visible
++
++  @javascript
++  Scenario: Create a 4 column grid
++    Given I log in as "admin"
++    And the following config values are set as admin:
++      | toolbar  | bsgrid = bsgrid | editor_atto |
++    And I am on homepage
++    And I follow "Courses"
++    And I click on "Add a new course" "button"
++    And I click on ".editor_atto_content" "css_element"
++    And I click on "Bootstrap Grid" "button"
++    When I click on "a[title='25% Columns']" "css_element"
++    Then ".editor_atto_content .container-fluid .row-fluid" "css_element" should be visible
++    And ".editor_atto_content .span2" "css_element" should not exist
++    And ".editor_atto_content .span3" "css_element" should be visible
++    And ".editor_atto_content .span4" "css_element" should not exist
++    And ".editor_atto_content .span6" "css_element" should not exist
++    And ".editor_atto_content .span8" "css_element" should not exist
++
++  @javascript
++  Scenario: Create a 6 column grid
++    Given I log in as "admin"
++    And the following config values are set as admin:
++      | toolbar  | bsgrid = bsgrid | editor_atto |
++    And I am on homepage
++    And I follow "Courses"
++    And I click on "Add a new course" "button"
++    And I click on ".editor_atto_content" "css_element"
++    And I click on "Bootstrap Grid" "button"
++    When I click on "a[title='16% Columns']" "css_element"
++    Then ".editor_atto_content .container-fluid .row-fluid" "css_element" should be visible
++    And ".editor_atto_content .span2" "css_element" should be visible
++    And ".editor_atto_content .span3" "css_element" should not exist
++    And ".editor_atto_content .span4" "css_element" should not exist
++    And ".editor_atto_content .span6" "css_element" should not exist
++    And ".editor_atto_content .span8" "css_element" should not exist
+\ No newline at end of file
+diff --git a/lib/editor/atto/plugins/bsgrid/version.php b/lib/editor/atto/plugins/bsgrid/version.php
+new file mode 100644
+index 0000000..793e9c6
+--- /dev/null
++++ b/lib/editor/atto/plugins/bsgrid/version.php
+@@ -0,0 +1,33 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++/**
++ * Atto bsgrid  version file.
++ *
++ * @package    atto_bsgrid
++ * @copyright  2015 Peter Feigl <peter.feigl@nexoid.at>
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++defined('MOODLE_INTERNAL') || die();
++
++$plugin->version   = 2015063000;        // The current plugin version (Date: YYYYMMDDXX).
++$plugin->requires  = 2013110500;        // Requires this Moodle version.
++$plugin->component = 'atto_bsgrid';  // Full name of the plugin (used for diagnostics).
++$plugin->maturity  = MATURITY_BETA;
++// Human readable version informatiomn
++$plugin->release   = '1.0.0 (Build 2015063000)';
++
+diff --git a/lib/editor/atto/plugins/bsgrid/yui/build/moodle-atto_bsgrid-button/moodle-atto_bsgrid-button-debug.js b/lib/editor/atto/plugins/bsgrid/yui/build/moodle-atto_bsgrid-button/moodle-atto_bsgrid-button-debug.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..9df4680fc823ad42655967393b138d0d380c02b3
+GIT binary patch
+literal 8485
+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
+JvvJMi{|{L<6?Oms
+
+literal 0
+HcmV?d00001
+
+diff --git a/lib/editor/atto/plugins/bsgrid/yui/build/moodle-atto_bsgrid-button/moodle-atto_bsgrid-button-min.js b/lib/editor/atto/plugins/bsgrid/yui/build/moodle-atto_bsgrid-button/moodle-atto_bsgrid-button-min.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..7d8d73ea72f158870b1bcf79b71a9762eab280d5
+GIT binary patch
+literal 4525
+zcmcIoO>f&c5WVlOaCt~Xm}WjVDCEd!l6KJ?k}aBKfkhA)j6~Z+X-XxjBwa!OeTS5^
+zmSe+q-Ob4&MLv$^y&2B<@4HLNk|aRWG)*M$F>BM|qZw<F^d55<C`3lNimgahz=_30
+zGwMw0ajJtSraLOy@2gWzC0AoR>8oxRi&4Pu)k73T7He*Et={eT>xYA~+JsssBBG=D
+zv51Px>o0e=H+Sb(m$za2<<M}+V;iS3pDKe&VxryCL_Bq3$&8u9>BOnBOen5<Bbkc?
+z4cZHJ`n+r!fP2%VchWH#Qzx(`8|-$kXl{k1V{V7WYN5sfsth<lq-`9+U39va4NmvK
+zq5<m8S@v_thpUm{nCgh;fuwKZhhy)D<2UfbhRAFDu*}07A|L&%hx6?{+*z%*4K3b6
+zZSOsQ@7M9S#><V!oVva22zxVMY-sTozW9H<+_+%oi_!MJSdoE_Jab3unA^e+8zQgK
+z#InfS5P41H{Q~mw&&ITT6YdT@cZYAl-G<0paJM1y7Tj%!yoS4Fs@M?u_tmQS1>}>}
+z$cwomjtZy)4#UFoX(pNFp&<h5l+YCvz?v0S@^E>*u|R4`VAD|xE1h8hPphyNX!KYI
+zFKx7Zh6XQI<M{>irBG$v%R$RNHbXpmfy}kiLbqTE;&BUaG{Xb+tU_B5m$&Yug(YWL
+z!0IZj1=7osWD!DrP8FMSC>&!Rpex!gaWOsjWp%{qIWwHbngjU(YKm=6uP9H1P4&=i
+zqo4fq7nzTRBKHrZ5K36Vr1*#Hu&KoZTtKaDC&IYWG(d?k>{0Rr;kxebyJFi$_sB^s
+zRUAF^vo2)3QL3kN1+$xgY~|``kwmB{pvazbWkph!!vYS6BHFDfOVsR}Cb9?ij1?N}
+z_TgRC4RnO+#CXy&iYsr^uo1jLm?*rn6L?El16MU4%_3)SrzkFNZfL6!aHlhABedI%
+zp~0Y@r0y>2_=m;mgjv>WAl+*Pi=mv~Jr&b&$LQG2)v+d~Y|MwbmI30)9;yy-X1vlM
+zAnXAIL^c~B?A%!g`RSf>&;Sum&$MPgC}%PFq18s=!czr(SEYrZs3PB=$G!Y6(rE@f
+zDLdEmAX3TX8q^hX5;G|uS^O>Za6@1nGRcpRppJB$&t9MDu?cyJOXAkS&+C;l9a*Bm
+zIGSnx1ZRKbBbG}WU@spL9q;c$m(|FuIVUJ4oF!aeK$GPRUXrsCZ;~em0q5jdBz6*t
+zF3Mh@y-efWoQ*8kpGCq$UE;o>e#N^es@Cl67;2ob{WK!gY-Ltj88igp{{eoltq3$G
+zImFm?n#^L%$+~IDa6hLk%eYE{6q6eMF-?Bd0Epy%dXhc|*gK9+nf`W{ftGj@I4{nh
+z*m5E+T)1gC{xeh1RX;LqXbg-B$%71FUm2!@S(sH^`Y4{H#v)ur^nYOpK?A`M3ds14
+zLKKOmh`&MB0F{Qe#JFy<JC!b+93xYG!_W;V=q5lEbwxX<FohN$c_>JGE|(0G^imnF
+zZ6zFHoOJ4`+2?Xx@CC(G0Pq<zmAv9v<x-ZIPJr{q!ByU)eqk*-3$BWDtwC6~Oaq>C
+z$C-uR8zKSH=3Hb$7&hVzQ0+b8KcFV{3?u?#`;rP}gZSP;=BRJqr4*N>IJ>?5dJ`54
+zxhn*UWzJ1_U*Fg6$K9pyQ(b{>>~Ai3aF-7JoS=uYba9A2{PpSU&E=oh9}p=t|DFr&
+Uq3S<jTKT`1`OFU+asRh}0lYo_mjD0&
+
+literal 0
+HcmV?d00001
+
+diff --git a/lib/editor/atto/plugins/bsgrid/yui/build/moodle-atto_bsgrid-button/moodle-atto_bsgrid-button.js b/lib/editor/atto/plugins/bsgrid/yui/build/moodle-atto_bsgrid-button/moodle-atto_bsgrid-button.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..9df4680fc823ad42655967393b138d0d380c02b3
+GIT binary patch
+literal 8485
+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
+JvvJMi{|{L<6?Oms
+
+literal 0
+HcmV?d00001
+
+diff --git a/lib/editor/atto/plugins/bsgrid/yui/src/button/build.json b/lib/editor/atto/plugins/bsgrid/yui/src/button/build.json
+new file mode 100644
+index 0000000..0c18603
+--- /dev/null
++++ b/lib/editor/atto/plugins/bsgrid/yui/src/button/build.json
+@@ -0,0 +1,10 @@
++{
++    "name": "moodle-atto_bsgrid-button",
++    "builds": {
++        "moodle-atto_bsgrid-button": {
++            "jsfiles": [
++                "button.js"
++            ]
++        }
++    }
++}
+diff --git a/lib/editor/atto/plugins/bsgrid/yui/src/button/js/button.js b/lib/editor/atto/plugins/bsgrid/yui/src/button/js/button.js
+new file mode 100644
+index 0000000..6b29949
+--- /dev/null
++++ b/lib/editor/atto/plugins/bsgrid/yui/src/button/js/button.js
+@@ -0,0 +1,237 @@
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++/*
++ * @package    atto_bsgrid
++ * @copyright  2015 Peter Feigl <peter.feigl@nexoid.at>,
++ *             Guy Thomas <gthomas@moodlerooms.com>,
++ *             Stuart Lamour <slamour@moodlerooms.com>
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++/**
++ * @module moodle-atto_bsgrid-button
++ */
++
++/**
++ * Atto text editor bsgrid plugin.
++ *
++ * @namespace M.atto_bsgrid
++ * @class button
++ * @extends M.editor_atto.EditorPlugin
++ */
++
++var COMPONENTNAME = 'atto_bsgrid';
++var LOGNAME = 'atto_bsgrid';
++
++var CSS = {
++  INPUTSUBMIT: 'atto_bsgrid_selectcolumns'
++};
++
++// Note - the paragraph tags inside the BS grid divs is important - without it, deleting the contents
++// of a column will delete the actuall column!
++
++var col2_template =
++    '<div class="atto_bsgrid container-fluid">' +
++        '<div class="row-fluid">' +
++            '<div class="col-md-6 span6"><p>'+M.util.get_string('column1', 'atto_bsgrid')+'</p></div>' +
++            '<div class="col-md-6 span6"><p>'+M.util.get_string('column2', 'atto_bsgrid')+'</p></div>' +
++        '</div>' +
++    '</div>';
++var col3_template =
++    '<div class="atto_bsgrid container-fluid">' +
++        '<div class="row-fluid">' +
++            '<div class="col-md-4 span4"><p>'+M.util.get_string('column1', 'atto_bsgrid')+'</p></div>' +
++            '<div class="col-md-4 span4"><p>'+M.util.get_string('column2', 'atto_bsgrid')+'</p></div>' +
++            '<div class="col-md-4 span4"><p>'+M.util.get_string('column3', 'atto_bsgrid')+'</p></div>' +
++        '</div>' +
++    '</div>';
++
++var col1x3_template =
++    '<div class="atto_bsgrid container-fluid">' +
++        '<div class="row-fluid">' +
++            '<div class="col-md-4 span4"><p>'+M.util.get_string('column1', 'atto_bsgrid')+'</p></div>' +
++            '<div class="col-md-8 span8"><p>'+M.util.get_string('column2', 'atto_bsgrid')+'</p></div>' +
++        '</div>' +
++    '</div>';
++
++var col3x1_template =
++    '<div class="atto_bsgrid container-fluid">' +
++        '<div class="row-fluid">' +
++            '<div class="col-md-8 span8"><p>'+M.util.get_string('column1', 'atto_bsgrid')+'</p></div>' +
++            '<div class="col-md-4 span4"><p>'+M.util.get_string('column1', 'atto_bsgrid')+'</p></div>' +
++        '</div>' +
++    '</div>';
++
++
++var col4_template =
++    '<div class="atto_bsgrid container-fluid">' +
++        '<div class="row-fluid">' +
++            '<div class="col-md-3 span3"><p>'+M.util.get_string('column1', 'atto_bsgrid')+'</p></div>' +
++            '<div class="col-md-3 span3"><p>'+M.util.get_string('column2', 'atto_bsgrid')+'</p></div>' +
++            '<div class="col-md-3 span3"><p>'+M.util.get_string('column3', 'atto_bsgrid')+'</p></div>' +
++            '<div class="col-md-3 span3"><p>'+M.util.get_string('column4', 'atto_bsgrid')+'</p></div>' +
++        '</div>' +
++    '</div>';
++
++var col6_template =
++    '<div class="atto_bsgrid container-fluid">' +
++        '<div class="row-fluid">' +
++            '<div class="col-md-2 span2"><p>'+M.util.get_string('column1', 'atto_bsgrid')+'</p></div>' +
++            '<div class="col-md-2 span2"><p>'+M.util.get_string('column2', 'atto_bsgrid')+'</p></div>' +
++            '<div class="col-md-2 span2"><p>'+M.util.get_string('column3', 'atto_bsgrid')+'</p></div>' +
++            '<div class="col-md-2 span2"><p>'+M.util.get_string('column4', 'atto_bsgrid')+'</p></div>' +
++            '<div class="col-md-2 span2"><p>'+M.util.get_string('column5', 'atto_bsgrid')+'</p></div>' +
++            '<div class="col-md-2 span2"><p>'+M.util.get_string('column6', 'atto_bsgrid')+'</p></div>' +
++        '</div>' +
++    '</div>';
++
++var templates = { col2: { template: col2_template, icon: "col2", title: M.util.get_string('col2', 'atto_bsgrid') },
++          col3: { template: col3_template, icon: "col3", title: M.util.get_string('col3', 'atto_bsgrid') },
++        col1x3: { template: col1x3_template, icon: "col1x3", title: M.util.get_string('col1x3', 'atto_bsgrid') },
++        col3x1: { template: col3x1_template, icon: "col3x1", title: M.util.get_string('col3x1', 'atto_bsgrid') },
++          col4: { template: col4_template, icon: "col4", title: M.util.get_string('col4', 'atto_bsgrid') },
++          col6: { template: col6_template, icon: "col6", title: M.util.get_string('col6', 'atto_bsgrid') }
++        };
++function contains(a, obj) {
++    for (var i = 0; i < a.length; i++) {
++        if (a[i] === obj) {
++            return true;
++        }
++    }
++    return false;
++}
++var TEMPLATE="";
++Y.namespace('M.atto_bsgrid').Button = Y.Base.create('button', Y.M.editor_atto.EditorPlugin, [], {
++
++  /**
++   * Initialize the button
++   *
++   * @method Initializer
++   */
++  initializer: function() {
++    // If we don't have the capability to view then give up.
++    if (this.get('disabled')){
++      return;
++    }
++
++    var twoicons = ['iconone'];
++
++    TEMPLATE +=
++      '<form class="atto_form">' +
++      '<div id="{{elementid}}_{{innerform}}" class="mdl-align">';
++    for(var t in templates) {
++      if(contains(this.get('enabled_templates'),t)) {
++        TEMPLATE += '<a class="bsgridtemplateicon {{CSS.INPUTSUBMIT}}" alt="' + templates[t].title +  '" title="' +
++                    templates[t].title + '" data-template="'+ t + '">' +
++                        '<img src="'+ M.util.image_url("ed/" + templates[t].icon,"atto_bsgrid") + '"/>' +
++                    '</a>';
++      }
++    }
++
++    TEMPLATE += '</div>' + '</form>';
++
++    Y.Array.each(twoicons, function(theicon) {
++      // Add the bsgrid icon/buttons
++      this.addButton({
++        icon: 'ed/' + theicon,
++        iconComponent: 'atto_bsgrid',
++        buttonName: theicon,
++        callback: this._displayDialogue,
++        callbackArgs: theicon
++      });
++    }, this);
++
++  },
++
++  /**
++   * Display the bsgrid Dialogue
++   *
++   * @method _displayDialogue
++   * @private
++   */
++  _displayDialogue: function(e, clickedicon) {
++    e.preventDefault();
++    var width=400;
++
++
++    var dialogue = this.getDialogue({
++      headerContent: M.util.get_string('dialogtitle', COMPONENTNAME),
++      width: width + 'px',
++      focusAfterHide: clickedicon
++    });
++    //dialog doesn't detect changes in width without this
++    //if you reuse the dialog, this seems necessary
++    if(dialogue.width !== width + 'px'){
++      dialogue.set('width',width+'px');
++    }
++
++    //append buttons to iframe
++    var buttonform = this._getFormContent(clickedicon);
++
++    var bodycontent =  Y.Node.create('<div></div>');
++    bodycontent.append(buttonform);
++
++    //set to bodycontent
++    dialogue.set('bodyContent', bodycontent);
++    dialogue.show();
++    this.markUpdated();
++  },
++
++
++  /**
++   * Return the dialogue content for the tool, attaching any required
++   * events.
++   *
++   * @method _getDialogueContent
++   * @return {Node} The content to place in the dialogue.
++   * @private
++   */
++  _getFormContent: function(clickedicon) {
++    var template = Y.Handlebars.compile(TEMPLATE),
++        content = Y.Node.create(template({
++          elementid: this.get('host').get('elementid'),
++          CSS: CSS,
++          component: COMPONENTNAME,
++          clickedicon: clickedicon
++        }));
++
++    this._form = content;
++    this._form.all('.' + CSS.INPUTSUBMIT).on('click', this._doInsert, this);
++    return content;
++  },
++
++  /**
++   * Inserts the users input onto the page
++   * @method _getDialogueContent
++   * @private
++   */
++  _doInsert : function(e){
++    e.preventDefault();
++    this.getDialogue({
++      focusAfterHide: null
++    }).hide();
++    this.editor.focus();
++    var templateName = e.currentTarget.getAttribute('data-template');
++    this.get('host').insertContentAtFocusPoint(templates[templateName].template);
++    this.markUpdated();
++
++  }
++}, { ATTRS: {
++  enabled_templates: {
++    values: ['col2','col3','col1x3','col3x1','col4','col6']
++  }
++}
++   });
+diff --git a/lib/editor/atto/plugins/bsgrid/yui/src/button/meta/button.json b/lib/editor/atto/plugins/bsgrid/yui/src/button/meta/button.json
+new file mode 100644
+index 0000000..18de907
+--- /dev/null
++++ b/lib/editor/atto/plugins/bsgrid/yui/src/button/meta/button.json
+@@ -0,0 +1,7 @@
++{
++    "moodle-atto_bsgrid-button": {
++        "requires": [
++            "moodle-editor_atto-plugin"
++        ]
++    }
++}
+-- 
+1.8.3.1
+

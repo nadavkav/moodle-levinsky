@@ -1,0 +1,2294 @@
+From 8bc2dfad06b8958a8094bec667f43e5710729124 Mon Sep 17 00:00:00 2001
+From: Nadav Kavalerchik <nadavkav@gmail.com>
+Date: Wed, 11 Oct 2017 21:20:29 +0300
+Subject: [PATCH 32/95] lib/editor/atto/plugins/cloze (new)
+
+---
+ lib/editor/atto/plugins/cloze/.travis.yml          |  76 +++
+ lib/editor/atto/plugins/cloze/LICENSE              | 674 +++++++++++++++++++
+ lib/editor/atto/plugins/cloze/README.txt           |  17 +
+ .../atto/plugins/cloze/lang/en/atto_cloze.php      |  25 +
+ lib/editor/atto/plugins/cloze/lib.php              | 124 ++++
+ lib/editor/atto/plugins/cloze/styles.css           |  37 ++
+ .../atto/plugins/cloze/tests/behat/cloze.feature   |  80 +++
+ lib/editor/atto/plugins/cloze/version.php          |  31 +
+ .../moodle-atto_cloze-button-debug.js              | Bin 0 -> 25245 bytes
+ .../moodle-atto_cloze-button-min.js                | Bin 0 -> 11659 bytes
+ .../moodle-atto_cloze-button.js                    | Bin 0 -> 25245 bytes
+ .../atto/plugins/cloze/yui/src/button/build.json   |  10 +
+ .../atto/plugins/cloze/yui/src/button/js/button.js | 732 +++++++++++++++++++++
+ .../plugins/cloze/yui/src/button/meta/editor.json  |   8 +
+ 14 files changed, 1814 insertions(+)
+ create mode 100644 lib/editor/atto/plugins/cloze/.travis.yml
+ create mode 100644 lib/editor/atto/plugins/cloze/LICENSE
+ create mode 100644 lib/editor/atto/plugins/cloze/README.txt
+ create mode 100644 lib/editor/atto/plugins/cloze/lang/en/atto_cloze.php
+ create mode 100644 lib/editor/atto/plugins/cloze/lib.php
+ create mode 100644 lib/editor/atto/plugins/cloze/styles.css
+ create mode 100644 lib/editor/atto/plugins/cloze/tests/behat/cloze.feature
+ create mode 100644 lib/editor/atto/plugins/cloze/version.php
+ create mode 100644 lib/editor/atto/plugins/cloze/yui/build/moodle-atto_cloze-button/moodle-atto_cloze-button-debug.js
+ create mode 100644 lib/editor/atto/plugins/cloze/yui/build/moodle-atto_cloze-button/moodle-atto_cloze-button-min.js
+ create mode 100644 lib/editor/atto/plugins/cloze/yui/build/moodle-atto_cloze-button/moodle-atto_cloze-button.js
+ create mode 100644 lib/editor/atto/plugins/cloze/yui/src/button/build.json
+ create mode 100644 lib/editor/atto/plugins/cloze/yui/src/button/js/button.js
+ create mode 100644 lib/editor/atto/plugins/cloze/yui/src/button/meta/editor.json
+
+diff --git a/lib/editor/atto/plugins/cloze/.travis.yml b/lib/editor/atto/plugins/cloze/.travis.yml
+new file mode 100644
+index 0000000..1535ba6
+--- /dev/null
++++ b/lib/editor/atto/plugins/cloze/.travis.yml
+@@ -0,0 +1,76 @@
++language: php
++
++sudo: false
++
++cache:
++  directories:
++    - $HOME/.composer/cache
++
++php:
++ - 5.6
++ - 7.0
++ - 7.1
++
++addons:
++  postgresql: "9.3"
++
++env:
++ matrix:
++  - DB=pgsql MOODLE_BRANCH=MOODLE_30_STABLE
++  - DB=pgsql MOODLE_BRANCH=MOODLE_31_STABLE
++  - DB=pgsql MOODLE_BRANCH=MOODLE_32_STABLE
++  - DB=pgsql MOODLE_BRANCH=MOODLE_33_STABLE
++  - DB=mysqli MOODLE_BRANCH=MOODLE_33_STABLE
++  - DB=mysqli MOODLE_BRANCH=master
++  - DB=pgsql MOODLE_BRANCH=master
++ 
++matrix:
++ exclude:
++  - env: DB=pgsql MOODLE_BRANCH=MOODLE_30_STABLE
++    php: 7.1
++  - env: DB=pgsql MOODLE_BRANCH=MOODLE_31_STABLE
++    php: 7.1
++  - env: DB=mysqli MOODLE_BRANCH=master
++    php: 5.6
++  - env: DB=pgsql MOODLE_BRANCH=master
++    php: 5.6
++
++before_install:
++  - phpenv config-rm xdebug.ini
++  - cd ../..
++  - composer selfupdate
++  - composer create-project -n --no-dev --prefer-dist moodlerooms/moodle-plugin-ci ci ^1
++  - export PATH="$(cd ci/bin; pwd):$(cd ci/vendor/bin; pwd):$PATH"
++
++install:
++  - moodle-plugin-ci install
++
++script:
++  - moodle-plugin-ci phplint
++  - moodle-plugin-ci phpcpd
++  - moodle-plugin-ci phpmd
++  - moodle-plugin-ci csslint
++  - moodle-plugin-ci shifter
++  - moodle-plugin-ci phpunit
++  - moodle-plugin-ci behat
++  - env: DB=pgsql MOODLE_BRANCH=master
++    php: 5.6
++
++before_install:
++  - phpenv config-rm xdebug.ini
++  - cd ../..
++  - composer selfupdate
++  - composer create-project -n --no-dev --prefer-dist moodlerooms/moodle-plugin-ci ci ^1
++  - export PATH="$(cd ci/bin; pwd):$(cd ci/vendor/bin; pwd):$PATH"
++
++install:
++  - moodle-plugin-ci install
++
++script:
++  - moodle-plugin-ci phplint
++  - moodle-plugin-ci phpcpd
++  - moodle-plugin-ci phpmd
++  - moodle-plugin-ci csslint
++  - moodle-plugin-ci shifter
++  - moodle-plugin-ci phpunit
++  - moodle-plugin-ci behat
+diff --git a/lib/editor/atto/plugins/cloze/LICENSE b/lib/editor/atto/plugins/cloze/LICENSE
+new file mode 100644
+index 0000000..ef7e7ef
+--- /dev/null
++++ b/lib/editor/atto/plugins/cloze/LICENSE
+@@ -0,0 +1,674 @@
++GNU GENERAL PUBLIC LICENSE
++                       Version 3, 29 June 2007
++
++ Copyright (C) 2007 Free Software Foundation, Inc. <http://fsf.org/>
++ Everyone is permitted to copy and distribute verbatim copies
++ of this license document, but changing it is not allowed.
++
++                            Preamble
++
++  The GNU General Public License is a free, copyleft license for
++software and other kinds of works.
++
++  The licenses for most software and other practical works are designed
++to take away your freedom to share and change the works.  By contrast,
++the GNU General Public License is intended to guarantee your freedom to
++share and change all versions of a program--to make sure it remains free
++software for all its users.  We, the Free Software Foundation, use the
++GNU General Public License for most of our software; it applies also to
++any other work released this way by its authors.  You can apply it to
++your programs, too.
++
++  When we speak of free software, we are referring to freedom, not
++price.  Our General Public Licenses are designed to make sure that you
++have the freedom to distribute copies of free software (and charge for
++them if you wish), that you receive source code or can get it if you
++want it, that you can change the software or use pieces of it in new
++free programs, and that you know you can do these things.
++
++  To protect your rights, we need to prevent others from denying you
++these rights or asking you to surrender the rights.  Therefore, you have
++certain responsibilities if you distribute copies of the software, or if
++you modify it: responsibilities to respect the freedom of others.
++
++  For example, if you distribute copies of such a program, whether
++gratis or for a fee, you must pass on to the recipients the same
++freedoms that you received.  You must make sure that they, too, receive
++or can get the source code.  And you must show them these terms so they
++know their rights.
++
++  Developers that use the GNU GPL protect your rights with two steps:
++(1) assert copyright on the software, and (2) offer you this License
++giving you legal permission to copy, distribute and/or modify it.
++
++  For the developers' and authors' protection, the GPL clearly explains
++that there is no warranty for this free software.  For both users' and
++authors' sake, the GPL requires that modified versions be marked as
++changed, so that their problems will not be attributed erroneously to
++authors of previous versions.
++
++  Some devices are designed to deny users access to install or run
++modified versions of the software inside them, although the manufacturer
++can do so.  This is fundamentally incompatible with the aim of
++protecting users' freedom to change the software.  The systematic
++pattern of such abuse occurs in the area of products for individuals to
++use, which is precisely where it is most unacceptable.  Therefore, we
++have designed this version of the GPL to prohibit the practice for those
++products.  If such problems arise substantially in other domains, we
++stand ready to extend this provision to those domains in future versions
++of the GPL, as needed to protect the freedom of users.
++
++  Finally, every program is threatened constantly by software patents.
++States should not allow patents to restrict development and use of
++software on general-purpose computers, but in those that do, we wish to
++avoid the special danger that patents applied to a free program could
++make it effectively proprietary.  To prevent this, the GPL assures that
++patents cannot be used to render the program non-free.
++
++  The precise terms and conditions for copying, distribution and
++modification follow.
++
++                       TERMS AND CONDITIONS
++
++  0. Definitions.
++
++  "This License" refers to version 3 of the GNU General Public License.
++
++  "Copyright" also means copyright-like laws that apply to other kinds of
++works, such as semiconductor masks.
++
++  "The Program" refers to any copyrightable work licensed under this
++License.  Each licensee is addressed as "you".  "Licensees" and
++"recipients" may be individuals or organizations.
++
++  To "modify" a work means to copy from or adapt all or part of the work
++in a fashion requiring copyright permission, other than the making of an
++exact copy.  The resulting work is called a "modified version" of the
++earlier work or a work "based on" the earlier work.
++
++  A "covered work" means either the unmodified Program or a work based
++on the Program.
++
++  To "propagate" a work means to do anything with it that, without
++permission, would make you directly or secondarily liable for
++infringement under applicable copyright law, except executing it on a
++computer or modifying a private copy.  Propagation includes copying,
++distribution (with or without modification), making available to the
++public, and in some countries other activities as well.
++
++  To "convey" a work means any kind of propagation that enables other
++parties to make or receive copies.  Mere interaction with a user through
++a computer network, with no transfer of a copy, is not conveying.
++
++  An interactive user interface displays "Appropriate Legal Notices"
++to the extent that it includes a convenient and prominently visible
++feature that (1) displays an appropriate copyright notice, and (2)
++tells the user that there is no warranty for the work (except to the
++extent that warranties are provided), that licensees may convey the
++work under this License, and how to view a copy of this License.  If
++the interface presents a list of user commands or options, such as a
++menu, a prominent item in the list meets this criterion.
++
++  1. Source Code.
++
++  The "source code" for a work means the preferred form of the work
++for making modifications to it.  "Object code" means any non-source
++form of a work.
++
++  A "Standard Interface" means an interface that either is an official
++standard defined by a recognized standards body, or, in the case of
++interfaces specified for a particular programming language, one that
++is widely used among developers working in that language.
++
++  The "System Libraries" of an executable work include anything, other
++than the work as a whole, that (a) is included in the normal form of
++packaging a Major Component, but which is not part of that Major
++Component, and (b) serves only to enable use of the work with that
++Major Component, or to implement a Standard Interface for which an
++implementation is available to the public in source code form.  A
++"Major Component", in this context, means a major essential component
++(kernel, window system, and so on) of the specific operating system
++(if any) on which the executable work runs, or a compiler used to
++produce the work, or an object code interpreter used to run it.
++
++  The "Corresponding Source" for a work in object code form means all
++the source code needed to generate, install, and (for an executable
++work) run the object code and to modify the work, including scripts to
++control those activities.  However, it does not include the work's
++System Libraries, or general-purpose tools or generally available free
++programs which are used unmodified in performing those activities but
++which are not part of the work.  For example, Corresponding Source
++includes interface definition files associated with source files for
++the work, and the source code for shared libraries and dynamically
++linked subprograms that the work is specifically designed to require,
++such as by intimate data communication or control flow between those
++subprograms and other parts of the work.
++
++  The Corresponding Source need not include anything that users
++can regenerate automatically from other parts of the Corresponding
++Source.
++
++  The Corresponding Source for a work in source code form is that
++same work.
++
++  2. Basic Permissions.
++
++  All rights granted under this License are granted for the term of
++copyright on the Program, and are irrevocable provided the stated
++conditions are met.  This License explicitly affirms your unlimited
++permission to run the unmodified Program.  The output from running a
++covered work is covered by this License only if the output, given its
++content, constitutes a covered work.  This License acknowledges your
++rights of fair use or other equivalent, as provided by copyright law.
++
++  You may make, run and propagate covered works that you do not
++convey, without conditions so long as your license otherwise remains
++in force.  You may convey covered works to others for the sole purpose
++of having them make modifications exclusively for you, or provide you
++with facilities for running those works, provided that you comply with
++the terms of this License in conveying all material for which you do
++not control copyright.  Those thus making or running the covered works
++for you must do so exclusively on your behalf, under your direction
++and control, on terms that prohibit them from making any copies of
++your copyrighted material outside their relationship with you.
++
++  Conveying under any other circumstances is permitted solely under
++the conditions stated below.  Sublicensing is not allowed; section 10
++makes it unnecessary.
++
++  3. Protecting Users' Legal Rights From Anti-Circumvention Law.
++
++  No covered work shall be deemed part of an effective technological
++measure under any applicable law fulfilling obligations under article
++11 of the WIPO copyright treaty adopted on 20 December 1996, or
++similar laws prohibiting or restricting circumvention of such
++measures.
++
++  When you convey a covered work, you waive any legal power to forbid
++circumvention of technological measures to the extent such circumvention
++is effected by exercising rights under this License with respect to
++the covered work, and you disclaim any intention to limit operation or
++modification of the work as a means of enforcing, against the work's
++users, your or third parties' legal rights to forbid circumvention of
++technological measures.
++
++  4. Conveying Verbatim Copies.
++
++  You may convey verbatim copies of the Program's source code as you
++receive it, in any medium, provided that you conspicuously and
++appropriately publish on each copy an appropriate copyright notice;
++keep intact all notices stating that this License and any
++non-permissive terms added in accord with section 7 apply to the code;
++keep intact all notices of the absence of any warranty; and give all
++recipients a copy of this License along with the Program.
++
++  You may charge any price or no price for each copy that you convey,
++and you may offer support or warranty protection for a fee.
++
++  5. Conveying Modified Source Versions.
++
++  You may convey a work based on the Program, or the modifications to
++produce it from the Program, in the form of source code under the
++terms of section 4, provided that you also meet all of these conditions:
++
++    a) The work must carry prominent notices stating that you modified
++    it, and giving a relevant date.
++
++    b) The work must carry prominent notices stating that it is
++    released under this License and any conditions added under section
++    7.  This requirement modifies the requirement in section 4 to
++    "keep intact all notices".
++
++    c) You must license the entire work, as a whole, under this
++    License to anyone who comes into possession of a copy.  This
++    License will therefore apply, along with any applicable section 7
++    additional terms, to the whole of the work, and all its parts,
++    regardless of how they are packaged.  This License gives no
++    permission to license the work in any other way, but it does not
++    invalidate such permission if you have separately received it.
++
++    d) If the work has interactive user interfaces, each must display
++    Appropriate Legal Notices; however, if the Program has interactive
++    interfaces that do not display Appropriate Legal Notices, your
++    work need not make them do so.
++
++  A compilation of a covered work with other separate and independent
++works, which are not by their nature extensions of the covered work,
++and which are not combined with it such as to form a larger program,
++in or on a volume of a storage or distribution medium, is called an
++"aggregate" if the compilation and its resulting copyright are not
++used to limit the access or legal rights of the compilation's users
++beyond what the individual works permit.  Inclusion of a covered work
++in an aggregate does not cause this License to apply to the other
++parts of the aggregate.
++
++  6. Conveying Non-Source Forms.
++
++  You may convey a covered work in object code form under the terms
++of sections 4 and 5, provided that you also convey the
++machine-readable Corresponding Source under the terms of this License,
++in one of these ways:
++
++    a) Convey the object code in, or embodied in, a physical product
++    (including a physical distribution medium), accompanied by the
++    Corresponding Source fixed on a durable physical medium
++    customarily used for software interchange.
++
++    b) Convey the object code in, or embodied in, a physical product
++    (including a physical distribution medium), accompanied by a
++    written offer, valid for at least three years and valid for as
++    long as you offer spare parts or customer support for that product
++    model, to give anyone who possesses the object code either (1) a
++    copy of the Corresponding Source for all the software in the
++    product that is covered by this License, on a durable physical
++    medium customarily used for software interchange, for a price no
++    more than your reasonable cost of physically performing this
++    conveying of source, or (2) access to copy the
++    Corresponding Source from a network server at no charge.
++
++    c) Convey individual copies of the object code with a copy of the
++    written offer to provide the Corresponding Source.  This
++    alternative is allowed only occasionally and noncommercially, and
++    only if you received the object code with such an offer, in accord
++    with subsection 6b.
++
++    d) Convey the object code by offering access from a designated
++    place (gratis or for a charge), and offer equivalent access to the
++    Corresponding Source in the same way through the same place at no
++    further charge.  You need not require recipients to copy the
++    Corresponding Source along with the object code.  If the place to
++    copy the object code is a network server, the Corresponding Source
++    may be on a different server (operated by you or a third party)
++    that supports equivalent copying facilities, provided you maintain
++    clear directions next to the object code saying where to find the
++    Corresponding Source.  Regardless of what server hosts the
++    Corresponding Source, you remain obligated to ensure that it is
++    available for as long as needed to satisfy these requirements.
++
++    e) Convey the object code using peer-to-peer transmission, provided
++    you inform other peers where the object code and Corresponding
++    Source of the work are being offered to the general public at no
++    charge under subsection 6d.
++
++  A separable portion of the object code, whose source code is excluded
++from the Corresponding Source as a System Library, need not be
++included in conveying the object code work.
++
++  A "User Product" is either (1) a "consumer product", which means any
++tangible personal property which is normally used for personal, family,
++or household purposes, or (2) anything designed or sold for incorporation
++into a dwelling.  In determining whether a product is a consumer product,
++doubtful cases shall be resolved in favor of coverage.  For a particular
++product received by a particular user, "normally used" refers to a
++typical or common use of that class of product, regardless of the status
++of the particular user or of the way in which the particular user
++actually uses, or expects or is expected to use, the product.  A product
++is a consumer product regardless of whether the product has substantial
++commercial, industrial or non-consumer uses, unless such uses represent
++the only significant mode of use of the product.
++
++  "Installation Information" for a User Product means any methods,
++procedures, authorization keys, or other information required to install
++and execute modified versions of a covered work in that User Product from
++a modified version of its Corresponding Source.  The information must
++suffice to ensure that the continued functioning of the modified object
++code is in no case prevented or interfered with solely because
++modification has been made.
++
++  If you convey an object code work under this section in, or with, or
++specifically for use in, a User Product, and the conveying occurs as
++part of a transaction in which the right of possession and use of the
++User Product is transferred to the recipient in perpetuity or for a
++fixed term (regardless of how the transaction is characterized), the
++Corresponding Source conveyed under this section must be accompanied
++by the Installation Information.  But this requirement does not apply
++if neither you nor any third party retains the ability to install
++modified object code on the User Product (for example, the work has
++been installed in ROM).
++
++  The requirement to provide Installation Information does not include a
++requirement to continue to provide support service, warranty, or updates
++for a work that has been modified or installed by the recipient, or for
++the User Product in which it has been modified or installed.  Access to a
++network may be denied when the modification itself materially and
++adversely affects the operation of the network or violates the rules and
++protocols for communication across the network.
++
++  Corresponding Source conveyed, and Installation Information provided,
++in accord with this section must be in a format that is publicly
++documented (and with an implementation available to the public in
++source code form), and must require no special password or key for
++unpacking, reading or copying.
++
++  7. Additional Terms.
++
++  "Additional permissions" are terms that supplement the terms of this
++License by making exceptions from one or more of its conditions.
++Additional permissions that are applicable to the entire Program shall
++be treated as though they were included in this License, to the extent
++that they are valid under applicable law.  If additional permissions
++apply only to part of the Program, that part may be used separately
++under those permissions, but the entire Program remains governed by
++this License without regard to the additional permissions.
++
++  When you convey a copy of a covered work, you may at your option
++remove any additional permissions from that copy, or from any part of
++it.  (Additional permissions may be written to require their own
++removal in certain cases when you modify the work.)  You may place
++additional permissions on material, added by you to a covered work,
++for which you have or can give appropriate copyright permission.
++
++  Notwithstanding any other provision of this License, for material you
++add to a covered work, you may (if authorized by the copyright holders of
++that material) supplement the terms of this License with terms:
++
++    a) Disclaiming warranty or limiting liability differently from the
++    terms of sections 15 and 16 of this License; or
++
++    b) Requiring preservation of specified reasonable legal notices or
++    author attributions in that material or in the Appropriate Legal
++    Notices displayed by works containing it; or
++
++    c) Prohibiting misrepresentation of the origin of that material, or
++    requiring that modified versions of such material be marked in
++    reasonable ways as different from the original version; or
++
++    d) Limiting the use for publicity purposes of names of licensors or
++    authors of the material; or
++
++    e) Declining to grant rights under trademark law for use of some
++    trade names, trademarks, or service marks; or
++
++    f) Requiring indemnification of licensors and authors of that
++    material by anyone who conveys the material (or modified versions of
++    it) with contractual assumptions of liability to the recipient, for
++    any liability that these contractual assumptions directly impose on
++    those licensors and authors.
++
++  All other non-permissive additional terms are considered "further
++restrictions" within the meaning of section 10.  If the Program as you
++received it, or any part of it, contains a notice stating that it is
++governed by this License along with a term that is a further
++restriction, you may remove that term.  If a license document contains
++a further restriction but permits relicensing or conveying under this
++License, you may add to a covered work material governed by the terms
++of that license document, provided that the further restriction does
++not survive such relicensing or conveying.
++
++  If you add terms to a covered work in accord with this section, you
++must place, in the relevant source files, a statement of the
++additional terms that apply to those files, or a notice indicating
++where to find the applicable terms.
++
++  Additional terms, permissive or non-permissive, may be stated in the
++form of a separately written license, or stated as exceptions;
++the above requirements apply either way.
++
++  8. Termination.
++
++  You may not propagate or modify a covered work except as expressly
++provided under this License.  Any attempt otherwise to propagate or
++modify it is void, and will automatically terminate your rights under
++this License (including any patent licenses granted under the third
++paragraph of section 11).
++
++  However, if you cease all violation of this License, then your
++license from a particular copyright holder is reinstated (a)
++provisionally, unless and until the copyright holder explicitly and
++finally terminates your license, and (b) permanently, if the copyright
++holder fails to notify you of the violation by some reasonable means
++prior to 60 days after the cessation.
++
++  Moreover, your license from a particular copyright holder is
++reinstated permanently if the copyright holder notifies you of the
++violation by some reasonable means, this is the first time you have
++received notice of violation of this License (for any work) from that
++copyright holder, and you cure the violation prior to 30 days after
++your receipt of the notice.
++
++  Termination of your rights under this section does not terminate the
++licenses of parties who have received copies or rights from you under
++this License.  If your rights have been terminated and not permanently
++reinstated, you do not qualify to receive new licenses for the same
++material under section 10.
++
++  9. Acceptance Not Required for Having Copies.
++
++  You are not required to accept this License in order to receive or
++run a copy of the Program.  Ancillary propagation of a covered work
++occurring solely as a consequence of using peer-to-peer transmission
++to receive a copy likewise does not require acceptance.  However,
++nothing other than this License grants you permission to propagate or
++modify any covered work.  These actions infringe copyright if you do
++not accept this License.  Therefore, by modifying or propagating a
++covered work, you indicate your acceptance of this License to do so.
++
++  10. Automatic Licensing of Downstream Recipients.
++
++  Each time you convey a covered work, the recipient automatically
++receives a license from the original licensors, to run, modify and
++propagate that work, subject to this License.  You are not responsible
++for enforcing compliance by third parties with this License.
++
++  An "entity transaction" is a transaction transferring control of an
++organization, or substantially all assets of one, or subdividing an
++organization, or merging organizations.  If propagation of a covered
++work results from an entity transaction, each party to that
++transaction who receives a copy of the work also receives whatever
++licenses to the work the party's predecessor in interest had or could
++give under the previous paragraph, plus a right to possession of the
++Corresponding Source of the work from the predecessor in interest, if
++the predecessor has it or can get it with reasonable efforts.
++
++  You may not impose any further restrictions on the exercise of the
++rights granted or affirmed under this License.  For example, you may
++not impose a license fee, royalty, or other charge for exercise of
++rights granted under this License, and you may not initiate litigation
++(including a cross-claim or counterclaim in a lawsuit) alleging that
++any patent claim is infringed by making, using, selling, offering for
++sale, or importing the Program or any portion of it.
++
++  11. Patents.
++
++  A "contributor" is a copyright holder who authorizes use under this
++License of the Program or a work on which the Program is based.  The
++work thus licensed is called the contributor's "contributor version".
++
++  A contributor's "essential patent claims" are all patent claims
++owned or controlled by the contributor, whether already acquired or
++hereafter acquired, that would be infringed by some manner, permitted
++by this License, of making, using, or selling its contributor version,
++but do not include claims that would be infringed only as a
++consequence of further modification of the contributor version.  For
++purposes of this definition, "control" includes the right to grant
++patent sublicenses in a manner consistent with the requirements of
++this License.
++
++  Each contributor grants you a non-exclusive, worldwide, royalty-free
++patent license under the contributor's essential patent claims, to
++make, use, sell, offer for sale, import and otherwise run, modify and
++propagate the contents of its contributor version.
++
++  In the following three paragraphs, a "patent license" is any express
++agreement or commitment, however denominated, not to enforce a patent
++(such as an express permission to practice a patent or covenant not to
++sue for patent infringement).  To "grant" such a patent license to a
++party means to make such an agreement or commitment not to enforce a
++patent against the party.
++
++  If you convey a covered work, knowingly relying on a patent license,
++and the Corresponding Source of the work is not available for anyone
++to copy, free of charge and under the terms of this License, through a
++publicly available network server or other readily accessible means,
++then you must either (1) cause the Corresponding Source to be so
++available, or (2) arrange to deprive yourself of the benefit of the
++patent license for this particular work, or (3) arrange, in a manner
++consistent with the requirements of this License, to extend the patent
++license to downstream recipients.  "Knowingly relying" means you have
++actual knowledge that, but for the patent license, your conveying the
++covered work in a country, or your recipient's use of the covered work
++in a country, would infringe one or more identifiable patents in that
++country that you have reason to believe are valid.
++
++  If, pursuant to or in connection with a single transaction or
++arrangement, you convey, or propagate by procuring conveyance of, a
++covered work, and grant a patent license to some of the parties
++receiving the covered work authorizing them to use, propagate, modify
++or convey a specific copy of the covered work, then the patent license
++you grant is automatically extended to all recipients of the covered
++work and works based on it.
++
++  A patent license is "discriminatory" if it does not include within
++the scope of its coverage, prohibits the exercise of, or is
++conditioned on the non-exercise of one or more of the rights that are
++specifically granted under this License.  You may not convey a covered
++work if you are a party to an arrangement with a third party that is
++in the business of distributing software, under which you make payment
++to the third party based on the extent of your activity of conveying
++the work, and under which the third party grants, to any of the
++parties who would receive the covered work from you, a discriminatory
++patent license (a) in connection with copies of the covered work
++conveyed by you (or copies made from those copies), or (b) primarily
++for and in connection with specific products or compilations that
++contain the covered work, unless you entered into that arrangement,
++or that patent license was granted, prior to 28 March 2007.
++
++  Nothing in this License shall be construed as excluding or limiting
++any implied license or other defenses to infringement that may
++otherwise be available to you under applicable patent law.
++
++  12. No Surrender of Others' Freedom.
++
++  If conditions are imposed on you (whether by court order, agreement or
++otherwise) that contradict the conditions of this License, they do not
++excuse you from the conditions of this License.  If you cannot convey a
++covered work so as to satisfy simultaneously your obligations under this
++License and any other pertinent obligations, then as a consequence you may
++not convey it at all.  For example, if you agree to terms that obligate you
++to collect a royalty for further conveying from those to whom you convey
++the Program, the only way you could satisfy both those terms and this
++License would be to refrain entirely from conveying the Program.
++
++  13. Use with the GNU Affero General Public License.
++
++  Notwithstanding any other provision of this License, you have
++permission to link or combine any covered work with a work licensed
++under version 3 of the GNU Affero General Public License into a single
++combined work, and to convey the resulting work.  The terms of this
++License will continue to apply to the part which is the covered work,
++but the special requirements of the GNU Affero General Public License,
++section 13, concerning interaction through a network will apply to the
++combination as such.
++
++  14. Revised Versions of this License.
++
++  The Free Software Foundation may publish revised and/or new versions of
++the GNU General Public License from time to time.  Such new versions will
++be similar in spirit to the present version, but may differ in detail to
++address new problems or concerns.
++
++  Each version is given a distinguishing version number.  If the
++Program specifies that a certain numbered version of the GNU General
++Public License "or any later version" applies to it, you have the
++option of following the terms and conditions either of that numbered
++version or of any later version published by the Free Software
++Foundation.  If the Program does not specify a version number of the
++GNU General Public License, you may choose any version ever published
++by the Free Software Foundation.
++
++  If the Program specifies that a proxy can decide which future
++versions of the GNU General Public License can be used, that proxy's
++public statement of acceptance of a version permanently authorizes you
++to choose that version for the Program.
++
++  Later license versions may give you additional or different
++permissions.  However, no additional obligations are imposed on any
++author or copyright holder as a result of your choosing to follow a
++later version.
++
++  15. Disclaimer of Warranty.
++
++  THERE IS NO WARRANTY FOR THE PROGRAM, TO THE EXTENT PERMITTED BY
++APPLICABLE LAW.  EXCEPT WHEN OTHERWISE STATED IN WRITING THE COPYRIGHT
++HOLDERS AND/OR OTHER PARTIES PROVIDE THE PROGRAM "AS IS" WITHOUT WARRANTY
++OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING, BUT NOT LIMITED TO,
++THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
++PURPOSE.  THE ENTIRE RISK AS TO THE QUALITY AND PERFORMANCE OF THE PROGRAM
++IS WITH YOU.  SHOULD THE PROGRAM PROVE DEFECTIVE, YOU ASSUME THE COST OF
++ALL NECESSARY SERVICING, REPAIR OR CORRECTION.
++
++  16. Limitation of Liability.
++
++  IN NO EVENT UNLESS REQUIRED BY APPLICABLE LAW OR AGREED TO IN WRITING
++WILL ANY COPYRIGHT HOLDER, OR ANY OTHER PARTY WHO MODIFIES AND/OR CONVEYS
++THE PROGRAM AS PERMITTED ABOVE, BE LIABLE TO YOU FOR DAMAGES, INCLUDING ANY
++GENERAL, SPECIAL, INCIDENTAL OR CONSEQUENTIAL DAMAGES ARISING OUT OF THE
++USE OR INABILITY TO USE THE PROGRAM (INCLUDING BUT NOT LIMITED TO LOSS OF
++DATA OR DATA BEING RENDERED INACCURATE OR LOSSES SUSTAINED BY YOU OR THIRD
++PARTIES OR A FAILURE OF THE PROGRAM TO OPERATE WITH ANY OTHER PROGRAMS),
++EVEN IF SUCH HOLDER OR OTHER PARTY HAS BEEN ADVISED OF THE POSSIBILITY OF
++SUCH DAMAGES.
++
++  17. Interpretation of Sections 15 and 16.
++
++  If the disclaimer of warranty and limitation of liability provided
++above cannot be given local legal effect according to their terms,
++reviewing courts shall apply local law that most closely approximates
++an absolute waiver of all civil liability in connection with the
++Program, unless a warranty or assumption of liability accompanies a
++copy of the Program in return for a fee.
++
++                     END OF TERMS AND CONDITIONS
++
++            How to Apply These Terms to Your New Programs
++
++  If you develop a new program, and you want it to be of the greatest
++possible use to the public, the best way to achieve this is to make it
++free software which everyone can redistribute and change under these terms.
++
++  To do so, attach the following notices to the program.  It is safest
++to attach them to the start of each source file to most effectively
++state the exclusion of warranty; and each file should have at least
++the "copyright" line and a pointer to where the full notice is found.
++
++    {one line to give the program's name and a brief idea of what it does.}
++    Copyright (C) {year}  {name of author}
++
++    This program is free software: you can redistribute it and/or modify
++    it under the terms of the GNU General Public License as published by
++    the Free Software Foundation, either version 3 of the License, or
++    (at your option) any later version.
++
++    This program is distributed in the hope that it will be useful,
++    but WITHOUT ANY WARRANTY; without even the implied warranty of
++    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++    GNU General Public License for more details.
++
++    You should have received a copy of the GNU General Public License
++    along with this program.  If not, see <http://www.gnu.org/licenses/>.
++
++Also add information on how to contact you by electronic and paper mail.
++
++  If the program does terminal interaction, make it output a short
++notice like this when it starts in an interactive mode:
++
++    {project}  Copyright (C) {year}  {fullname}
++    This program comes with ABSOLUTELY NO WARRANTY; for details type `show w'.
++    This is free software, and you are welcome to redistribute it
++    under certain conditions; type `show c' for details.
++
++The hypothetical commands `show w' and `show c' should show the appropriate
++parts of the General Public License.  Of course, your program's commands
++might be different; for a GUI interface, you would use an "about box".
++
++  You should also get your employer (if you work as a programmer) or school,
++if any, to sign a "copyright disclaimer" for the program, if necessary.
++For more information on this, and how to apply and follow the GNU GPL, see
++<http://www.gnu.org/licenses/>.
++
++  The GNU General Public License does not permit incorporating your program
++into proprietary programs.  If your program is a subroutine library, you
++may consider it more useful to permit linking proprietary applications with
++the library.  If this is what you want to do, use the GNU Lesser General
++Public License instead of this License.  But first, please read
++<http://www.gnu.org/philosophy/why-not-lgpl.html>.
+diff --git a/lib/editor/atto/plugins/cloze/README.txt b/lib/editor/atto/plugins/cloze/README.txt
+new file mode 100644
+index 0000000..eac35bb
+--- /dev/null
++++ b/lib/editor/atto/plugins/cloze/README.txt
+@@ -0,0 +1,17 @@
++atto_cloze
++=================
++
++This is an editor plugin to provide an interface for creating and
++modifying embedded answer (cloze) questions. To install add to the Atto
++editor plugins directory and visit notifications to update database. This
++directory must be named 'cloze' in lib/editor/atto/plugins. Then
++add 'cloze' to the list of buttons in Atto toolbar settings at Site
++administration -> Plugins -> Text editors -> Atto HTML editor -> Atto
++toolbar settings.
++
++The button should appear in the editor only while editing questions. Click
++the button while editing a question, select the question type and a form
++will appear form entering answers. Finally insert into the question text.
++
++All original files are copyright Daniel Thies 2016 dthies@ccal.edu and
++are licensed under the included GPL 3
+diff --git a/lib/editor/atto/plugins/cloze/lang/en/atto_cloze.php b/lib/editor/atto/plugins/cloze/lang/en/atto_cloze.php
+new file mode 100644
+index 0000000..184a98a
+--- /dev/null
++++ b/lib/editor/atto/plugins/cloze/lang/en/atto_cloze.php
+@@ -0,0 +1,25 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++/**
++ * Strings for component 'atto_cloze', language 'en'.
++ *
++ * @package    atto_cloze
++ * @copyright  2016 Dan Thies <dthies@ccal.edu>
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++$string['pluginname'] = 'Cloze editor';
+diff --git a/lib/editor/atto/plugins/cloze/lib.php b/lib/editor/atto/plugins/cloze/lib.php
+new file mode 100644
+index 0000000..6b1f276
+--- /dev/null
++++ b/lib/editor/atto/plugins/cloze/lib.php
+@@ -0,0 +1,124 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++/**
++ * Atto text editor integration version file.
++ *
++ * @package    atto_cloze
++ * @copyright  2016 onward Daniel Thies <dthies@ccal.edu>
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++defined('MOODLE_INTERNAL') || die();
++
++/**
++ * Get the list of strings for this plugin.
++ * @param string $elementid
++ */
++function atto_cloze_strings_for_js() {
++    global $PAGE;
++
++    $PAGE->requires->strings_for_js(array( 'pluginname' ), 'atto_cloze' );
++    $PAGE->requires->strings_for_js(array( 'common:insert' ), 'editor_tinymce' );
++    $PAGE->requires->strings_for_js(array( 'answer', 'chooseqtypetoadd', 'defaultmark', 'feedback', 'incorrect' ), 'question' );
++    $PAGE->requires->strings_for_js(array( 'multichoice', 'numerical', 'shortanswer' ), 'mod_quiz' );
++    $PAGE->requires->strings_for_js(array( 'addmoreanswerblanks', 'tolerance' ), 'qtype_calculated' );
++    $PAGE->requires->strings_for_js(array( 'add', 'cancel', 'delete',
++            'duplicate', 'down', 'grade', 'previous', 'up' ), 'core' );
++}
++
++/**
++ * Set params for this plugin.
++ *
++ * @return array
++ */
++function atto_cloze_params_for_js() {
++    global $CFG;
++
++    $singleno = array('option' => get_string('answersingleno', 'qtype_multichoice'));
++    $singleyes = array('option' => get_string('answersingleyes', 'qtype_multichoice'));
++    $selectinline = array('option' => get_string('layoutselectinline', 'qtype_multianswer'));
++    $horizontal = array('option' => get_string('layouthorizontal', 'qtype_multianswer'));
++    $vertical = array('option' => get_string('layoutvertical', 'qtype_multianswer'));
++    $qtypes = array(
++        array('type' => 'MULTICHOICE', 'name' => get_string('multichoice', 'mod_quiz'),
++            'summary' => get_string('pluginnamesummary', 'qtype_multichoice'),
++            'options' => array($selectinline, $singleyes)
++        ),
++        array('type' => 'MULTICHOICE_H', 'name' => get_string('multichoice', 'mod_quiz'),
++            'summary' => get_string('pluginnamesummary', 'qtype_multichoice'),
++            'options' => array($horizontal, $singleyes)
++        ),
++        array('type' => 'MULTICHOICE_V', 'name' => get_string('multichoice', 'mod_quiz'),
++            'summary' => get_string('pluginnamesummary', 'qtype_multichoice'),
++            'options' => array($vertical, $singleyes)
++        ),
++    );
++    // Check whether shuffled multichoice is supported yet.
++    if ($CFG->version >= 2015111604) {
++        $shuffle = array('option' => get_string('shufflewithin', 'mod_quiz'));
++        $qtypes = array_merge($qtypes, array(
++
++            array('type' => 'MULTICHOICE_S', 'name' => get_string('multichoice', 'mod_quiz'),
++                'summary' => get_string('pluginnamesummary', 'qtype_multichoice'),
++                'options' => array($selectinline, $shuffle, $singleyes)
++            ),
++            array('type' => 'MULTICHOICE_HS', 'name' => get_string('multichoice', 'mod_quiz'),
++                'summary' => get_string('pluginnamesummary', 'qtype_multichoice'),
++                'options' => array($horizontal, $shuffle, $singleyes)
++            ),
++            array('type' => 'MULTICHOICE_VS', 'name' => get_string('multichoice', 'mod_quiz'),
++                'summary' => get_string('pluginnamesummary', 'qtype_multichoice'),
++                'options' => array($vertical, $shuffle, $singleyes)
++            ),
++        ));
++    }
++
++    // Check whether shuffled multichoice is supported yet.
++    if ($CFG->version >= 2016080400) {
++        $multihorizontal = array('option' => get_string('layoutmultiple_horizontal', 'qtype_multianswer'));
++        $multivertical = array('option' => get_string('layoutmultiple_vertical', 'qtype_multianswer'));
++        $qtypes = array_merge($qtypes, array(
++            array('type' => 'MULTIRESPONSE', 'name' => get_string('multichoice', 'mod_quiz'),
++                'summary' => get_string('pluginnamesummary', 'qtype_multichoice'),
++                'options' => array($multivertical, $singleno)
++            ),
++            array('type' => 'MULTIRESPONSE_H', 'name' => get_string('multichoice', 'mod_quiz'),
++                'summary' => get_string('pluginnamesummary', 'qtype_multichoice'),
++                'options' => array($multihorizontal, $singleno)
++            ),
++            array('type' => 'MULTIRESPONSE_S', 'name' => get_string('multichoice', 'mod_quiz'),
++                'summary' => get_string('pluginnamesummary', 'qtype_multichoice'),
++                'options' => array($multivertical, $shuffle, $singleno)
++            ),
++            array('type' => 'MULTIRESPONSE_HS', 'name' => get_string('multichoice', 'mod_quiz'),
++                'summary' => get_string('pluginnamesummary', 'qtype_multichoice'),
++                'options' => array($multihorizontal, $shuffle, $singleno)
++            ),
++        ));
++    }
++    $qtypes = array_merge($qtypes, array(
++        array('type' => 'NUMERICAL', 'name' => get_string('numerical', 'mod_quiz'),
++        'summary' => get_string('pluginnamesummary', 'qtype_numerical')),
++        array('type' => 'SHORTANSWER', 'name' => get_string('shortanswer', 'mod_quiz'),
++        'summary' => get_string('pluginnamesummary', 'qtype_shortanswer'),
++        'options' => array('option' => get_string('caseno', 'mod_quiz'))),
++        array('type' => 'SHORTANSWER_C', 'name' => get_string('shortanswer', 'mod_quiz'),
++        'summary' => get_string('pluginnamesummary', 'qtype_shortanswer'),
++        'options' => array('option' => get_string('caseyes', 'mod_quiz'))),
++    ));
++    return array('questiontypes' => $qtypes);
++}
+diff --git a/lib/editor/atto/plugins/cloze/styles.css b/lib/editor/atto/plugins/cloze/styles.css
+new file mode 100644
+index 0000000..a916e98
+--- /dev/null
++++ b/lib/editor/atto/plugins/cloze/styles.css
+@@ -0,0 +1,37 @@
++.atto_cloze_col0 {
++    padding-right: 1em;
++    float: right;
++}
++
++.atto_cloze_answers {
++    height: 300px;
++    overflow: auto;
++}
++
++.atto_cloze_qtype {
++    overflow: auto;
++    position: relative;
++}
++
++.atto_cloze_qtype .atto_cloze_summary {
++    display: none;
++    left: 175px;
++    position: absolute;
++    top: 0;
++}
++
++.atto_cloze_qtype input[type="radio"]:checked + label .atto_cloze_summary {
++    display: inline;
++}
++
++input.atto_cloze_marks {
++    width: 4em;
++}
++
++.atto_cloze_answers li:first-child .atto_cloze_up {
++    display: none
++}
++
++.atto_cloze_answers li:last-child .atto_cloze_down {
++    display: none
++}
+diff --git a/lib/editor/atto/plugins/cloze/tests/behat/cloze.feature b/lib/editor/atto/plugins/cloze/tests/behat/cloze.feature
+new file mode 100644
+index 0000000..450fe16
+--- /dev/null
++++ b/lib/editor/atto/plugins/cloze/tests/behat/cloze.feature
+@@ -0,0 +1,80 @@
++@editor @editor_atto @atto @atto_cloze @_bug_phantomjs
++Feature: Atto cloze editor button
++  As a teacher
++  In order to create cloze questions 
++  I need to use an editing tool.
++
++  Background:
++    Given the following "courses" exist:
++      | fullname | shortname | format |
++      | Course 1 | C1        | topics |
++    And the following "users" exist:
++      | username | firstname |
++      | teacher  | Teacher   |
++    And the following "course enrolments" exist:
++      | user    | course | role           |
++      | teacher | C1     | editingteacher |
++    And the following "question categories" exist:
++      | contextlevel | reference | name           |
++      | Course       | C1        | Test questions |
++    And the following "questions" exist:
++      | questioncategory | qtype       | name                 | questiontext |
++      | Test questions   | shortanswer | shortanswer question | Rabbit       |
++    And I log in as "admin"
++    And I navigate to "Atto toolbar settings" node in "Site administration > Plugins > Text editors > Atto HTML editor"
++    And I set the field "Toolbar config" to "other = html, cloze"
++    And I press "Save changes"
++    And I follow "Site home"
++    And I follow "Course 1"
++    And I navigate to "Question bank" node in "Course administration"
++    And I click on "Create a new question ..." "button"
++    And I click on "Embedded answers" "radio" in the "Choose a question type to add" "dialogue"
++    And I click on "Add" "button" in the "Choose a question type to add" "dialogue"
++
++@javascript @atto_shortanswer
++  Scenario: Insert the button into question text of existing question
++    When I set the field "Question text" to "Bunny"
++    And I select the text in the "Question text" Atto editor
++    And I click on "Cloze editor" "button"
++    And I click on "SHORTANSWER" "radio" in the "Cloze editor" "dialogue"
++    And I click on "Add" "button" in the "Cloze editor" "dialogue"
++    And I set the field with xpath "//input[contains(concat(' ', normalize-space(@class), ' '), ' atto_cloze_feedback ')]" to "Funny"
++    And I click on "Insert" "button" in the "Cloze editor" "dialogue"
++    Then I should see "{1:SHORTANSWER:~%100%Bunny#Funny}"
++
++@javascript @atto_multichoice
++  Scenario: Create a multiple choice question
++    When I set the field "Question text" to "<p> blind mice.</p>"
++    And I click on "Cloze editor" "button"
++    And I click on "MULTICHOICE_S" "radio" in the "Cloze editor" "dialogue"
++    And I click on "Add" "button" in the "Cloze editor" "dialogue"
++    And I set the field with xpath "//div[@class='atto_cloze']//li[1]//input[contains(concat(' ', normalize-space(@class), ' '), ' atto_cloze_answer ')]" to "Three"
++    And I click on "//div[@class='atto_cloze']//a[contains(concat(' ', normalize-space(@class), ' '), ' atto_cloze_add ')]" "xpath_element"
++    And I set the field with xpath "//div[@class='atto_cloze']//li[2]//select[contains(concat(' ', normalize-space(@class), ' '), ' atto_cloze_fraction ')]" to "Incorrect"
++    And I click on "//div[@class='atto_cloze']//li[2]//a[contains(concat(' ', normalize-space(@class), ' '), ' atto_cloze_add ')]" "xpath_element"
++    And I set the field with xpath "//div[@class='atto_cloze']//li[2]//input[contains(concat(' ', normalize-space(@class), ' '), ' atto_cloze_answer ')]" to "Four"
++    And I set the field with xpath "//div[@class='atto_cloze']//li[1]//input[contains(concat(' ', normalize-space(@class), ' '), ' atto_cloze_feedback ')]" to "Right"
++    And I set the field with xpath "//div[@class='atto_cloze']//li[3]//input[contains(concat(' ', normalize-space(@class), ' '), ' atto_cloze_answer ')]" to "Five"
++    And I click on "Insert" "button" in the "Cloze editor" "dialogue"
++    Then I should see "{1:MULTICHOICE_S:~%100%Three#Right~Four~Five}"
++
++@javascript @atto_numerical
++  Scenario: Create a numerical question
++    When I set the field "Question text" to "<p> blind mice.</p>"
++    And I click on "Cloze editor" "button"
++    And I click on "NUMERICAL" "radio" in the "Cloze editor" "dialogue"
++    And I click on "Add" "button" in the "Cloze editor" "dialogue"
++    And I set the field with xpath "//div[@class='atto_cloze']//li[1]//input[contains(concat(' ', normalize-space(@class), ' '), ' atto_cloze_answer ')]" to "3"
++    And I set the field with xpath "//div[@class='atto_cloze']//li[1]//input[contains(concat(' ', normalize-space(@class), ' '), ' atto_cloze_tolerance ')]" to "0.5"
++    And I set the field with xpath "//input[contains(concat(' ', normalize-space(@class), ' '), ' atto_cloze_feedback ')]" to "Three is correct"
++    And I click on "Insert" "button" in the "Cloze editor" "dialogue"
++    Then I should see "{1:NUMERICAL:~%100%3:0.5#Three is correct}"
++
++@javascript @atto_cloze_import
++  Scenario: Read a subquestion into the edit form
++    When I set the field "Question text" to "{1:SHORTANSWER:~%100%Bunny#Funny}"
++    And I select the text in the "Question text" Atto editor
++    And I click on "Cloze editor" "button"
++    And I set the field with xpath "//div[@class='atto_cloze']//li[1]//input[contains(concat(' ', normalize-space(@class), ' '), ' atto_cloze_answer ')]" to "10# Hare"
++    And I click on "Insert" "button" in the "Cloze editor" "dialogue"
++    Then I should see "{1:SHORTANSWER:~%100%10\# Hare#Funny}"
+diff --git a/lib/editor/atto/plugins/cloze/version.php b/lib/editor/atto/plugins/cloze/version.php
+new file mode 100644
+index 0000000..032d384
+--- /dev/null
++++ b/lib/editor/atto/plugins/cloze/version.php
+@@ -0,0 +1,31 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++/**
++ * Atto Cloze question editor version file.
++ *
++ * @package    atto_cloze
++ * @copyright  2016 onward Daniel Thies <dthies@ccal.edu>
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++defined('MOODLE_INTERNAL') || die();
++
++$plugin->version   = 2017072800;        // The current plugin version (Date: YYYYMMDDXX).
++$plugin->requires  = 2014051200;        // Requires this Moodle version.
++$plugin->component = 'atto_cloze';  // Full name of the plugin (used for diagnostics).
++$plugin->maturity = MATURITY_STABLE;
++$plugin->release = '1.1';
+diff --git a/lib/editor/atto/plugins/cloze/yui/build/moodle-atto_cloze-button/moodle-atto_cloze-button-debug.js b/lib/editor/atto/plugins/cloze/yui/build/moodle-atto_cloze-button/moodle-atto_cloze-button-debug.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..5ae5c3a5c416ae72f2bbda9d8ad3d051c0ccfc68
+GIT binary patch
+literal 25245
+zcmcg#dso}Ww*Nn$VoFYHlYk7#Y0tebq@h4s*5S2)+^$?gS;CgFZe_`p<j@?~{p|O*
+z_nsMzUIx;%tS%fhGkf-H_UxD3cW)0oe>m)RCP^}kf^|R7lj}j0{3lqync?4YXHAV}
+z@gNVASasj6spFla{Z%!8@}$>O7vnHfqc92-KBs<~t7N2(7?4_5<2;}Cdp!Z{CFyMs
+zYiOCCL2J_>P+2m{@BB3AtB=V{4g6T8!7$A7Gz10!ohv^c_L5Xhl3_UdND%OB77v3|
+z<>Nr*K|0B3XZquZ<G1REAP!PLQm3<<C>*H6a1g{<pnTv+PqJ|^R5uKVR=gn`&NU9|
+zO#;9^QM;ys5aX%(5TqGV|I+NC0j{YeC1kpOPMD`EnbNvdp!-opKF~5ty&B;KeM1$-
+zjQKd3f|fCWfx5deiquV@W?3+rMQgMTn4x|;xcKqp?S<Moey4ugIXl}qzIgX7Cg<Y>
+zqrrzjK!uZO6oN=_HTC2CBM>JDNBd{HKVr$w_Xmdu7w>?+dUJ4bynlYK-khAN9d){M
+zc5$%#_HgG+oxVLgJvra^lsX4{zy|`bgt;S@Pa3FUko#ej8Is>Yq#3Y_hHC782q4-)
+z5Pkq|z8WM`!t5Tg(Y}6^#J5bQ)*YaAFj8@nuc-{^ZE01zySwvl;~DE3Bu`S$dapd_
+z>a!>6nR-3-2fz5Yfx=Ir=R88Vq~Yy2SL(&a<~J&d!MmZ_^W!jxNY8^zZ4Gn!d_5TW
+zkrxbSuXv^2hhR2fL2#pBl=p6@kvGmKk?`>JP<?<prJ^Q)(<2-ONoe^DC#vl{mL~7u
+zghKy+gY1W44tRWW)ij#jhOvjKjAHChf(*0=>d33o9r;;Cs)duza{()ehZ$xH#A{mM
+z?KAXK1}g}B@Kd#Wa&&rfynlQ_HbHHxP6530?UN@w1-i8jYeDSUIX?es|E%v$yY}Pk
+zE=W6T&V=)(8JU@~w^tb+4)xIP&hhU4VR;nBWDrDp!ruPj{>6TI!Z3(}JkS%~?C<Y=
+zzq9-A@{~~!3~!(~X42Wt?#02$ab;5Kvx(G`4)@<&lqU?5Xu}Mi)Yvdg?qFz{31<gC
+z{8(SRsYj1?&i-9t(8N!FG3?oUdwO`VyHlfb2754oMKXKr9Gq7eF`MeK^S9q09aIp=
+zW;c^Cw-b(l#k(?j*=zzlKI$nKCx`p6O}mvn@+5*?hD6M?cc+yZzvdsOLFdWhTUMTn
+z{iD-E5Mwn6R_X}*ZVkf^&~#|-_DZ30E3Z20IkS+Ijej~@FiVrtRC>@jbNXsN=j|7Z
+z8XN-F*^2xd*a869UYXCKH<KXF!{K6aO%hna^4lQ4rfUnfYGoLV{8^OqkXre57G!ic
+ztSlB=J%&?9RyGOaDJ*$7Y}`W;d$w2Tz^@pp=JVb2bC306u~<<b{Ah+L^Es;pJ?XV>
+zHMuPV+1cBp1$mf948o-cKEfnP139lZkstq(t$;2<=o<ELFry1^2>Mo3mJYU88hJ=0
+z9(l7ojJ$9HLwr3;qi!ef0XW=@&Hx*9R@HOWX_Sy7bs<^|$~pF|li1lxB8cRvAdDN`
+zZ;&fw8onZJ;$H<bJg-MgrBmDpTttN%OmuKQ*9$%m1M9?S)hOf@4wCpfoA?oqHMHvU
+zuzaiMw{2Y~Rg7t?x`<tchLB82E7~B3pOYwK&C9CvD7wzbG`5m8oBrJ-kzM{1<Q&pn
+z(@G9qJAXGpa@9SUq?;55Oq*V@ifnRkQ-2s#ZLU1DI(Lty&0xX@#?(4M3llohmpbvU
+zdeq-&H-N?jQZQ`RaX!4TMBxbGj(7<Trif;lAJ{IABnnJmUy8LvcIm;FTRmB@6oFni
+zTC#6-&nj=j7$+IdJ1(B`ZT5hjpE}rPkHBF*FB4t-^+1Xruy1FpC*pgx)uW4`@!l$V
+z9M;;irv~}Attt5ntYC5(RavW_R`~j0FTsV}>>z**be+j{NeXM71lgJ%wRs7mxPTDP
+zCP4}(GHMZE#Xn-Ktiwknm)xUbq|u3ZjF(i|sg(tq3)VL+F~Z`roEPn9sEK?NIaCF1
+zpZ_V57f>3#LQSrTX-d?Zr7gtbOt4R+f5S(ror=zU-g8|mSfFV637Wpzk}y*XNMZ`d
+zu#$>O@Ih$RcC^N^(LEg`lSvZyLqz;3nJ68+=3)GCGFak(5LD3Odb;<5+Uf}*b*?b9
+z2aqYDD#)w^4HB*vH?rMnt2eFh1~E}IQyI|0(;*g;MW=5mn)~YM=8Ko#+OVK+gB|><
+z<Rt%5y{f*f-Zl_DT_y9mu^wevft_^MIVTERIDhHojf)D!d<x^Q18>?&?^x0~BI)aI
+z%duozXjl>PI7zaAgO@x(@KL_g%9xRYNEoSu&DIFA7N1-oz9k{o0fI$zXqzs>(p@8$
+zYXbz)Gzk_dy|XQ$*a}CE5|znsupS%HiLyrDJP@-1M=DHOcW~~oMyPe#1T&<YV&gN>
+zK7=D_yX=iS7vm3EYcJdLx14n#c5aQo0VIM*(KP<pqS#$$Am~xUSrM#e91;psn|Lp?
+zVDIL0nZ)6GgZbl$&`Jwxs|VOMISag{#OiE7i}OKdmRJU4TV}`>f30zq6JjH|@>wbk
+zT7%Wh3aCA65vW;y7wF5&rn4GP5s^+m75hCj$*u-F3U+D)ni0GQExMvUgY7nkTZ@!)
+zRtw4gnXrPgrkB?J?W@g=4LyS>b_Tv~dH(XH_mX~^SH1YU<#`LV&2PMK@bj<cRh$3x
+zUi{bB|JrOBec`q2wz=tT(of5}7F=3@wai{`nZCZ+wqQ9{>zl3QtS{%o`f?_&zi30K
+zO<3z9<7V!yw<!h)-&kBBJ^#+Lb%AcjEev#4z3;go03CeieeY+1H$dhu54s&Wwa7@k
+z^V$mpYwGf9P3Qc%s6i_G4CSRX7zJs7{4bmXuKEmS2r1({LKz5G1f^CdC|dAz{XsRG
+z)Sswp8ne&HB&y?N7}zJ%H2eSz_1``I<TZU2&mt7i_=$^6tf)Bl5ml%d1*@2nwp0z&
+zD4~W&g$a}uITFt_VEtjSDqLVY!no}aX#1!UxngM>iWfi!Ua~UDV|JX0b*KxHe;W*2
+zuwoNucV~poIW29UHDbiemLbE1Ca@|GQCu}i4?+l4N~*33NvHsF>bnIwv+e>(Y>Ur>
+zadcN(R2hsTTVmYA|1F%%Cip~kgfxq#>$0;2KVDEq>>$pA+aR?M8@b2pEJ~!q6^sOR
+zDkLX2|3{gpG{|RZ%(ZAn?j}v{5Wdt;K#J3mqKbR1mGhi4SAb+OV*Z`^@vS)l>a~^v
+ztG}Jsh<O!ii3lz3@IOJ?w~YW@Y5?GKieD&-X5RH}n#`telEEyaY7GiFW*Ft$-ElDZ
+zMcs`99I#Z~L03>GCJm-T=Ue^OgkvF94(Y%H6hlXN*6oawEQe{5$j+lOQih5rY*I4(
+z_;iYD!n!#q>%@-r3Cb^_R!IWZSuG)T62t7kdC|pEMIj5dGvGh61EVm_Y*iI9^OXzF
+z?Btp(;0+kvFBtLPf42-UjQFCB6a<_wa=}H?rKMgH!_d0b*K0CSFq56tRn-KSSLNVF
+zw{t1^MMML-;N(rm)0Hb)SqO{}65T5pvJeAFLyRUEBX>ZzypGBZh$iVn2VS&<e(2FI
+zC;|F$jwx(St{tXT<|C67QCYPw8(yO$VjB4$_h4I++nLs5z+E_EW7N3ZMq0L6pf3X=
+z>^(6*n9!jrG$V&!(8Hes6(gpEjfdt;)EM>th-?1X5q%=yqo{z~a)mn91ee5Ju66hA
+znI4Sk@KF`3XqKt+oU}s_O@l0nJ_P5p8zZM~O+th>&$eiaK(emG5Sp}5K?M6-mXlpQ
+zi+?m^wyn1;TCDMofX|QMSn#J~$M!@>ayVi5=`hkAWynC=2klIK2mGO4PjKjyp=uT{
+zwPZA1+!bA@7#@KQ_+%!?Dm0i0NANVmSd9@GC}N<60kt@X8Q~Ted-+?jR&=0dfUz@!
+zhk>$2*_BTr@~V+l+uPe}<U?{*HCb{r30Z2Q5&WRZy4nm$WC68Fk<Vi8U;Ss51hbaz
+zU&FW>U0$Au$57%G@q4Jxr&$Wh&5^B`igADvO}Z<#t8ePQMW(IWkv0|bLUC?N%_OT5
+z4Y3m87nyhqND?Gjj=q}hm2p4^xc~LW#`HI21|)@FUVIm#Z>O&?#R{DiJ)H#=Jvft7
+zX)h{>EQ3j)JAv%Kqvi!qi6zc};mUQ>2`|hQsfDwussUmoa3^FX6XC8XU=fduP&{aX
+zT!@-m;Hv<0#H5G1>=)}{HrA_-VQDlfpR`R0s+B+iYMk7aluYn7<6x-yr;yxWl+M_X
+z0wriZGuk;2wbM480*)kFqoyx^FlMg<EqZD2>nud8p&<2)+voCj3sz^LS*T-_`9AvZ
+z@&&rZ;N8$a(aSi?Xg7lm&Z%4!)s=GCWT~;GuDcHh+oJhe41}6f03=Hs__#w6U+I=Y
+z!wzGWTg+{pGRNWuYf7}kxnW4_^8ihT2)Wh_b&gRj%pUnB&FalwOBzg)4?%a;>V-M+
+z-Vpvwntbf)b84PDehO{!MGZBYXi$Ulyz_oU^Jo;@;4pdQXrWoPYx;^jO3*q=PiqY;
+zX(=(-guVu5m)dRm3ct!$hSoAN#-HIo>T}37&Ga1bz1uP3=7CO~6ASkM(Jpd8h<%_>
+zqwDaVrs$_&VieqR;66a32s+sG;=wpUccgG8t>f77kR2lubv=eUa@Lf6XtQ$GU7$V9
+zkJ($?SOZA1W~*>+yPXOy+@jYAN-Mgh(QM%;ff38SqNdg{*WPQOyzVh_mOGaEiHx9&
+zCuL6B4zWH|>2?+lyOmqbl(V4@Htkmiai2ozm{T-@|0u7wHQT=NJQ*VU9-ZU2=m$o#
+z;9&<*g?kU^;Uh;GSqbeSy+;F^H9$&xO&Wkp>%4FwYnspu?$HWmz_gtS=^ff(7YZFW
+zg|>6oXe(B2;1EF7VWB_l0f2r9&_}5S;)21ALank6Zc@>&98Xj6eZWrTlNcrN9_vVR
+z3(=#2rGA(Nbzt0HWr10ZYC7o+H~pJ19)dB*(n&8$)#H^2u1Mk;+sap|zH{|Q5t+aW
+z3!XY~v=hpqiL&>uxvWi~>9fx0Wjgg(1?pU=?sb@<b$>7}9Zq+c4Bi0wSJgTH@#O46
+z#NFx3R@xfs@twxU#Tjo}bbM4<L?GpG3r&VX#M&DhWtWqt-XJUdOZo9og75Nf?O-WF
+zr&0P@@V^?QF87p86TyX|+e`CXe-z>@-EDTXDoe>K8;^}0H*{wqDIl>wN|(4V$&CUy
+zl!{I6PfNG7ha=ijEEjmwl-)qhMK>-a2TGe_&2V;y_|D{_?j=P<+dSo}KcM^>k_(Qj
+zLe3A5R@FtsXJGTE$9@Kve_as7bD3RLRu@x|3eBZ01NGHc3O<qK?JxWkOB)_}V?W!a
+z-q>#8MAQ--uA<R>imUii<VCybpLy*G4TQtCJJqZc{WVv#8}pWLNHgE`8X$31$y3=G
+zx_6Ijam_$%lS5w>v8GvHFp{3208<|jj##JtF~J<%a7Xg4%P5Zv^|BY6Sd&%H=0pgg
+zhU0fiacFV+;7)V0VJcZ^dNF21?@Z~Vray}FSPf(Cgq9;|tSd!P)_x-vKpdr)>O)us
+z?3_ch&OID-<dEjsR=xN0?&Ze%e_uUY?RPJ)ch>*+>N)=9J^OC;{o)_J+p=u2OHRqg
+zH1LAof<f1UE(FMd2+wo(BW}vIR?IAPK%~Mh8-VlT%S}fq9AVn=7q#(a2Uj4-IWWh|
+z0YL1KL849&czNYbeB4LfUibZb@Au1}|F~Lx*1N5koiFsVhZCz8K-1EF#NS<$BJIjR
+z6%e7O%Wgoe_jC8l?)rC^?>&;)^VKhZ?{0s$y4uw!J_U-aPrrlsR(m2L4Yc4oNrGf#
+zV8Vpye_sCcs=B$EToM3Mbq{fuod}u0m>;6Yng*fh^5;IOpNqDG(&dXQa>*NRTmo4Y
+ztT&xy<4W$$Y)zlS4`T|4!2nUM;RP7rr2*#*y1l;ltOxHB#e(t?aDm-#d1-cGO$FJ?
+zrr%sG*}-xO7@PNn+VL?lRNsp9<(2x5+!a+k((H6A2`)|5Q)<SF(`ufyu>Kwnw-9?j
+zD?gQue}*Xq(M2_Y$Zxn94!GG8nbA17<0}F0atbSyydZ=^HIBTb)=M>&dU?RcIW5<N
+zw)u9NW9%R0bRmEUe#03QN%F0TIuz<{CQ*S9ZPnvhC!=oQ<?P~AET9GgtFXRVwIBCy
+zz;8je#B58qCNYp5lP$hz+@9xX8jt*Z?2V!XMN(PPQ!nW4DyMEn(;bNm^Yu1{c&F4F
+zh4o6JdnSr_p=GfyZW?Brw8tvBsCy?zl!)oBdhDuJ?01XY2&0;~Y8aPjF6gZqX2;;N
+zv#X_F0Vn>hC`M(dLY{3kulv5nvOyIe#;O9=QeG9riCn<fH^>z3!N0C#Sv~#kE%^o>
+zO0Nj1L`~Mz2D*2QO@ljJcDEhl-sCD5wx>Zc;G`PD9qaDeWm)vsxxkgf&Swz{gfyZM
+zf4@7thrAxXm4NDPf5P6m*{0<t&z<>~Sv`51uYQs~gW-G72`vu$XHnoy2k*Z`qsrd1
+zY|(U?h<+8+ncIO)^CXPTiIdZoc^Ud_&|I^wTnfzKW3=>;a(U)97S~d%nbkH^nRn8D
+zcB~wm>C4xd_^FB*h3y8f;8GOAq|=KW-?RVF#osZi)ySW#D0D=N=jAHHLqpm#N=`nE
+zJ5C;RId`0ie>ZoCEu3r$6Y6gGEF22Rz)`F}4u|N5qQ;~)1(LT`mUBnud<tVK=a<ki
+z`KflF)KquESU0Jlj!(p(EdOA#Fw-eZEGMr#_fyDZUqqKwaYmNcE#<8qN6x~e(q-?I
+z1Z7mr2w(RQXE_iT3sLoD<tcm|ZYwcPGa7h{2vQF^sE|vk7n=CR`rGBDX4qL=#2mtJ
+zz#_(&qzeJkJnGsBwBeGXY(cgOfr}^gxRMj5W+MMlpHr{8m2g>9;=TJjl$NMC5yu@y
+zr7WF&N_uCSL3M9gwb2ONwdk4tAu6FrPL$eFb(AJ1m)aF*m|{A^_DZ{p*$~pW!-baI
+zdH7O~+mBv`)}#U(N2*MKfZvtAj2(ET=)^ira6sLZS_xC$hmn!B=y#$H<N}-0?l{`i
+z$5kL;3DlT0Sc@~XD6w5YG865j()p<ws5oh+8!49Bzw+T1642R(PLDA5Zz5BvXm7rF
+zqdj!TZn#IWdVIn6%f?JzSye^NDZ3{Cn1)9Gx4h0A%cUz#k+Gud#`|BsR=+x5S!+Xs
+zrHhL=sPGp+S(nTNITst>;$utS?Z%<Pv**uUmeK*TW=%6nM*$CrMG=DwOLdur(}PDX
+zWprC*ukK&M;dnN=2~v{~El8tDg-c9-RkcB<|AdIXrm8GaT2{(7IWe4-_7d{z(2Sg+
+zvAQghJ!-v`wG#$f2*}^rar>|#>P3cc!;Kva?wGu~qxfY<k-siyxugrO>*6#46TviC
+zlEZ|)UWsyHxEtA|B%=`w11Qm7;|4>6HzX9kT#MsIMK+VZ4h==Z43&LpN;AeoFV@zF
+z-@D+Xh%BW&j5o%OjOGus+;-h^fdJJ?Q@=DXuFQ3^WuZ>dd5%ssMw`Azj!mq*D{7&k
+zI)GPj=K3`VtVuHT?$e75BkE@(4WPb$T1^;JV<|?k%0RY|G%M#P{078A?bw$gcr{vq
+zfUC<s9BsY<>^24z&o9^{1tP<Tc2m2<J2-}x2*(%sv9R0|%0(S!G}SW4VKh9(O!BTP
+zS$;#3;Es1E9DqncGvGyWpbNDki-l%Hd@<fOFY@@61Kz5beuoJGN*AI`uVjHoEY>%v
+z7X|TcKCWV=7p$X0jJ9Z4QS3qI#vmfIDcU*@@l}cOZ85FD+&K_<@q^kYNNinRYk4UP
+z8;*)?;?Ou65gWb1cMUODSi<znJq1>;v>q6Ba5esfnPo?`_I`@SKWdFp1ba-Vf~jc)
+z+T>I*VI8;`;BSFnQwKb_Dr7jSN<j@=iXdHMeQ`xj+G>Zne~Z-6ok2p@7&>XrLZ+<m
+z76e))d9SR?aGC)%sRk*vrWto}`Qi|<O3xzGu}tH?;Mw=!p?7-zS8BQ0LtngBFh<>(
+zL9NQZ&%u)MHDJulee1fi^>T;=N`;Du0k)-aval4`GH^S~D4?ANjgu+jINOPh*&Uhb
+zs2eG%D|iiFpm%w+s2z5n{{DXP`yZ<)pR3OM_y5>5ohA(iV2?|XkLHOK5ep)kc_On+
+zH$uH>iw>op^MGS0Ge4Cn@86f$vXm+1cjVe%J>bhxi^6#!KyKY|WY|M()8;lb&#aBC
+zznoyFH0cnwk?R$V%Le#XUh-9(z3t*gy{d2Ku+!BqG94|ka@meZU>ER(jJuPgOB_oZ
+z`H4$&3<Fs0xHbJB(*DucEd&d+5PbK3(ZgLQq`*|NIdnI2F)eIqn+bHdL(z;2sB{%e
+zyG2TGq7YE}k)4Zv*zEqD?OG0ks8ZI%Fml**EC_Dd_bFY@)%lg-B}%NSR(eckU?1Kr
+z#axYyqYcr<AjIPj?W*wgw9!nJyb)C}!|C)U+A>t#@`F+-5a{!RuFGTkR$%&aH*9*j
+zapm!{-QxDF56WFz2}t3pKYlMPYTF4zdLM^huBOx*WSr3|!;pF5O14XPNw;_cir5Ye
+zyvm{93x(huog=+-Mj%pw{@gw0T6~3YjJC?$EvR`R9%>Ub?8Aryyh;Z_fsGJ7b8s#1
+zL$j;~@QcnymmLSxWd*91#Gne11`Kd}7!VinI!0whf(ar9beRndp31}UjG>M+AdkeK
+zXuzuq3?k|pJS`ympcRb7ywxlqxMks&=_p*lhUBZh4n#h(uHi!8HQ)crPVN-%TS|D?
+z91P+HD{$d>cuHwNeT(RiqJPjFa66#=d9v?|#vrpa0aVL(*MoD4H{!Qr*#BfVx(e62
+z?+q)3>2}5Ezbp;0&J`(QliN<-wbC(w)&M6QwdTK&aK)`JLd@zhltXNCg}~#4qo|5m
+zwE+V4kq83CUizIu+S1PR*o`MyWtTF))^Yd9otq%maF~mX=(ywOu{)r1Ip3uil&CC7
+zv5!k;R^o351G}|W58hqI7f*1;1h<`wi!;1ORv>EMvL=k5@k@mGUlnjB#j%R~CIj+F
+zAMhRflw0P63w>>Y`JWUZ(v<(bg7*Fxnnj7e1RpO!>i@HXF>d_oS!oVEk?%)w9!nXR
+z0G1Z^k&WhApblp33DMYj{XhF>=lGWN*JvM^ujn@|vlYx;fe-0VgOxS4qQBx^e@UPI
+OzfQ>aJFHw0tp5jF7*DnU
+
+literal 0
+HcmV?d00001
+
+diff --git a/lib/editor/atto/plugins/cloze/yui/build/moodle-atto_cloze-button/moodle-atto_cloze-button-min.js b/lib/editor/atto/plugins/cloze/yui/build/moodle-atto_cloze-button/moodle-atto_cloze-button-min.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..8bd92c824d3f2d5f84a441ff041709ed216e40bc
+GIT binary patch
+literal 11659
+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
+NTE4Sk7bwyH@qZ-+?_vM|
+
+literal 0
+HcmV?d00001
+
+diff --git a/lib/editor/atto/plugins/cloze/yui/build/moodle-atto_cloze-button/moodle-atto_cloze-button.js b/lib/editor/atto/plugins/cloze/yui/build/moodle-atto_cloze-button/moodle-atto_cloze-button.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..5ae5c3a5c416ae72f2bbda9d8ad3d051c0ccfc68
+GIT binary patch
+literal 25245
+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
+OzfQ>aJFHw0tp5jF7*DnU
+
+literal 0
+HcmV?d00001
+
+diff --git a/lib/editor/atto/plugins/cloze/yui/src/button/build.json b/lib/editor/atto/plugins/cloze/yui/src/button/build.json
+new file mode 100644
+index 0000000..c747f70
+--- /dev/null
++++ b/lib/editor/atto/plugins/cloze/yui/src/button/build.json
+@@ -0,0 +1,10 @@
++{
++  "name": "moodle-atto_cloze-button",
++  "builds": {
++    "moodle-atto_cloze-button": {
++      "jsfiles": [
++        "button.js"
++      ]
++    }
++  }
++}
+diff --git a/lib/editor/atto/plugins/cloze/yui/src/button/js/button.js b/lib/editor/atto/plugins/cloze/yui/src/button/js/button.js
+new file mode 100644
+index 0000000..671669d
+--- /dev/null
++++ b/lib/editor/atto/plugins/cloze/yui/src/button/js/button.js
+@@ -0,0 +1,732 @@
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++/*
++ * @package    atto_cloze
++ * @copyright  2016 onward Daniel Thies <dthies@ccal.edu>
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++/**
++ * @module moodle-atto_cloze-button
++ */
++
++/**
++ * Atto text editor cloze plugin.
++ *
++ * @namespace M.atto_cloze
++ * @class button
++ * @extends M.editor_atto.EditorPlugin
++ */
++
++var COMPONENTNAME = 'atto_cloze';
++
++var CSS = {
++    ANSWER: 'atto_cloze_answer',
++    ANSWERS: 'atto_cloze_answers',
++    ADD: 'atto_cloze_add',
++    CANCEL: 'atto_cloze_cancel',
++    DELETE: 'atto_cloze_delete',
++    FEEDBACK: 'atto_cloze_feedback',
++    FRACTION: 'atto_cloze_fraction',
++    LEFT: 'atto_cloze_col0',
++    LOWER: 'atto_cloze_down',
++    RIGHT: 'atto_cloze_col1',
++    MARKS: 'atto_cloze_marks',
++    DUPLICATE: 'atto_cloze_duplicate',
++    RAISE: 'atto_cloze_up',
++    SUBMIT: 'atto_cloze_submit',
++    SUMMARY: 'atto_cloze_summary',
++    TOLERANCE: 'atto_cloze_tolerance',
++    TYPE: 'atto_cloze_qtype'
++};
++var TEMPLATE = {
++    FORM: '<div class="atto_cloze">' +
++             '<form class="atto_form">' +
++             '<p>{{qtype}}' +
++                 '<label for="{{elementid}}_mark">{{get_string "defaultmark" "question"}}</label>' +
++                 '<input id="{{elementid}}_mark" type="text" class="{{CSS.MARKS}}" value="{{marks}}" />' +
++                 '<img class="{{CSS.ADD}}" title="{{get_string "addmoreanswerblanks" "qtype_calculated"}}" src="' +
++                     M.util.image_url('t/add', 'core') + '">' +
++             '<div class="{{CSS.ANSWERS}}">' +
++             '<ol>{{#answerdata}}' +
++             '<li><div><div class="{{../CSS.LEFT}}">' +
++                 '<a class="{{../CSS.ADD}}" title="{{get_string "addmoreanswerblanks" "qtype_calculated"}}">' +
++                 '<img class="icon_smallicon" src="' +
++                     M.util.image_url('t/add', 'core') + '"></a>' +
++                 '<a class="{{../CSS.DELETE}}" title="{{get_string "delete" "core"}}">' +
++                 '<img class="icon_smallicon" src="' +
++                     M.util.image_url('t/delete', 'core') + '"></a>' +
++                 '<a class="{{../CSS.RAISE}}" title="{{get_string "up" "core"}}">' +
++                 '<img class="icon_smallicon" src="' +
++                     M.util.image_url('t/up', 'core') + '"></a>' +
++                 '<a class="{{../CSS.LOWER}}" title="{{get_string "down" "core"}}">' +
++                 '<img class="icon_smallicon" src="' +
++                     M.util.image_url('t/down', 'core') + '"></a>' +
++                 '<br /><label id="{{id}}_grade">{{get_string "grade" "core"}}</label>' +
++                 '<select id="{{id}}_grade" value="{{fraction}}" class="{{../CSS.FRACTION}}" selected>' +
++                     '{{#if fraction}}' +
++                         '<option value="{{../fraction}}">{{../fraction}}%</option>' +
++                     '{{/if}}' +
++                     '<option value="">{{get_string "incorrect" "question"}}</option>' +
++                     '{{#../fractions}}' +
++                     '<option value="{{fraction}}">{{fraction}}%</option>' +
++                     '{{/../fractions}}' +
++                 '</select></div>' +
++                 '<div class="{{../CSS.RIGHT}}">' +
++                 '<label for="{{id}}_answer">{{get_string "answer" "question"}}</label>' +
++                 '<input id="{{id}}_answer" type="text" class="{{../CSS.ANSWER}}" value="{{answer}}" />' +
++                 '{{#if ../numerical}}' +
++                 '<label for="{{id}}_tolerance">{{{get_string "tolerance" "qtype_calculated"}}}</label>' +
++                 '<input id="{{id}}_tolerance" type="text" class="{{../../CSS.TOLERANCE}}" value="{{tolerance}}" />' +
++                 '{{/if}}' +
++                 '<label for="{{id}}_feedback">{{get_string "feedback" "question"}}</label>' +
++                 '<input id="{{id}}_feedback" type="text" class="{{../CSS.FEEDBACK}}" value="{{feedback}}" />' +
++             '</div></div></li>' +
++             '{{/answerdata}}</ol></div>' +
++                 '<p><button type="submit" class="{{CSS.SUBMIT}}" ' +
++                     'title="{{get_string "common:insert" "editor_tinymce"}}">' +
++                     '{{get_string "common:insert" "editor_tinymce"}}</button>' +
++                 '<button type="submit" class="{{CSS.CANCEL}}">{{get_string "cancel" "core"}}</button></p>' +
++             '</form>' +
++          '</div>',
++    OUTPUT: '&#123;{{marks}}:{{qtype}}:{{#answerdata}}~{{#if fraction}}%{{../fraction}}%{{/if}}{{answer}}' +
++          '{{#if tolerance}}:{{tolerance}}{{/if}}' +
++          '{{#if feedback}}#{{feedback}}{{/if}}{{/answerdata}}&#125;',
++    TYPE: '<div class="atto_cloze">{{get_string "chooseqtypetoadd" "question"}}' +
++             '<form ="atto_form">' +
++             '<div class="{{CSS.TYPE}}">' +
++             '{{#types}}' +
++             '<div class="option">' +
++                 '<input name="qtype" id="qtype_qtype_{{type}}" value="{{type}}" type="radio">' +
++                 '<label for="qtype_qtype_{{type}}">' +
++                 '<span class="typename">{{type}}</span>' +
++                 '<span class="{{../CSS.SUMMARY}}"><h6>{{name}}</h6><p>{{summary}}</p>' +
++                 '<ul>{{#options}}' +
++                 '<li>{{option}}</li>' +
++                 '{{/options}}</ul>' +
++                 '</span>' +
++                 '</label></div>' +
++             '{{/types}}</div>' +
++                 '<p><button type="submit" class="{{CSS.SUBMIT}}" ' +
++                     'title="{{get_string "add" "core"}}">{{get_string "add" "core"}}</button>' +
++                 '{{#qtype}}<button type="submit" class="{{../CSS.DUPLICATE}}">' +
++                     '{{get_string "duplicate" "core"}}</button>{{/qtype}}' +
++                 '<button type="submit" class="{{CSS.CANCEL}}">{{get_string "cancel" "core"}}</button></p>' +
++          '</form></div>'
++    },
++    FRACTIONS = [{fraction: 100},
++        {fraction: 50},
++        {fraction: 33.33333},
++        {fraction: 25},
++        {fraction: 20},
++        {fraction: 16.66667},
++        {fraction: 14.28571},
++        {fraction: 12.5},
++        {fraction: 11.11111},
++        {fraction: 10},
++        {fraction: 5},
++        {fraction: 0},
++        {fraction: -5},
++        {fraction: -10},
++        {fraction: -11.11111},
++        {fraction: -12.5},
++        {fraction: -14.28571},
++        {fraction: -16.66667},
++        {fraction: -20},
++        {fraction: -25},
++        {fraction: -33.333},
++        {fraction: -50},
++        {fraction: -100}];
++
++Y.namespace('M.atto_cloze').Button = Y.Base.create('button', Y.M.editor_atto.EditorPlugin, [], {
++    /**
++     * A reference to the currently open form.
++     *
++     * @param _form
++     * @type Node
++     * @private
++     */
++    _form: null,
++
++    /**
++     * An array containing the current answers options
++     *
++     * @param _answerdata
++     * @type Array
++     * @private
++     */
++    _answerdata: null,
++
++    /**
++     * The sub question type to be edited
++     *
++     * @param _qtype
++     * @type String
++     * @private
++     */
++    _qtype: null,
++
++    /**
++     * The text initial selected to use as answer default
++     *
++     * @param _selectedText
++     * @type String
++     * @private
++     */
++    _selectedText: null,
++
++
++    /**
++     * The maximum marks for the sub question
++     *
++     * @param _marks
++     * @type Integer
++     * @private
++     */
++    _marks: null,
++
++    /**
++     * The selection object returned by the browser.
++     *
++     * @property _currentSelection
++     * @type Range
++     * @default null
++     * @private
++     */
++    _currentSelection: null,
++
++    initializer: function() {
++        this._groupFocus = {};
++        // Check whether we are editing a question.
++        var form = this.get('host').editor.ancestor('body#page-question-type-multianswer form');
++        // Only add plugin if this is the first editor on a multianswer question form.
++        if (!form ||
++                !this.get('host').editor.compareTo(form.one('.editor_atto_content')) ||
++                !form.test('[action="question.php"]')) {
++            return;
++        }
++
++        this.addButton({
++            icon: 'icon',
++            iconComponent: 'qtype_multianswer',
++            callback: this._displayDialogue
++        });
++        this._marks = 1;
++        this._answerDefault = '';
++
++        // We need custom highlight logic for this button.
++        this.get('host').on('atto:selectionchanged', function () {
++            if (this._resolveSubquestion()) {
++                this.highlightButtons();
++            } else {
++                this.unHighlightButtons();
++            }
++        }, this);
++
++    },
++
++    /**
++     * Display form to edit subquestions.
++     *
++     * @method _displayDialogue
++     * @private
++     */
++    _displayDialogue: function() {
++
++        var host = this.get('host');
++
++        host.editor.focus();
++
++        // Store the current selection.
++        this._currentSelection = host.getSelection();
++        if (this._currentSelection === false) {
++            return;
++        }
++
++        // Save selected string to set answer default answer.
++        this._selectedText = this._currentSelection.toString();
++
++        var dialogue = this.getDialogue({
++            headerContent: M.util.get_string('pluginname', COMPONENTNAME),
++            bodyContent: '<div style="height:500px"></div>',
++            width: 500
++        }, true);
++
++        // Resolve whether cursor is in a subquestion.
++        var subquestion = this._resolveSubquestion();
++        if (subquestion) {
++            this._parseSubquestion(subquestion);
++            dialogue.set('bodyContent', this._getDialogueContent(null, this._qtype));
++        } else {
++            dialogue.set('bodyContent', this._getDialogueContent());
++        }
++        dialogue.show();
++
++        this._dialogue = dialogue;
++    },
++
++    /**
++     * Return the dialogue content for the tool, attaching any required
++     * events.
++     *
++     * @method _getDialogueContent
++     * @param {Event} The event causing content to change
++     * @param {String} The question type to be used
++     * @return {Node} The content to place in the dialogue.
++     * @private
++     */
++    _getDialogueContent: function(e, qtype) {
++        var template, content;
++
++        if (this._form) {
++            this._form.remove()
++                .destroy(true);
++        }
++
++        if (!qtype) {
++            template = Y.Handlebars.compile(TEMPLATE.TYPE);
++            content = Y.Node.create(template({CSS: CSS,
++                qtype: this._qtype,
++                types: this.get('questiontypes')
++                }));
++            this._form = content;
++
++            content.delegate('click', this._choiceHandler,
++                '.' + CSS.SUBMIT + ', .' + CSS.DUPLICATE, this);
++            content.one('.' + CSS.CANCEL).on('click', this._cancel, this);
++            return content;
++        }
++
++        template = Y.Handlebars.compile(TEMPLATE.FORM);
++
++        content = Y.Node.create(template({CSS: CSS,
++            answerdata: this._answerdata,
++            elementid: Y.guid(),
++            fractions: FRACTIONS,
++            qtype: this._qtype,
++            marks: this._marks,
++            numerical: (this._qtype === 'NUMERICAL' || this._qtype === 'NM')
++        }));
++
++        this._form = content;
++
++        content.one('.' + CSS.SUBMIT).on('click', this._setSubquestion, this);
++        content.one('.' + CSS.CANCEL).on('click', this._cancel, this);
++        content.delegate('click', this._deleteAnswer, '.' + CSS.DELETE, this);
++        content.delegate('click', this._addAnswer, '.' + CSS.ADD, this);
++        content.delegate('key', this._addAnswer, 'enter', '.' + CSS.ANSWER + ', .' + CSS.FEEDBACK, this);
++        content.delegate('click', this._lowerAnswer, '.' + CSS.LOWER, this);
++        content.delegate('click', this._raiseAnswer, '.' + CSS.RAISE, this);
++
++        return content;
++    },
++
++    /**
++     * Find the correct answer default for the current question type
++     *
++     * @method _getAnswerDefault
++     * @private
++     * @return {String} Default answer
++     */
++    _getAnswerDefault: function() {
++        switch (this._qtype) {
++            case 'SHORTANSWER':
++            case 'SA':
++            case 'NUMERICAL':
++            case 'NM':
++                this._answerDefault = 100;
++                break;
++            default:
++                this._answerDefault = '';
++        }
++    },
++
++    /**
++     * Handle question choice
++     *
++     * @method _choiceHandler
++     * @private
++     * @param {Event} Event from button click in chooser
++     */
++    _choiceHandler: function(e) {
++        e.preventDefault();
++        var qtype = this._form.one('input[name=qtype]:checked');
++        if (qtype) {
++            this._qtype = qtype.get('value');
++            this._getAnswerDefault();
++        }
++        if (e && e.currentTarget && e.currentTarget.hasClass(CSS.SUBMIT)) {
++            this._answerdata = [
++                {
++                    id: Y.guid(),
++                    answer: this._selectedText,
++                    feedback: '',
++                    fraction: 100,
++                    tolerance: 0
++                }
++            ];
++        }
++        this._dialogue.set('bodyContent', this._getDialogueContent(e, this._qtype));
++        this._form.one('.' + CSS.ANSWER).focus();
++    },
++
++    /**
++     * Parse question and set properties found
++     *
++     * @method _parseSubquestion
++     * @private
++     * @param {String} The question string
++     */
++    _parseSubquestion: function(question) {
++        var re = /\{([0-9]*):([_A-Z]+):(.*?)\}$/g,
++            parts = re.exec(question);
++        if (!parts) {
++            return;
++        }
++        this._marks = parts[1];
++        this._qtype = parts[2];
++        this._getAnswerDefault();
++        this._answerdata = [];
++        var answers = parts[3].match(/(\\.|[^~])*/g);
++        if (!answers) {
++            return;
++        }
++        answers.forEach(function(answer) {
++            var options = /^(%(-?[\.0-9]+)%|(=?))((\\.|[^#])*)#?(.*)/.exec(answer);
++            if (options && options[4]) {
++                if (this._qtype === 'NUMERICAL' || this._qtype === 'NM') {
++                    var tolerance = /^([^:]*):?(.*)/.exec(options[4])[2] || 0;
++                    this._answerdata.push({
++                        answer: this._decode(options[4].replace(/:.*/, '')),
++                        id: Y.guid(),
++                        feedback: this._decode(options[6]),
++                        tolerance: tolerance,
++                        fraction: options[3] ? 100 : options[2] || 0});
++                    return;
++                }
++                this._answerdata.push({answer: this._decode(options[4]),
++                    id: Y.guid(),
++                    feedback: this._decode(options[6]),
++                    fraction: options[3] ? 100 : options[2] || 0});
++            }
++        }, this);
++    },
++
++    /**
++     * Insert a new set of answer blanks before the button.
++     *
++     * @method _addAnswer
++     * @private
++     */
++    _addAnswer: function(e) {
++        e.preventDefault();
++        var index = this._form.all('.' + CSS.ADD).indexOf(e.target);
++        if (index === -1) {
++            index = this._form.all('.' + CSS.ANSWER + ', .' + CSS.FEEDBACK).indexOf(e.target);
++            if (index !== -1) {
++                index = Math.floor(index / 2) + 1;
++            }
++        }
++        if (e.target.ancestor('li')) {
++            this._answerDefault = e.target.ancestor('li').one('.' + CSS.FRACTION).getDOMNode().value;
++            index = this._form.all('li').indexOf(e.target.ancestor('li')) + 1;
++        }
++        var tolerance = 0;
++        if (e.target.ancestor('li') && e.target.ancestor('li').one('.' + CSS.TOLERANCE)) {
++            tolerance = e.target.ancestor('li').one('.' + CSS.TOLERANCE).getDOMNode().value;
++        }
++        this._getFormData()
++            ._answerdata.splice(index, 0, {answer: '', id: Y.guid(), feedback: '',
++                fraction: this._answerDefault, tolerance: tolerance});
++        this._dialogue.set('bodyContent', this._getDialogueContent(e, this._qtype));
++        this._form.all('.' + CSS.ANSWER).item(index).focus();
++    },
++
++    /**
++     * Delete set of answer blanks before the button.
++     *
++     * @method _deleteAnswer
++     * @private
++     */
++    _deleteAnswer: function(e) {
++        e.preventDefault();
++        var index = this._form.all('.' + CSS.DELETE).indexOf(e.target);
++        if (index === -1) {
++            index = this._form.all('li').indexOf(e.target.ancestor('li'));
++        }
++        this._getFormData()
++            ._answerdata.splice(index, 1);
++        this._dialogue.set('bodyContent', this._getDialogueContent(e, this._qtype));
++        var answers = this._form.all('.' + CSS.ANSWER);
++        index = Math.min(index, answers.size() - 1);
++        answers.item(index).focus();
++    },
++
++    /**
++     * Lower answer option
++     *
++     * @method _lowerAnswer
++     * @private
++     */
++    _lowerAnswer: function(e) {
++        e.preventDefault();
++        var li = e.target.ancestor('li');
++        li.insertBefore(li.next(), li);
++        li.one('.' + CSS.ANSWER).focus();
++    },
++
++    /**
++     * Raise answer option
++     *
++     * @method _raiseAnswer
++     * @private
++     */
++    _raiseAnswer: function(e) {
++        e.preventDefault();
++        var li = e.target.ancestor('li');
++        li.insertBefore(li, li.previous());
++        li.one('.' + CSS.ANSWER).focus();
++    },
++
++    /**
++     * Reset and hide form.
++     *
++     * @method _cancel
++     * @private
++     */
++    _cancel: function(e) {
++        e.preventDefault();
++        this._dialogue.hide();
++    },
++
++    /**
++     * Insert content into editor and reset and hide form.
++     *
++     * @method _setSubquestion
++     * @private
++     */
++    _setSubquestion: function(e) {
++        e.preventDefault();
++        var template = Y.Handlebars.compile(TEMPLATE.OUTPUT);
++        this._getFormData();
++
++        this._answerdata.forEach(function(option) {
++            option.answer = this._encode(option.answer);
++            option.feedback = this._encode(option.feedback);
++        }, this);
++
++        var question = template(
++            {CSS: CSS,
++                answerdata: this._answerdata,
++                qtype: this._qtype,
++                marks: this._marks
++            }),
++            host = this.get('host');
++
++        this._dialogue.hide();
++        host.focus();
++        host.setSelection(this._currentSelection);
++
++        // Save the selection before inserting the new question.
++        var selection = window.rangy.saveSelection();
++        host.insertContentAtFocusPoint(question);
++
++        // Select the inserted text.
++        window.rangy.restoreSelection(selection);
++    },
++
++    /**
++     * Read and process the current data in the form.
++     *
++     * @method _setSubquestion
++     * @chainable
++     * @private
++     */
++    _getFormData: function() {
++        this._answerdata = [];
++        var answer,
++            answers = this._form.all('.' + CSS.ANSWER),
++            feedbacks = this._form.all('.' + CSS.FEEDBACK),
++            fractions = this._form.all('.' + CSS.FRACTION),
++            tolerances = this._form.all('.' + CSS.TOLERANCE);
++        for(var i = 0; i < answers.size(); i++) {
++            answer = answers.item(i).getDOMNode().value;
++            if (this._qtype === 'NM' || this._qtype === 'NUMERICAL') {
++                answer = Number(answer);
++            }
++            this._answerdata.push({answer: answer,
++                id: Y.guid(), feedback: feedbacks.item(i).getDOMNode().value,
++                fraction: fractions.item(i).getDOMNode().value,
++                tolerance: tolerances.item(i) ? tolerances.item(i).getDOMNode().value : 0});
++            this._marks = this._form.one('.' + CSS.MARKS).getDOMNode().value;
++        }
++        return this;
++    },
++
++    /**
++     * Locate a node and offset to be used as a end of a range representing an
++     * offset in the text value of a node.
++     * true.
++     *
++     * @method _getAnchor
++     * @param {DOMNode} Parent node with text value
++     * @param {Integer} Position of character with in text of parent node
++     * @return {Object} An object with anchor and offset for the character
++     * with offset in string.
++     * @private
++     */
++    _getAnchor: function(node, offset) {
++        if (!node.hasChildNodes()) {
++            return {anchor: node, offset: offset};
++        }
++        var child = node.firstChild;
++        while (offset > child.textContent.length) {
++            offset -= child.textContent.length;
++            child = child.nextSibling;
++        }
++        return this._getAnchor(child, offset);
++    },
++
++    /**
++     * Find the offset for the text of a child with within the text of parent
++     *
++     * @method _getOffset
++     * @param {DOMNode} Parent node with text value
++     * @param {DOMNode} Parent node with text value
++     * @return {Integer} The offset of the child's text
++     * @private
++     */
++    _getOffset: function(container, node) {
++        if (container === node) {
++            return 0;
++        }
++        if (!container.contains(node)) {
++            return;
++        }
++        var offset = 0,
++            child = container.firstChild;
++        while (!child.contains(node)) {
++            offset += child.textContent.length;
++            child = child.nextSibling;
++        }
++        return offset + this._getOffset(child, node);
++    },
++
++    /**
++     * Encode answer or feedback text.
++     *
++     * @method _encode
++     * @param {String} Text to encode
++     * @return {String} The encoded text
++     * @private
++     */
++    _encode: function(text) {
++        return String(text).replace(/(#|\}|~)/g, '\\$1');
++    },
++
++    /**
++     * Decode answer or feedback text.
++     *
++     * @method _decode
++     * @param {String} Text to decoded
++     * @return {String} The decoded text
++     * @private
++     */
++    _decode: function(text) {
++        return String(text).replace(/\\(#|\}|~)/g, '$1');
++    },
++
++    /**
++     * Check whether cursor is in a subquestion and return subquestion text if
++     * true.
++     *
++     * @method _resolveSubquestion
++     * @return {String} The substring describing subquestion
++     * @private
++     */
++    _resolveSubquestion: function() {
++        var host = this.get('host'),
++            selectedNode = host.getSelectionParentNode(),
++            re = /\{[0-9]*:(\\.|[^}])*?\}/g;
++
++        if (!selectedNode) {
++            return;
++        }
++        var subquestions = selectedNode.textContent.match(re);
++        if (!subquestions) {
++            return;
++        }
++
++        var index,
++            selection = this.get('host').getSelection(),
++            result = '',
++            questionEnd = 0;
++
++        if (!selection || selection.length === 0) {
++            return false;
++        }
++
++        var startIndex = this._getIndex(selectedNode, selection[0].startContainer, selection[0].startOffset),
++            endIndex = this._getIndex(selectedNode, selection[0].endContainer, selection[0].endOffset);
++
++        subquestions.forEach(function(subquestion) {
++            index = selectedNode.textContent.indexOf(subquestion, questionEnd);
++            questionEnd = index + subquestion.length;
++            if (index <= startIndex && endIndex <= questionEnd) {
++                result = subquestion;
++                var startRange = this._getAnchor(selectedNode, index);
++                var endRange = this._getAnchor(selectedNode, questionEnd);
++                selection[0].setStart(startRange.anchor, startRange.offset);
++                selection[0].setEnd(endRange.anchor, endRange.offset);
++                this._currentSelection = selection;
++            }
++        }, this);
++
++        return result;
++    },
++
++    /**
++     * Calculate the postition in text of parent node an selection end point
++     *
++     * @method _getIndex
++     * @param {Node} parent node
++     * @param {Node} selction end point container node
++     * @param {Integer} selction end point offset
++     * @return {String} The substring describing subquestion
++     * @private
++     */
++    _getIndex: function(selectedNode, container, offset) {
++        var index;
++        if (!container.firstChild) {
++            index = this._getOffset(selectedNode, container) + offset;
++        } else if (container.childNodes[offset]) {
++            index = this._getOffset(selectedNode, container.childNodes[offset]);
++        } else {
++            index = this._getOffset(selectedNode, container.lastChild) + container.lastChild.textContent.length;
++        }
++        return index;
++    }
++}, {
++    ATTRS: {
++        /**
++         * The list of subquestion types available in this version of Moodle.
++         *
++         * @attribute questiontypes
++         * @type array
++         */
++        questiontypes: []
++    }
++});
+diff --git a/lib/editor/atto/plugins/cloze/yui/src/button/meta/editor.json b/lib/editor/atto/plugins/cloze/yui/src/button/meta/editor.json
+new file mode 100644
+index 0000000..ac92c17
+--- /dev/null
++++ b/lib/editor/atto/plugins/cloze/yui/src/button/meta/editor.json
+@@ -0,0 +1,8 @@
++{
++  "moodle-atto_cloze-button": {
++    "requires": [
++        "escape",
++        "moodle-tinymce_cloze-editor"
++    ]
++  }
++}
+-- 
+1.8.3.1
+

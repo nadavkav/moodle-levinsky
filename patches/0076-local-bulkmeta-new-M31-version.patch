@@ -1,0 +1,1017 @@
+From 92f1997dccde608435c10f93c78b9005e88a142d Mon Sep 17 00:00:00 2001
+From: Nadav Kavalerchik <nadavkav@gmail.com>
+Date: Mon, 16 Oct 2017 10:23:14 +0300
+Subject: [PATCH 76/95] local/bulkmeta (new) M31 version
+
+---
+ local/bulkmeta/README.md                           |   8 +
+ local/bulkmeta/lang/en/local_bulkmeta.php          |  30 ++++
+ local/bulkmeta/lang/he/local_bulkmeta.php          |  30 ++++
+ local/bulkmeta/lib.php                             |  72 +++++++++
+ local/bulkmeta/locallib.php                        | 177 +++++++++++++++++++++
+ local/bulkmeta/manage.php                          | 100 ++++++++++++
+ local/bulkmeta/manage_form.php                     | 109 +++++++++++++
+ local/bulkmeta/search.ajax.php                     |  47 ++++++
+ local/bulkmeta/version.php                         |  30 ++++
+ .../moodle-local_bulkmeta-selector-debug.js        | Bin 0 -> 5268 bytes
+ .../moodle-local_bulkmeta-selector-min.js          | Bin 0 -> 2098 bytes
+ .../moodle-local_bulkmeta-selector.js              | Bin 0 -> 5268 bytes
+ local/bulkmeta/yui/src/selector/build.json         |  10 ++
+ local/bulkmeta/yui/src/selector/js/selector.js     | 147 +++++++++++++++++
+ local/bulkmeta/yui/src/selector/meta/selector.json |  14 ++
+ 15 files changed, 774 insertions(+)
+ create mode 100755 local/bulkmeta/README.md
+ create mode 100755 local/bulkmeta/lang/en/local_bulkmeta.php
+ create mode 100755 local/bulkmeta/lang/he/local_bulkmeta.php
+ create mode 100755 local/bulkmeta/lib.php
+ create mode 100755 local/bulkmeta/locallib.php
+ create mode 100755 local/bulkmeta/manage.php
+ create mode 100755 local/bulkmeta/manage_form.php
+ create mode 100755 local/bulkmeta/search.ajax.php
+ create mode 100755 local/bulkmeta/version.php
+ create mode 100755 local/bulkmeta/yui/build/moodle-local_bulkmeta-selector/moodle-local_bulkmeta-selector-debug.js
+ create mode 100755 local/bulkmeta/yui/build/moodle-local_bulkmeta-selector/moodle-local_bulkmeta-selector-min.js
+ create mode 100755 local/bulkmeta/yui/build/moodle-local_bulkmeta-selector/moodle-local_bulkmeta-selector.js
+ create mode 100755 local/bulkmeta/yui/src/selector/build.json
+ create mode 100755 local/bulkmeta/yui/src/selector/js/selector.js
+ create mode 100755 local/bulkmeta/yui/src/selector/meta/selector.json
+
+diff --git a/local/bulkmeta/README.md b/local/bulkmeta/README.md
+new file mode 100755
+index 0000000..ae3be8f
+--- /dev/null
++++ b/local/bulkmeta/README.md
+@@ -0,0 +1,8 @@
++Bulk meta course linkage for Moodle (http://moodle.org/)
++===============================================
++
++Add or remove multiple courses as course meta link enrolments.
++
++Contributions
++-------------
++Written by Troy Williams
+\ No newline at end of file
+diff --git a/local/bulkmeta/lang/en/local_bulkmeta.php b/local/bulkmeta/lang/en/local_bulkmeta.php
+new file mode 100755
+index 0000000..0d2f0b2
+--- /dev/null
++++ b/local/bulkmeta/lang/en/local_bulkmeta.php
+@@ -0,0 +1,30 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++$string['coursesmatchingsearch'] = 'Found courses ({$a}) matching search';
++$string['coursesmatchingsearchremoved'] = 'Found courses ({$a->matches}) matching search, ({$a->removed}) removed due to permissions';
++$string['includeinsearch'] = 'Include {$a} in search';
++$string['linkedcourse'] = 'Link course';
++$string['linkedcourses'] = 'Linked courses';
++$string['linkselected'] = 'Link selected';
++$string['metalinkedcourses'] = 'Meta linked courses ({$a})';
++$string['nometalinkedcourses'] = 'No meta linked courses';
++$string['notenabled'] = 'Course meta link enrolment plugin not enabled';
++$string['pluginname'] = 'Bulk meta course linkage';
++$string['searchanywhere'] = 'Match the search text anywhere';
++$string['toomanycoursesmatchsearch'] = 'Too many courses ({$a->matches}) match \'{$a->query}\'';
++$string['toomanycoursestoshow'] = 'Too many courses ({$a}) to show';
++$string['unlinkselected'] = 'Unlink selected';
+diff --git a/local/bulkmeta/lang/he/local_bulkmeta.php b/local/bulkmeta/lang/he/local_bulkmeta.php
+new file mode 100755
+index 0000000..ea04038
+--- /dev/null
++++ b/local/bulkmeta/lang/he/local_bulkmeta.php
+@@ -0,0 +1,30 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++$string['coursesmatchingsearch'] = 'נמצאו ({$a}) קורסים התואמים להגדרת החיפוש';
++$string['coursesmatchingsearchremoved'] = 'Found courses ({$a->matches}) matching search, ({$a->removed}) removed due to permissions';
++$string['includeinsearch'] = 'הכללת {$a} בחיפוש';
++$string['linkedcourse'] = 'קורס המקושר לקורס־אב זה';
++$string['linkedcourses'] = 'קורסים המקושרים לקורס־אב זה';
++$string['linkselected'] = 'קישור הקורסים שסומנו, לקורס־אב זה';
++$string['metalinkedcourses'] = 'קורסים מקושרים ({$a})';
++$string['nometalinkedcourses'] = 'לא קיימים קורסי־אב';
++$string['notenabled'] = 'שיוך קורס(ים) לקורס־אב לא זמין';
++$string['pluginname'] = 'קישור קורס־אב זה לתתי־קורסים';
++$string['searchanywhere'] = 'חיפוש תווים התואמים לכל חלק משם הקורס';
++$string['toomanycoursesmatchsearch'] = 'יותר מידי קורסים ({$a->matches}) נמצאו עבור החיפוש \'{$a->query}\'';
++$string['toomanycoursestoshow'] = 'הרשימה מכילה יותר קורסים ({$a}) ממה שניתן להציג';
++$string['unlinkselected'] = 'ביטול קישור לקורסי־אב';
+diff --git a/local/bulkmeta/lib.php b/local/bulkmeta/lib.php
+new file mode 100755
+index 0000000..2172d69
+--- /dev/null
++++ b/local/bulkmeta/lib.php
+@@ -0,0 +1,72 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++defined('MOODLE_INTERNAL') || die();
++
++/**
++ * Libray code.
++ *
++ * @package    local_bulkmeta
++ * @copyright  2014 Troy Williams
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++/**
++ * This function extends the settings navigation block, if in a course
++ * and have correct permissions a link to bulk meta course linkage page
++ * will be added.
++ *
++ * @global type $SITE
++ * @param type $navigation
++ * @param context_course $context
++ * @return type
++ */
++function local_bulkmeta_extend_settings_navigation($navigation, $context) {
++    global $SITE;
++
++    if (!isloggedin()) {
++        return;
++    }
++
++    if (is_null($navigation) or is_null($context)) {
++        return;
++    }
++
++    if ($context->instanceid === $SITE->id) {
++        return;
++    }
++
++    if (!enrol_is_enabled('meta')) {
++        return;
++    }
++
++    if (!has_capability('enrol/meta:config', $context)) {
++        return;
++    }
++
++    // Only add link when in the context of a course.
++    if ($context instanceof context_course) {
++        if ($courseadmin = $navigation->get('courseadmin')) {
++            $users = $courseadmin->get('users');
++            if ($users) {
++                $url = new moodle_url('/local/bulkmeta/manage.php', array('id' => $context->instanceid));
++                $users->add(get_string('pluginname', 'local_bulkmeta'), $url, navigation_node::TYPE_CUSTOM,
++                    null, 'localbulkmeta', new pix_icon('i/enrolusers', ''));
++            }
++        }
++    }
++
++}
+diff --git a/local/bulkmeta/locallib.php b/local/bulkmeta/locallib.php
+new file mode 100755
+index 0000000..688d574
+--- /dev/null
++++ b/local/bulkmeta/locallib.php
+@@ -0,0 +1,177 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++defined('MOODLE_INTERNAL') || die();
++
++/**
++ * Libray code.
++ *
++ * @package    local_bulkmeta
++ * @copyright  2014 Troy Williams
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++class local_bulkmeta_manager {
++
++    const MAX_RESULTS = 100;
++
++    public static function linked_courses($courseid) {
++        global $DB;
++
++        $result = new stdClass();
++        $result->matches = 0;
++        $result->results = array();
++
++        // Build count sql.
++        $countsql = "SELECT
++                      COUNT(1)
++                       FROM {course} c
++                      WHERE c.id IN (SELECT e.customint1
++                                       FROM {enrol} e
++                                      WHERE e.enrol = 'meta'
++                                        AND e.courseid = :courseid)";
++
++        // Build select sql.
++        $selectsql = "SELECT c.id, c.shortname, c.fullname, c.visible
++                        FROM {course} c
++                       WHERE c.id IN (SELECT e.customint1
++                                        FROM {enrol} e
++                                       WHERE e.enrol = 'meta'
++                                         AND e.courseid = :courseid)
++                    ORDER BY c.shortname ASC";
++
++        // Add courseid to params.
++        $params = array('courseid' => $courseid);
++
++        $result->matches = $DB->count_records_sql($countsql, $params);
++        if ($result->matches) {
++
++            $result->label = get_string('metalinkedcourses',
++                                        'local_bulkmeta', $result->matches);
++
++            // Fetch records.
++            $courses = $DB->get_records_sql($selectsql, $params);
++            foreach ($courses as $c) {
++                $result->results[$c->id] = shorten_text(format_string($c->fullname), 80, true);
++            }
++
++        } else {
++
++            $result->label = get_string('nometalinkedcourses',
++                                        'local_bulkmeta');
++        }
++
++        return $result;
++    }
++
++    public static function search($courseid, $query) {
++        global $DB;
++
++        $result = new stdClass();
++        $result->label = '';
++        $result->query = $query;
++        $result->maxlimit = self::MAX_RESULTS;
++        $result->matches = 0;
++        $result->results = array();
++
++        // Build sql for excluded courses.
++        $existing = $DB->get_records('enrol', array('enrol' => 'meta', 'courseid' => $courseid), '', 'customint1, id');
++        $excludes = array_merge(array_keys($existing), array(SITEID, $courseid));
++        list($excludesql, $excludeparams) = $DB->get_in_or_equal($excludes, SQL_PARAMS_NAMED, 'ex', false);
++        $excludesql = 'c.id '.$excludesql;
++
++        // Build search sql.
++        $searchsql = '';
++        $searchparams = array();
++        if (!empty($query)) {
++            $searchanywhere = get_user_preferences('bulkmeta_option_searchanywhere', false);
++            if ($searchanywhere) {
++                $query = '%' . $query . '%';
++            } else {
++                $query = $query . '%';
++            }
++            $searchfields = array('c.shortname', 'c.fullname');
++            if (get_user_preferences('bulkmeta_option_idnumber', false)) {
++                $searchfields[] = 'c.idnumber';
++            }
++            if (get_user_preferences('bulkmeta_option_summary', false)) {
++                $searchfields[] = 'c.summary';
++            }
++            for ($i = 0; $i < count($searchfields); $i++) {
++                $searchlikes[$i] = $DB->sql_like($searchfields[$i], ":s{$i}", false, false);
++                $searchparams["s{$i}"] = $query;
++            }
++            $searchsql = ' AND (' .implode(' OR ', $searchlikes).')';
++        }
++
++        // Put all the params together.
++        $params = array_merge(array('contextlevel' => CONTEXT_COURSE), $excludeparams, $searchparams);
++
++        // Build count statement.
++        $countsql = "SELECT
++                      COUNT(1)
++                       FROM {course} c
++                      WHERE $excludesql $searchsql";
++
++        // Get the raw count.
++        $result->matches = $DB->count_records_sql($countsql, $params);
++
++        // Gravy?
++        if ($result->matches <= $result->maxlimit) {
++
++            $sql = "SELECT c.id, c.shortname, c.fullname, c.visible
++                      FROM {course} c
++                 LEFT JOIN {context} ctx ON (ctx.instanceid = c.id AND ctx.contextlevel = :contextlevel)
++                     WHERE $excludesql $searchsql
++                  ORDER BY c.shortname ASC";
++
++            // Fetch records, check if current user has valid permissions.
++            $courses = $DB->get_records_sql($sql, $params, 0, $result->maxlimit);
++            foreach ($courses as $c) {
++                $coursecontext = context_course::instance($c->id);
++                if (!$c->visible and !has_capability('moodle/course:viewhiddencourses', $coursecontext)) {
++                    $result->removed++;
++                    continue;
++                }
++                if (!has_capability('enrol/meta:selectaslinked', $coursecontext)) {
++                    $result->removed++;
++                    continue;
++                }
++                foreach ($courses as $c) {
++                    $result->results[$c->id] = shorten_text(format_string($c->fullname), 80, true);
++                }
++            }
++        }
++
++        // Build the label.
++        if ($result->matches > $result->maxlimit) {
++            if ($result->query) {
++                $result->label = get_string('toomanycoursesmatchsearch', 'local_bulkmeta', $result);
++            } else {
++                $result->label = get_string('toomanycoursestoshow', 'local_bulkmeta', $result->matches);
++            }
++        } else {
++            if (!empty($result->removed)) {
++                $result->label = get_string('coursesmatchingsearchremoved', 'local_bulkmeta', $result);
++            } else {
++                $result->label = get_string('coursesmatchingsearch', 'local_bulkmeta', $result->matches);
++            }
++        }
++
++        return $result;
++    }
++
++}
+diff --git a/local/bulkmeta/manage.php b/local/bulkmeta/manage.php
+new file mode 100755
+index 0000000..8953e6d
+--- /dev/null
++++ b/local/bulkmeta/manage.php
+@@ -0,0 +1,100 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++/**
++ * Page to link/unlink multiple courses as meta course enrolments.
++ *
++ * @package    local_bulkmeta
++ * @copyright  2014 Troy Williams
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++require_once(dirname(dirname(dirname(__FILE__))).'/config.php');
++require_once("$CFG->dirroot/enrol/meta/locallib.php");
++require_once("$CFG->dirroot/local/bulkmeta/manage_form.php");
++require_once("$CFG->dirroot/local/bulkmeta/locallib.php");
++
++$id = required_param('id', PARAM_INT); // Get the course identifier parameter.
++
++$course = $DB->get_record('course', array('id' => $id), '*', MUST_EXIST);
++$context = context_course::instance($course->id, MUST_EXIST);
++
++$pageurl = new moodle_url('/local/bulkmeta/manage.php');
++$pageurl->param('id', $course->id);
++
++$PAGE->set_url($pageurl);
++$PAGE->set_pagelayout('admin');
++
++navigation_node::override_active_url(new moodle_url('/enrol/instances.php', array('id' => $course->id)));
++
++require_login($course);
++require_capability('moodle/course:enrolconfig', $context);
++require_capability('enrol/meta:config', $context);
++
++// If not enabled redirect enrolment management page.
++if (!enrol_is_enabled('meta')) {
++    notice(get_string('notenabled', 'local_bulkmeta'), new moodle_url('/admin/settings.php?section=manageenrols'));
++}
++
++if (optional_param('links_clearbutton', 0, PARAM_RAW) && confirm_sesskey()) {
++    redirect($pageurl);
++}
++
++// Get the course meta link enrolment plugin.
++$enrol = enrol_get_plugin('meta');
++
++if (!$enrol->get_newinstance_link($course->id)) {
++    //redirect(new moodle_url('/enrol/instances.php', array('id' => $course->id)));
++}
++
++$mform = new bulkmeta_manage_form($pageurl->out(false), array('course' => $course));
++// Redirect to instance page on cancel.
++if ($mform->is_cancelled()) {
++    redirect(new moodle_url('/enrol/instances.php', array('id' => $course->id)));
++}
++// Handle the add and the removes.
++if ($mform->is_submitted()) {
++    $data = $mform->get_data();
++    // Process courses to be linked.
++    if (isset($data->bulkmeta_addbutton) && !empty($data->bulkmeta_link)) {
++        foreach ($data->bulkmeta_link as $courseidtolink) {
++            if (!empty($courseidtolink)) { // Because of formlib selectgroups.
++                $enrol->add_instance($course, array('customint1' => $courseidtolink));
++            }
++        }
++        enrol_meta_sync($course->id);
++        redirect(new moodle_url('/local/bulkmeta/manage.php', array('id' => $course->id)));
++    }
++    // Process courses to be unlinked.
++    if (isset($data->bulkmeta_removebutton) && !empty($data->bulkmeta_unlink)) {
++        list($insql, $inparams) = $DB->get_in_or_equal($data->bulkmeta_unlink, SQL_PARAMS_NAMED);
++        $params = array_merge(array('courseid' => $data->id), $inparams);
++        $instances = $DB->get_records_select('enrol',
++                                             "enrol = 'meta' AND courseid = :courseid AND customint1 ". $insql,
++                                             $params);
++        foreach ($instances as $instance) {
++            $enrol->delete_instance($instance);
++        }
++        enrol_meta_sync($course->id);
++        redirect(new moodle_url('/local/bulkmeta/manage.php', array('id' => $course->id)));
++    }
++}
++
++$PAGE->set_heading($course->fullname);
++$PAGE->set_title(get_string('pluginname', 'local_bulkmeta'));
++echo $OUTPUT->header();
++$mform->display();
++echo $OUTPUT->footer();
+diff --git a/local/bulkmeta/manage_form.php b/local/bulkmeta/manage_form.php
+new file mode 100755
+index 0000000..2e12551
+--- /dev/null
++++ b/local/bulkmeta/manage_form.php
+@@ -0,0 +1,109 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++defined('MOODLE_INTERNAL') || die();
++
++/**
++ * Form library code.
++ *
++ * @package    local_bulkmeta
++ * @copyright  2014 Troy Williams
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++require_once($CFG->libdir . '/formslib.php');
++
++class bulkmeta_manage_form extends moodleform {
++
++    protected $course;
++
++    public function definition() {
++        global $PAGE;
++
++        $searchtext = optional_param('bulkmeta_searchtext', '', PARAM_TEXT);
++
++        $mform  = $this->_form;
++        $course = $this->_customdata['course'];
++        $this->course = $course;
++
++        $mform->disable_form_change_checker();
++
++        $mform->addElement('html', html_writer::tag('h1', get_string('pluginname', 'local_bulkmeta')));
++
++        $currentlylinked = local_bulkmeta_manager::linked_courses($course->id);
++        $linkedcoursesdata = array($currentlylinked->label => $currentlylinked->results);
++
++        $mform->addElement('selectgroups', 'bulkmeta_unlink', get_string('linkedcourses', 'local_bulkmeta'), $linkedcoursesdata,
++                           array('size' => 10, 'multiple' => true));
++        $mform->addElement('submit', 'bulkmeta_removebutton', get_string('unlinkselected', 'local_bulkmeta'));
++
++        $mform->addElement('html', html_writer::empty_tag('br'));
++
++        $found = local_bulkmeta_manager::search($course->id, $searchtext);
++        $foundcoursesdata = array($found->label => $found->results);
++
++        $mform->addElement('selectgroups', 'bulkmeta_link', '', $foundcoursesdata, array('size' => 10, 'multiple' => true));
++
++        $searchgroup = array();
++        $searchgroup[] = $mform->createElement('text', 'bulkmeta_searchtext');
++        $mform->setType('bulkmeta_searchtext', PARAM_TEXT);
++        $searchgroup[] = $mform->createElement('submit', 'bulkmeta_searchbutton', get_string('search'));
++        $mform->registerNoSubmitButton('bulkmeta_searchbutton');
++        $searchgroup[] = $mform->createElement('submit', 'bulkmeta_clearbutton', get_string('clear'));
++        $mform->registerNoSubmitButton('bulkmeta_clearbutton');
++        $searchgroup[] = $mform->createElement('submit', 'bulkmeta_addbutton', get_string('linkselected', 'local_bulkmeta'));
++        $mform->addGroup($searchgroup, 'searchgroup', get_string('search') , array(''), false);
++
++        $mform->addElement('checkbox', 'bulkmeta_option_searchanywhere', get_string('searchanywhere', 'local_bulkmeta'));
++        user_preference_allow_ajax_update('bulkmeta_option_searchanywhere', 'bool');
++        $searchanywhere = get_user_preferences('bulkmeta_option_searchanywhere', false);
++        $this->set_data(array('bulkmeta_option_searchanywhere' => $searchanywhere));
++
++        $mform->addElement('checkbox', 'bulkmeta_option_idnumber',
++                           get_string('includeinsearch', 'local_bulkmeta', get_string('idnumbercourse')));
++
++        user_preference_allow_ajax_update('bulkmeta_option_idnumber', 'bool');
++        $includeidnumber = get_user_preferences('bulkmeta_option_idnumber', false);
++        $this->set_data(array('bulkmeta_option_idnumber' => $includeidnumber));
++
++        $mform->addElement('checkbox', 'bulkmeta_option_summary',
++                           get_string('includeinsearch', 'local_bulkmeta', get_string('coursesummary')));
++
++        user_preference_allow_ajax_update('bulkmeta_option_summary', 'bool');
++        $includesummary = get_user_preferences('bulkmeta_option_summary', false);
++        $this->set_data(array('bulkmeta_option_summary' => $includesummary));
++
++        $mform->addElement('hidden', 'id', null);
++        $mform->setType('id', PARAM_INT);
++        $this->set_data(array('id' => $course->id));
++
++        $cancellink = html_writer::link(new moodle_url('/enrol/instances.php', array('id' => $course->id)), get_string('cancel'));
++        $mform->addElement('static', 'cancel', $cancellink);
++        $mform->closeHeaderBefore('cancel');
++
++        $PAGE->requires->yui_module('moodle-local_bulkmeta-selector',
++                                    'M.local_bulkmeta.selector.init',
++                                    array($course->id, 'bulkmeta'));
++
++    }
++
++    public function validation($data, $files) {
++        global $DB, $CFG;
++        $errors = array();
++        return $errors;
++    }
++
++}
+diff --git a/local/bulkmeta/search.ajax.php b/local/bulkmeta/search.ajax.php
+new file mode 100755
+index 0000000..7285ade
+--- /dev/null
++++ b/local/bulkmeta/search.ajax.php
+@@ -0,0 +1,47 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++define('AJAX_SCRIPT', true);
++
++/**
++ * AJAX search handler
++ *
++ * @package    local_bulkmeta
++ * @copyright  2014 Troy Williams
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++require_once(dirname(__FILE__) . '/../../config.php');
++require_once($CFG->dirroot . '/enrol/meta/locallib.php');
++require_once($CFG->dirroot . '/local/bulkmeta/locallib.php');
++
++$PAGE->set_context(context_system::instance());
++$PAGE->set_url('/local/bulkmeta/search.ajax.php');
++
++echo $OUTPUT->header();
++
++// Check access.
++require_login();
++require_sesskey();
++
++$id         = required_param('id', PARAM_INT); // Get the course identifier parameter.
++$searchtext = required_param('searchtext', PARAM_TEXT); // Get the search parameter.
++
++$course = $DB->get_record('course', array('id' => $id), '*', MUST_EXIST);
++
++$result = local_bulkmeta_manager::search($course->id, $searchtext);
++
++echo json_encode(array('result' => $result));
+diff --git a/local/bulkmeta/version.php b/local/bulkmeta/version.php
+new file mode 100755
+index 0000000..c3c8c23
+--- /dev/null
++++ b/local/bulkmeta/version.php
+@@ -0,0 +1,30 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++/**
++ *
++ * @package
++ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++defined('MOODLE_INTERNAL') || die();
++
++$plugin->version   = 2015051100;
++$plugin->requires  = 2015051100;            // See http://docs.moodle.org/dev/Moodle_Versions for more information.
++$plugin->cron      = 0;
++$plugin->component = 'local_bulkmeta';      // Full name of the plugin (used for diagnostics).
++$plugin->release   = '2.9';                 // Human-friendly version name.
++$plugin->maturity  = MATURITY_RC;           // This version's maturity level.
++$plugin->dependencies = array('enrol_meta' => '2015051100');
+\ No newline at end of file
+diff --git a/local/bulkmeta/yui/build/moodle-local_bulkmeta-selector/moodle-local_bulkmeta-selector-debug.js b/local/bulkmeta/yui/build/moodle-local_bulkmeta-selector/moodle-local_bulkmeta-selector-debug.js
+new file mode 100755
+index 0000000000000000000000000000000000000000..805232f944ddc104aa09626ad365f3950311d9fa
+GIT binary patch
+literal 5268
+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
+
+literal 0
+HcmV?d00001
+
+diff --git a/local/bulkmeta/yui/build/moodle-local_bulkmeta-selector/moodle-local_bulkmeta-selector-min.js b/local/bulkmeta/yui/build/moodle-local_bulkmeta-selector/moodle-local_bulkmeta-selector-min.js
+new file mode 100755
+index 0000000000000000000000000000000000000000..533ec47afeea9461ba7eac655083259b20b89007
+GIT binary patch
+literal 2098
+zcmaJ?ZExE)5dOYjVQ_;ZK{UP3PL(wX3amrg4ar(`2t0w3&NgeB)JQ5Xu=U?}6eUHm
+zy?qcQp6-svd!Bpv*O!lsmt{nDT9*=LQWsoic`dg)aC~M#LgBO_bXBXu39TZaF5Z7)
+zZynQP!{M-R=&_OY>C*l6Z`a?l`w!Q5H@{|I?rs;KSg~5Or>7^QwM)pnO+WAJm|Nhc
+z*f9Q`KeK96{Swv=o?W{Crv~%VOhuXQMcGU(Si6Onbl-h6gciCs7DTyFwUkux9fU7k
+z`4id20}1)KdU@J_0Yb?NJ-s7-ic;0P9Iyw(*1H`yFJwuD5^gc{#8DOR-9}i}Z<RXQ
+zu6>SFQD9m@M1B-yMiP~fENqz9&S^zrW?-iuA&O5O3yDWR^=p%dBr5^3O#fpC-y#x+
+zT1M`ylJz<Q_6NR%V%N3PH+ok|aB#+%7l@pTh{Zk@*phbh%0R^pWVMk|YdC@wY4Sg*
+z4A@$_TVdTTGOlG92{wDK+`fX~@+ThZHEe+D{B}s$Av3l&7pe^Pu7s4C#0ql#+#cy%
+zy*?V*MBYT^yx7``7dQ%tc}&S*=xguNo}wa!+LHKkrA_q6&BRQEnzY^PxESxfS)^mz
+zgIQ90nkqyfpG16Vr&Eg*i%20wvF#8-%(B{o$q=d)(pq7`VFIX#n}!ZmzY@7)@fsro
+zTQX0eC{ELqkm<CoYD}XR7ggQ?4xvSc^yfeFS?Qv-QQXj@#N&+(xY~5h7>8p>L>{@U
+z0q4Z&duN1NM}A}~i4a8dzbDCIlKeEMxO+oKw0zCp&S$p)uv@Oy%+`72XfG0-{&bQ-
+zy;L-qY)p|+wg8e!9V@xx)TF3&0s;E0OJIco?r_%MAwFxP>+0&=eE3A@+a7lOU|h<G
+z^ndYuz>7^Z$O^=J7+g@P&O5XX3d#y4iKo-ZJOCTFZRwS9@zxe(u(JuJ!1$>m@!`<f
+zJn%PKIZ$3eN?~~}VaU?2vE^R0di`p;i8!^OFe;b+JTTvS<|_>JI?%mrXskYJ<%Mr0
+z9)HrZASD-xO)kjQMRFYeV3!GLyN%vg*lWRfRRIpXj{PN|T#_^*Xqn_WNJ57c?YdKt
+z0i6(x!$Qx@(ufdLQR6Sg+6n2?ACFz+B|jVj=hd95{Oi9sAXjXl*m^i|P#a3#fBkTG
+z|MB<F?+M)-95#V{!)q(&*56PHd55p>R;w9ma%<x#=|v~$_;0+NA*~%4du-l_^+w{;
+U{ewpjJtggX=0$MX#Fsz(3pUm2D*ylh
+
+literal 0
+HcmV?d00001
+
+diff --git a/local/bulkmeta/yui/build/moodle-local_bulkmeta-selector/moodle-local_bulkmeta-selector.js b/local/bulkmeta/yui/build/moodle-local_bulkmeta-selector/moodle-local_bulkmeta-selector.js
+new file mode 100755
+index 0000000000000000000000000000000000000000..805232f944ddc104aa09626ad365f3950311d9fa
+GIT binary patch
+literal 5268
+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
+
+literal 0
+HcmV?d00001
+
+diff --git a/local/bulkmeta/yui/src/selector/build.json b/local/bulkmeta/yui/src/selector/build.json
+new file mode 100755
+index 0000000..468d0b2
+--- /dev/null
++++ b/local/bulkmeta/yui/src/selector/build.json
+@@ -0,0 +1,10 @@
++{
++    "name": "moodle-local_bulkmeta-selector",
++    "builds": {
++        "moodle-local_bulkmeta-selector": {
++            "jsfiles": [
++                "selector.js"
++            ]
++        }
++    }
++}
+diff --git a/local/bulkmeta/yui/src/selector/js/selector.js b/local/bulkmeta/yui/src/selector/js/selector.js
+new file mode 100755
+index 0000000..6133bfa
+--- /dev/null
++++ b/local/bulkmeta/yui/src/selector/js/selector.js
+@@ -0,0 +1,147 @@
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++/**
++ * Javascript library
++ *
++ * @package    local_bulkmeta
++ * @copyright  2014 Troy Williams
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++M.local_bulkmeta = M.local_bulkmeta || {};
++M.local_bulkmeta.selector = {
++    /**
++     * The script which handles the query. URL params are
++     * substituted.
++     *
++     * @property AJAX_SEARCH_URL
++     * @type String
++     */
++    AJAX_SEARCH_URL: M.cfg.wwwroot + '/local/bulkmeta/search.ajax.php?searchtext={query}&id={id}&sesskey={sesskey}',
++
++    /**
++     * The course identifer of course in relation to meta linked courses.
++     *
++     * @property courseid
++     * @type Int
++     * @default null
++     */
++    courseid : null,
++    /**
++     * Name that will be used to reference form controls.
++     *
++     * @property name
++     * @type String
++     * @default null
++     */
++    name : null,
++    /**
++     * References to names various search options. Checkboxes.
++     *
++     * @property options
++     */
++    options : ['searchanywhere', 'fullname', 'idnumber', 'summary'],
++
++    init: function(courseid, name) {
++
++        this.courseid = courseid;
++        this.name = name;
++
++        Y.one('#id_' + name + '_searchbutton').remove();
++        Y.one('#id_' + name + '_clearbutton').remove();
++
++        this.searchfield = Y.one('#id_' + name + '_searchtext');
++        this.searchfield.plug(Y.Plugin.AutoComplete);
++        this.searchfield.ac.set('source', this.prepare_url(this.AJAX_SEARCH_URL, courseid));
++        this.searchfield.ac.set('resultListLocator', 'results');
++        this.searchfield.ac.set('resultTextLocator', 'fullname');
++        this.searchfield.ac.on('results', Y.bind(this.fill_listbox, this));
++        this.searchfield.on('key', Y.bind(this.backspace, this), 'backspace');
++
++        this.listbox = Y.one('#id_' + name + '_link');
++
++        for (var i in this.options) {
++            var optionname = this.options[i];
++            var optionnode = Y.one('#id_' + name + '_option_' + optionname);
++            if (optionnode) {
++                optionnode.on('click', this.set_user_preference, null, name, optionname);
++            }
++        }
++
++    },
++
++    backspace : function() {
++        if (this.get_search_text() === '') {
++            this.searchfield.ac.sendRequest('');
++        }
++        this.searchfield.ac.focus();
++    },
++
++    /**
++     * Gets the search text
++     * @return String the value to search for, with leading and trailing whitespace trimmed.
++     */
++    get_search_text : function() {
++        return this.searchfield.get('value').toString().replace(/^ +| +$/, '');
++    },
++
++    prepare_url : function (url, courseid) {
++        return Y.Lang.sub(url, {
++            sesskey: M.cfg.sesskey,
++            id: courseid
++        });
++    },
++
++    fill_listbox : function(e) {
++        var data = e.data;
++        var courses = {};
++        var optgroup = Y.Node.create('<optgroup></optgroup>');
++        this.listbox.all('optgroup').each(function(optgroup){
++            optgroup.all('option').each(function(option){
++                if (option.get('selected')) {
++                    courses[option.get('value')] = {
++                        id : option.get('value'),
++                        name : option.get('innerText') || option.get('textContent'),
++                        disabled: option.get('disabled')
++                    };
++                }
++                option.remove();
++            }, this);
++            optgroup.remove();
++        }, this);
++
++        count = 0;
++        for (var id in data.result.results) {
++            //console.log(id + ' ' + data.result.results[id]);
++            var option = Y.Node.create('<option value="' + id + '">' + data.result.results[id] + '</option>');
++            optgroup.append(option);
++            count++;
++        }
++        optgroup.set('label', data.result.label);
++        this.listbox.append(optgroup);
++    },
++
++    /**
++     * Sets a user preference for the options tracker
++     * @param {Y.Event|null} e
++     * @param {string} name The general name used when defining the control
++     * @param {string} option The name of the preference to set
++     */
++    set_user_preference : function(e, name, option) {
++       M.util.set_user_preference(name + '_option_' + option,
++                                  Y.one('#id_' + name + '_option_' + option).get('checked'));
++    }
++};
+diff --git a/local/bulkmeta/yui/src/selector/meta/selector.json b/local/bulkmeta/yui/src/selector/meta/selector.json
+new file mode 100755
+index 0000000..4b07c9c
+--- /dev/null
++++ b/local/bulkmeta/yui/src/selector/meta/selector.json
+@@ -0,0 +1,14 @@
++{
++    "moodle-local_bulkmeta-selector": {
++        "requires": [
++            "base",
++            "node",
++            "json-parse",
++            "autocomplete",
++            "autocomplete-filters",
++            "autocomplete-highlighters",
++            "event",
++            "event-key"
++        ]
++    }
++}
+-- 
+1.8.3.1
+

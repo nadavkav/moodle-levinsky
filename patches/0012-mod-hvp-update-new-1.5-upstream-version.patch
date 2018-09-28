@@ -1,0 +1,367 @@
+From da752649ec479ad13062931cd9a5e06b784996f7 Mon Sep 17 00:00:00 2001
+From: Nadav Kavalerchik <nadavkav@gmail.com>
+Date: Wed, 11 Oct 2017 16:38:34 +0300
+Subject: [PATCH 12/95] mod/hvp (update) new 1.5 upstream version
+
+---
+ mod/hvp/ajax.php                | 16 ++++++++++++++++
+ mod/hvp/classes/framework.php   | 22 ++++++++++++++++++++++
+ mod/hvp/classes/xapi_result.php |  8 ++++++++
+ mod/hvp/db/access.php           |  3 +++
+ mod/hvp/lang/de/hvp.php         |  9 ++++++++-
+ mod/hvp/lang/en/hvp.php         |  5 ++++-
+ mod/hvp/lang/fr/hvp.php         |  8 ++++++++
+ mod/hvp/lang/he/hvp.php         |  8 ++++++++
+ mod/hvp/lang/no/hvp.php         |  8 ++++++++
+ mod/hvp/lang/tr/hvp.php         |  8 ++++++++
+ mod/hvp/lib.php                 |  7 ++++++-
+ mod/hvp/settings.php            |  9 ++++++---
+ mod/hvp/version.php             |  4 ++--
+ 13 files changed, 107 insertions(+), 8 deletions(-)
+
+diff --git a/mod/hvp/ajax.php b/mod/hvp/ajax.php
+index 7ef2f0d..707aed9 100644
+--- a/mod/hvp/ajax.php
++++ b/mod/hvp/ajax.php
+@@ -192,6 +192,10 @@ switch($action) {
+      *  int minorVersion
+      */
+     case 'libraries':
++        if (!\mod_hvp\framework::has_access('addinstance', 'nopermissiontoviewcontenttypes')) {
++            break;
++        }
++
+         // Get parameters.
+         $name = optional_param('machineName', '', PARAM_TEXT);
+         $major = optional_param('majorVersion', 0, PARAM_INT);
+@@ -217,6 +221,10 @@ switch($action) {
+      * Load content type cache list to display available libraries in hub
+      */
+     case 'contenttypecache':
++        if (!\mod_hvp\framework::has_access('addinstance', 'nopermissiontoviewcontenttypes')) {
++            break;
++        }
++
+         $editor = \mod_hvp\framework::instance('editor');
+         $editor->ajax->action(H5PEditorEndpoints::CONTENT_TYPE_CACHE);
+         break;
+@@ -231,6 +239,10 @@ switch($action) {
+     case 'files':
+         $token = required_param('token', PARAM_RAW);
+         $contentid = required_param('contentId', PARAM_INT);
++        if (!\mod_hvp\framework::has_access('addinstance', 'nopermissiontouploadfiles')) {
++            break;
++        }
++
+         $editor = \mod_hvp\framework::instance('editor');
+         $editor->ajax->action(H5PEditorEndpoints::FILES, $token, $contentid);
+         break;
+@@ -257,6 +269,10 @@ switch($action) {
+      */
+     case 'libraryupload':
+         $token = required_param('token', PARAM_RAW);
++        if (!\mod_hvp\framework::has_access('addinstance', 'nopermissiontouploadcontent')) {
++            break;
++        }
++
+         $editor = \mod_hvp\framework::instance('editor');
+         $uploadpath = $_FILES['h5p']['tmp_name'];
+         $contentid = optional_param('contentId', 0, PARAM_INT);
+diff --git a/mod/hvp/classes/framework.php b/mod/hvp/classes/framework.php
+index 9f7e3ae..241447a 100644
+--- a/mod/hvp/classes/framework.php
++++ b/mod/hvp/classes/framework.php
+@@ -97,6 +97,27 @@ class framework implements \H5PFrameworkInterface {
+     }
+ 
+     /**
++     * Check if the current user has access to the given cap.
++     * If not use the given error.
++     *
++     * @param string $cap
++     * @param string $error
++     * @return boolean
++     */
++    public static function has_access($cap, $error) {
++        $contextid = required_param('contextId', PARAM_RAW);
++        $context   = \context::instance_by_id($contextid);
++
++        if (!has_capability("mod/hvp:$cap", $context)) {
++            \H5PCore::ajaxError(get_string($error, 'hvp'));
++            http_response_code(403);
++            return false;
++        }
++
++        return true;
++    }
++
++    /**
+      * Get current H5P language code.
+      *
+      * @return string Language Code
+@@ -328,6 +349,7 @@ class framework implements \H5PFrameworkInterface {
+                 'Invalid security token.' => 'invalidtoken',
+                 'No content type was specified.' => 'nocontenttype',
+                 'The chosen content type is invalid.' => 'invalidcontenttype',
++                'You do not have permission to install content types. Contact the administrator of your site.' => 'installdenied',
+                 'You do not have permission to install content types.' => 'installdenied',
+                 'Validating h5p package failed.' => 'validatingh5pfailed',
+                 'Failed to download the requested H5P.' => 'failedtodownloadh5p',
+diff --git a/mod/hvp/classes/xapi_result.php b/mod/hvp/classes/xapi_result.php
+index d48d565..da77d3a 100644
+--- a/mod/hvp/classes/xapi_result.php
++++ b/mod/hvp/classes/xapi_result.php
+@@ -38,6 +38,7 @@ class xapi_result {
+      * Handle xapi results endpoint
+      */
+     public static function handle_ajax() {
++        global $DB;
+ 
+         // Validate token.
+         if (!self::validate_token()) {
+@@ -50,6 +51,13 @@ class xapi_result {
+         $contentid = required_param('contentId', PARAM_INT);
+         $xapiresult = required_param('xAPIResult', PARAM_RAW);
+ 
++        // Validate.
++        $context = \context_course::instance($DB->get_field('hvp', 'course', array('id' => $contentid)));
++        if (!has_capability('mod/hvp:saveresults', $context)) {
++            \H5PCore::ajaxError(get_string('nopermissiontosaveresult', 'hvp'));
++            return;
++        }
++
+         $xapijson = json_decode($xapiresult);
+         if (!$xapijson) {
+             \H5PCore::ajaxError('Invalid json in xAPI data.');
+diff --git a/mod/hvp/db/access.php b/mod/hvp/db/access.php
+index 0d1023c..afd2307 100644
+--- a/mod/hvp/db/access.php
++++ b/mod/hvp/db/access.php
+@@ -58,6 +58,9 @@ $capabilities = array(
+         'captype' => 'write',
+         'contextlevel' => CONTEXT_MODULE,
+         'archetypes' => array(
++            'manager' => CAP_ALLOW,
++            'editingteacher' => CAP_ALLOW,
++            'teacher' => CAP_ALLOW
+         )
+     ),
+ 
+diff --git a/mod/hvp/lang/de/hvp.php b/mod/hvp/lang/de/hvp.php
+index 3cbc1ea..4e79f91 100644
+--- a/mod/hvp/lang/de/hvp.php
++++ b/mod/hvp/lang/de/hvp.php
+@@ -70,7 +70,8 @@ $string['enableembed'] = 'Einbetten-Knopf';
+ $string['enablecopyright'] = 'Urheberrecht-Knopf';
+ $string['enableabout'] = 'Über-H5P-Knopf';
+ 
+-
++$string['sendusagestatistics'] = 'Contribute usage statistics';
++$string['sendusagestatistics_help'] = 'Usage statistics numbers will automatically be reported to help the developers better understand how H5P is used and to determine potential areas of improvement. Read more about which <a {$a}>data is collected on h5p.org</a>.';
+ $string['enablesavecontentstate'] = 'Inhalte automatisch speichern';
+ $string['enablesavecontentstate_help'] = 'Automatisch den Status des interaktiven Inhalts für jeden Nutzer speichern. Das bedeutet, dass die Nutzer da weitermachen können, wo sie aufgehört haben.';
+ $string['contentstatefrequency'] = 'Speicherhäufigkeit';
+@@ -92,6 +93,12 @@ $string['upload'] = 'Hochladen';
+ $string['installedlibraries'] = 'Installierte Bibliotheken';
+ $string['invalidtoken'] = 'Ungültiger Sicherheitsschlüssel.';
+ $string['missingparameters'] = 'Fehlende Parameter';
++$string['nocontenttype'] = 'No content type was specified.';
++$string['invalidcontenttype'] = 'The chosen content type is invalid.';
++$string['installdenied'] = 'You do not have permission to install content types. Contact the administrator of your site.';
++$string['downloadfailed'] = 'Downloading the requested library failed.';
++$string['validationfailed'] = 'The requested H5P was not valid';
++$string['validatingh5pfailed'] = 'Validating h5p package failed.';
+ 
+ // H5P library list headers on admin page.
+ $string['librarylisttitle'] = 'Titel';
+diff --git a/mod/hvp/lang/en/hvp.php b/mod/hvp/lang/en/hvp.php
+index 59bdaa5..f061bfe 100644
+--- a/mod/hvp/lang/en/hvp.php
++++ b/mod/hvp/lang/en/hvp.php
+@@ -84,7 +84,7 @@ $string['sitekey'] = 'Site Key';
+ $string['sitekeydescription'] = 'The site key is a secret that uniquely identifies this site with the Hub.';
+ 
+ $string['sendusagestatistics'] = 'Contribute usage statistics';
+-$string['sendusagestatistics_help'] = 'Usage statistics numbers will automatically be reported to help the developers better understand how H5P is used and to determine potential areas of improvement.';
++$string['sendusagestatistics_help'] = 'Usage statistics numbers will automatically be reported to help the developers better understand how H5P is used and to determine potential areas of improvement. Read more about which <a {$a}>data is collected on h5p.org</a>.';
+ $string['enablesavecontentstate'] = 'Save content state';
+ $string['enablesavecontentstate_help'] = 'Automatically save the current state of interactive content for each user. This means that the user may pick up where he left off.';
+ $string['contentstatefrequency'] = 'Save content state frequency';
+@@ -217,6 +217,9 @@ $string['nopermissiontorestrict'] = 'You do not have permission to restrict libr
+ $string['nopermissiontosavecontentuserdata'] = 'You do not have permission to save content user data.';
+ $string['nopermissiontosaveresult'] = 'You do not have permission to save result for this content.';
+ $string['nopermissiontoviewresult'] = 'You do not have permission to view results for this content.';
++$string['nopermissiontouploadfiles'] = 'You do not have permission to upload files here.';
++$string['nopermissiontouploadcontent'] = 'You do not have permission to upload content here.';
++$string['nopermissiontoviewcontenttypes'] = 'You do not have permission to view the content types.';
+ 
+ // Editor translations.
+ $string['noziparchive'] = 'Your PHP version does not support ZipArchive.';
+diff --git a/mod/hvp/lang/fr/hvp.php b/mod/hvp/lang/fr/hvp.php
+index 3039d8e..dcd757e 100644
+--- a/mod/hvp/lang/fr/hvp.php
++++ b/mod/hvp/lang/fr/hvp.php
+@@ -74,6 +74,8 @@ $string['enableembed'] = 'Bouton d\'intégration';
+ $string['enablecopyright'] = 'Bouton de copyright';
+ $string['enableabout'] = 'Bouton à propos de H5P';
+ 
++$string['sendusagestatistics'] = 'Contribute usage statistics';
++$string['sendusagestatistics_help'] = 'Usage statistics numbers will automatically be reported to help the developers better understand how H5P is used and to determine potential areas of improvement. Read more about which <a {$a}>data is collected on h5p.org</a>.';
+ $string['enablesavecontentstate'] = 'Sauvegarder l\'état du contenu actuel';
+ $string['enablesavecontentstate_help'] = 'Sauvegarder automatiquement l\'état actuel du contenu interactif pour chaque utilisateur. Ceci signifie que l\'utilisateur pourra reprendre là où il en est resté la fois précédente.';
+ $string['contentstatefrequency'] = 'Fréquence des sauvegardes d\'état de vos contenus';
+@@ -95,6 +97,12 @@ $string['upload'] = 'Uploader';
+ $string['installedlibraries'] = 'Bibliothèques installées';
+ $string['invalidtoken'] = 'Token de sécurité invalide.';
+ $string['missingparameters'] = 'Paramètres manquants';
++$string['nocontenttype'] = 'No content type was specified.';
++$string['invalidcontenttype'] = 'The chosen content type is invalid.';
++$string['installdenied'] = 'You do not have permission to install content types. Contact the administrator of your site.';
++$string['downloadfailed'] = 'Downloading the requested library failed.';
++$string['validationfailed'] = 'The requested H5P was not valid';
++$string['validatingh5pfailed'] = 'Validating h5p package failed.';
+ 
+ // H5P library list headers on admin page.
+ $string['librarylisttitle'] = 'Titre';
+diff --git a/mod/hvp/lang/he/hvp.php b/mod/hvp/lang/he/hvp.php
+index 6684516..0c5100d 100644
+--- a/mod/hvp/lang/he/hvp.php
++++ b/mod/hvp/lang/he/hvp.php
+@@ -70,6 +70,8 @@ $string['enableembed'] = 'Embed button';
+ $string['enablecopyright'] = 'Copyright button';
+ $string['enableabout'] = 'About H5P button';
+ 
++$string['sendusagestatistics'] = 'Contribute usage statistics';
++$string['sendusagestatistics_help'] = 'Usage statistics numbers will automatically be reported to help the developers better understand how H5P is used and to determine potential areas of improvement. Read more about which <a {$a}>data is collected on h5p.org</a>.';
+ $string['enablesavecontentstate'] = 'Save content state';
+ $string['enablesavecontentstate_help'] = 'Automatically save the current state of interactive content for each user. This means that the user may pick up where he left off.';
+ $string['contentstatefrequency'] = 'Save content state frequency';
+@@ -91,6 +93,12 @@ $string['upload'] = 'Upload';
+ $string['installedlibraries'] = 'Installed Libraries';
+ $string['invalidtoken'] = 'Invalid security token.';
+ $string['missingparameters'] = 'Missing parameters';
++$string['nocontenttype'] = 'No content type was specified.';
++$string['invalidcontenttype'] = 'The chosen content type is invalid.';
++$string['installdenied'] = 'You do not have permission to install content types. Contact the administrator of your site.';
++$string['downloadfailed'] = 'Downloading the requested library failed.';
++$string['validationfailed'] = 'The requested H5P was not valid';
++$string['validatingh5pfailed'] = 'Validating h5p package failed.';
+ 
+ // H5P library list headers on admin page.
+ $string['librarylisttitle'] = 'Title';
+diff --git a/mod/hvp/lang/no/hvp.php b/mod/hvp/lang/no/hvp.php
+index fb3b403..512982f 100644
+--- a/mod/hvp/lang/no/hvp.php
++++ b/mod/hvp/lang/no/hvp.php
+@@ -82,6 +82,8 @@ $string['enableembed'] = 'Inkluder-knapp';
+ $string['enablecopyright'] = 'Opphavsretts-knapp';
+ $string['enableabout'] = 'Om H5P-knapp';
+ 
++$string['sendusagestatistics'] = 'Bidra med statistikk';
++$string['sendusagestatistics_help'] = 'Bruks-statistikk blir sendt til h5p.org for å bedre forstå hvordan H5P brukes og hvor det ka forbedres. Les mer om hvilke <a {$a}>data som blir samlet på h5p.org</a>.';
+ $string['enablesavecontentstate'] = 'Lagre tilstanden til innholdet';
+ $string['enablesavecontentstate_help'] = 'Automatisk lagring av hva brukeren har svart og hvor langt brukeren har kommet. Dette betyr brukeren kan fortsette der han avsluttet.';
+ $string['contentstatefrequency'] = 'Frekvens for tilstandslagring';
+@@ -105,6 +107,12 @@ $string['upload'] = 'Last opp';
+ $string['installedlibraries'] = 'Installerte bibliotek';
+ $string['invalidtoken'] = 'Ufyldig sikkerhetsnøkkel.';
+ $string['missingparameters'] = 'Mangler parametre';
++$string['nocontenttype'] = 'Ingen bibliotek var angitt.';
++$string['invalidcontenttype'] = 'Det valgte biblioteket er ikke gyldig.';
++$string['installdenied'] = 'Du har ikke nok rettigheter til å installere biblioteket. Kontakt nettside-administrator.';
++$string['downloadfailed'] = 'Nedlastingen av det angitte biblioteket klarte ikke å fullføre.';
++$string['validationfailed'] = 'Valgt H5P er ikke gyldig.';
++$string['validatingh5pfailed'] = 'Validering av H5P pakken har feilet.';
+ 
+ // H5P library list headers on admin page.
+ $string['librarylisttitle'] = 'Tittel';
+diff --git a/mod/hvp/lang/tr/hvp.php b/mod/hvp/lang/tr/hvp.php
+index eeb9a68..759847d 100644
+--- a/mod/hvp/lang/tr/hvp.php
++++ b/mod/hvp/lang/tr/hvp.php
+@@ -74,6 +74,8 @@ $string['enableembed'] = 'Katma tuşu';
+ $string['enablecopyright'] = 'Telif hakkı tuşu';
+ $string['enableabout'] = 'H5P bilgisi tuşu';
+ 
++$string['sendusagestatistics'] = 'Contribute usage statistics';
++$string['sendusagestatistics_help'] = 'Usage statistics numbers will automatically be reported to help the developers better understand how H5P is used and to determine potential areas of improvement. Read more about which <a {$a}>data is collected on h5p.org</a>.';
+ $string['enablesavecontentstate'] = 'İçerik durumunu kaydet';
+ $string['enablesavecontentstate_help'] = 'Her bir kullanıcı için mevcut etkileşimsel çerik durumunu kendiliğinden kaydet. Böylece kullanıcı bıraktığı yerden devam edebilir.';
+ $string['contentstatefrequency'] = 'İçerik durumunu kaydetme sıklığı';
+@@ -95,6 +97,12 @@ $string['upload'] = 'Yükle';
+ $string['installedlibraries'] = 'Kurulu Kitaplıklar';
+ $string['invalidtoken'] = 'Güvenlik bilgisi geçersiz.';
+ $string['missingparameters'] = 'Parametreler eksik';
++$string['nocontenttype'] = 'No content type was specified.';
++$string['invalidcontenttype'] = 'The chosen content type is invalid.';
++$string['installdenied'] = 'You do not have permission to install content types. Contact the administrator of your site.';
++$string['downloadfailed'] = 'Downloading the requested library failed.';
++$string['validationfailed'] = 'The requested H5P was not valid';
++$string['validatingh5pfailed'] = 'Validating h5p package failed.';
+ 
+ // H5P library list headers on admin page.
+ $string['librarylisttitle'] = 'Başlık';
+diff --git a/mod/hvp/lib.php b/mod/hvp/lib.php
+index ca4d995..030795d 100644
+--- a/mod/hvp/lib.php
++++ b/mod/hvp/lib.php
+@@ -282,6 +282,11 @@ function hvp_pluginfile($course, $cm, $context, $filearea, $args, $forcedownload
+                 return false; // Invalid context.
+             }
+ 
++            // Check permission.
++            if (!has_capability('mod/hvp:getcontent', $context)) {
++                return false;
++            }
++
+             // Get core.
+             $h5pinterface = \mod_hvp\framework::instance('interface');
+             $h5pcore = \mod_hvp\framework::instance('core');
+@@ -355,7 +360,7 @@ function hvp_grade_item_update($hvp, $grades=null) {
+     }
+ 
+     // Recalculate rawgrade relative to grademax.
+-    if (isset($hvp->rawgrade) && isset($hvp->rawgrademax)) {
++    if (isset($hvp->rawgrade) && isset($hvp->rawgrademax) && $hvp->rawgrademax != 0) {
+         // Get max grade Obs: do not try to use grade_get_grades because it
+         // requires context which we don't have inside an ajax.
+         $gradeitem = grade_item::fetch(array(
+diff --git a/mod/hvp/settings.php b/mod/hvp/settings.php
+index 2e51772..f9c92b9 100644
+--- a/mod/hvp/settings.php
++++ b/mod/hvp/settings.php
+@@ -59,9 +59,12 @@ if ($ADMIN->fulltree) {
+ 
+     // Send usage statistics.
+     $settings->add(
+-            new admin_setting_configcheckbox('mod_hvp/send_usage_statistics',
+-                    get_string('sendusagestatistics', 'hvp'),
+-                    get_string('sendusagestatistics_help', 'hvp'), 1));
++        new admin_setting_configcheckbox('mod_hvp/send_usage_statistics',
++            get_string('sendusagestatistics', 'hvp'),
++            get_string('sendusagestatistics_help', 'hvp',
++                'href="https://h5p.org/tracking-the-usage-of-h5p" target="_blank"'),
++            1)
++    );
+ 
+     $choices = array(
+         H5PDisplayOptionBehaviour::NEVER_SHOW => get_string('displayoptionnevershow', 'hvp'),
+diff --git a/mod/hvp/version.php b/mod/hvp/version.php
+index 38c98f4..3269e39 100644
+--- a/mod/hvp/version.php
++++ b/mod/hvp/version.php
+@@ -23,9 +23,9 @@
+ 
+ defined('MOODLE_INTERNAL') || die();
+ 
+-$plugin->version   = 2017062700;
++$plugin->version   = 2017083100;
+ $plugin->requires  = 2013051403;
+ $plugin->cron      = 0;
+ $plugin->component = 'mod_hvp';
+ $plugin->maturity  = MATURITY_STABLE;
+-$plugin->release   = '1.4';
++$plugin->release   = '1.5';
+-- 
+1.8.3.1
+

@@ -1,0 +1,49 @@
+From df6b0dbc44af9249963b1da1f73f304b3ac3ebd1 Mon Sep 17 00:00:00 2001
+From: Nadav Kavalerchik <nadavkav@gmail.com>
+Date: Fri, 28 Sep 2018 21:58:58 +0300
+Subject: [PATCH 95/95] lang/en (translation) Levinsky strings
+
+---
+ lang/en/levinsky.php           | 11 +++++++++++
+ lang/en/levinsky_he_backup.php | 11 +++++++++++
+ 2 files changed, 22 insertions(+)
+ create mode 100644 lang/en/levinsky.php
+ create mode 100644 lang/en/levinsky_he_backup.php
+
+diff --git a/lang/en/levinsky.php b/lang/en/levinsky.php
+new file mode 100644
+index 0000000..0eea0e7
+--- /dev/null
++++ b/lang/en/levinsky.php
+@@ -0,0 +1,11 @@
++<?php
++
++$string['chooseyear'] = 'Choose year';
++$string['nosyllabus'] = 'לא זמין סילבוס לקורס זה, אנא פנו אל המרצה לקבלת מידע נוסף';
++$string['syllabus'] = 'Syllabus';
++$string['mytimetable'] = 'לוח מפגשים בכיתות';
++$string['noclasses'] = 'מידע אודות מיקום המפגשים בכיתות אינו זמין, יש לפנות למזכירות למידע עדכני.';
++
++$string['logincheck'] = 'Please check you username and password';
++$string['logincheckpassword'] = 'You are not allowed to input Hebrew letters in the password';
++$string['notcalculated'] = 'Not calculated';
+diff --git a/lang/en/levinsky_he_backup.php b/lang/en/levinsky_he_backup.php
+new file mode 100644
+index 0000000..fd5a2c6
+--- /dev/null
++++ b/lang/en/levinsky_he_backup.php
+@@ -0,0 +1,11 @@
++<?php
++
++$string['chooseyear'] = 'בחרו שנה';
++$string['nosyllabus'] = 'לא זמין סילבוס לקורס זה, אנא פנו אל המרצה לקבלת מידע נוסף';
++$string['syllabus'] = 'סילבוס';
++$string['mytimetable'] = 'לוח מפגשים בכיתות';
++$string['noclasses'] = 'מידע אודות מיקום המפגשים בכיתות אינו זמין, יש לפנות למזכירות למידע עדכני.';
++
++$string['logincheck'] = 'אנא בדקו את שם המשתמש והסיסמה שלכם';
++$string['logincheckpassword'] = 'לא ניתן להזין תווים בעברית בסיסמה';
++$string['notcalculated'] = 'לא מחושב';
+-- 
+1.8.3.1
+

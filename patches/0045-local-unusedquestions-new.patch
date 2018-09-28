@@ -1,0 +1,200 @@
+From d139d51cc49f520c7e7b88c00cd143dbca6a985c Mon Sep 17 00:00:00 2001
+From: Nadav Kavalerchik <nadavkav@gmail.com>
+Date: Wed, 11 Oct 2017 21:29:32 +0300
+Subject: [PATCH 45/95] local/unusedquestions (new)
+
+---
+ local/unusedquestions/README.txt                   | 22 +++++++
+ .../lang/en/local_unusedquestions.php              | 20 +++++++
+ .../lang/he/local_unusedquestions.php              | 20 +++++++
+ local/unusedquestions/lib.php                      | 67 ++++++++++++++++++++++
+ local/unusedquestions/version.php                  | 20 +++++++
+ 5 files changed, 149 insertions(+)
+ create mode 100755 local/unusedquestions/README.txt
+ create mode 100755 local/unusedquestions/lang/en/local_unusedquestions.php
+ create mode 100755 local/unusedquestions/lang/he/local_unusedquestions.php
+ create mode 100755 local/unusedquestions/lib.php
+ create mode 100755 local/unusedquestions/version.php
+
+diff --git a/local/unusedquestions/README.txt b/local/unusedquestions/README.txt
+new file mode 100755
+index 0000000..b294235
+--- /dev/null
++++ b/local/unusedquestions/README.txt
+@@ -0,0 +1,22 @@
++Used/ Unused Question search module for Moodle (http://moodle.org/) - Copyright (C) 2015 Ray Morris
++
++Extends the Moodle question bank to find questions which are / are not used in a quiz.
++
++This may be useful when adding questions to a quiz - no need to add questions which are already in the quiz.
++It may also be useful to determine if some questions should be removed or moved, since they aren't being used.
++
++This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License
++as published by the Free Software Foundation; either version 3 of the License, or (at your option) any later version.
++
++This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied
++warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details:
++http://www.gnu.org/copyleft/gpl.html
++
++Project Page:
++https://github.com/MorrisR2/moodle_local_unusedquestions
++
++Installation:
++* http://docs.moodle.org/20/en/Installing_contributed_modules_or_plugins
++
++Issue tracker:
++* https://github.com/MorrisR2/moodle_local_unusedquestions/issues
+diff --git a/local/unusedquestions/lang/en/local_unusedquestions.php b/local/unusedquestions/lang/en/local_unusedquestions.php
+new file mode 100755
+index 0000000..8292b39
+--- /dev/null
++++ b/local/unusedquestions/lang/en/local_unusedquestions.php
+@@ -0,0 +1,20 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++$string['pluginname'] = 'Question bank unused questions';
++$string['onlyused'] = 'Only used';
++$string['onlyunused'] = 'Only unused';
++$string['usedandunused'] = 'Both used &amp; unused';
+diff --git a/local/unusedquestions/lang/he/local_unusedquestions.php b/local/unusedquestions/lang/he/local_unusedquestions.php
+new file mode 100755
+index 0000000..0fb2fe6
+--- /dev/null
++++ b/local/unusedquestions/lang/he/local_unusedquestions.php
+@@ -0,0 +1,20 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++$string['pluginname'] = 'שאלות בהן לא נעשה שימוש';
++$string['onlyused'] = 'תצוגת שאלות בהן נעשה שימוש בבחנים';
++$string['onlyunused'] = 'תצוגת שאלות בהן לא נעשה שימוש בבחנים';
++$string['usedandunused'] = 'תצוגת כל השאלות';
+diff --git a/local/unusedquestions/lib.php b/local/unusedquestions/lib.php
+new file mode 100755
+index 0000000..d7f0b6d
+--- /dev/null
++++ b/local/unusedquestions/lib.php
+@@ -0,0 +1,67 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++defined('MOODLE_INTERNAL') || die;
++
++global $CFG;
++require_once($CFG->dirroot . '/question/editlib.php');
++
++function local_unusedquestions_get_question_bank_search_conditions($caller) {
++    return array( new local_unusedquestions_question_bank_search_condition($caller));
++}
++
++class local_unusedquestions_question_bank_search_condition extends core_question\bank\search\condition  {
++    protected $where;
++    protected $params;
++
++    const ONLYUSED = 1;
++    const ONLYUNUSED = -1;
++    const ONLYANY = 0;
++
++    public function __construct() {
++        $this->onlyused = optional_param('onlyused', 0, PARAM_INT);
++
++        if ($this->onlyused != self::ONLYANY) {
++            $this->init();
++        }
++    }
++
++    public function where() {
++        return $this->where;
++    }
++
++    public function params() {
++        return $this->params;
++    }
++
++    public function display_options_adv() {
++        echo "<br />\n";
++        $options = array(self::ONLYUNUSED => get_string('onlyunused', 'local_unusedquestions'),
++                self::ONLYUSED => get_string('onlyused', 'local_unusedquestions'));
++        $attr = array ('class' => 'searchoptions');
++        echo html_writer::select($options, 'onlyused', $this->onlyused,
++                array(self::ONLYANY => get_string('usedandunused', 'local_unusedquestions')), $attr);
++    }
++
++    private function init() {
++        global $DB;
++        if ($this->onlyused == self::ONLYUSED) {
++            $this->where = '(q.id IN (SELECT questionid FROM {quiz_slots}))';
++        } else if ($this->onlyused == self::ONLYUNUSED) {
++            $this->where = '(q.id NOT IN (SELECT questionid FROM {quiz_slots}))';
++        }
++    }
++
++}
+diff --git a/local/unusedquestions/version.php b/local/unusedquestions/version.php
+new file mode 100755
+index 0000000..80771b0
+--- /dev/null
++++ b/local/unusedquestions/version.php
+@@ -0,0 +1,20 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++$plugin->version   = 2015020901;
++$plugin->release   = '1.0';
++$plugin->maturity  = MATURITY_ALPHA;
++$plugin->requires  = 2014051200;
++$plugin->component = 'local_unusedquestions';
+-- 
+1.8.3.1
+

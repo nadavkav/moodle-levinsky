@@ -1,0 +1,29 @@
+From f2c26fcecf44d128a0217023819638256a4bdc80 Mon Sep 17 00:00:00 2001
+From: Nadav Kavalerchik <nadavkav@gmail.com>
+Date: Fri, 28 Sep 2018 21:57:40 +0300
+Subject: [PATCH 94/95] block/course_list (patch) sort courses (+ see last two
+ commits)
+
+---
+ blocks/course_list/block_course_list.php | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/blocks/course_list/block_course_list.php b/blocks/course_list/block_course_list.php
+index 36003f7..c7a8ece 100644
+--- a/blocks/course_list/block_course_list.php
++++ b/blocks/course_list/block_course_list.php
+@@ -64,6 +64,11 @@ class block_course_list extends block_list {
+             } else {
+                 $sortorder = 'visible DESC, sortorder ASC';
+             }
++            // Special sorting of idnumber desc
++            if (!empty($CFG->navsortmycoursessort) &&
++                ($CFG->navsortmycoursessort === 'idnumberdesc' || $CFG->navsortmycoursessort === 'lastaccess')) {
++                $sortorder = 'visible DESC, idnumber DESC';
++            }
+             if ($courses = enrol_get_my_courses(NULL, $sortorder)) {
+                 foreach ($courses as $course) {
+                     $coursecontext = context_course::instance($course->id);
+-- 
+1.8.3.1
+

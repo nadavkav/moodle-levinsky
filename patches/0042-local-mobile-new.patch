@@ -1,0 +1,1636 @@
+From c009f1080126619d2f8cd0b6951f8a1df14135de Mon Sep 17 00:00:00 2001
+From: Nadav Kavalerchik <nadavkav@gmail.com>
+Date: Wed, 11 Oct 2017 21:27:07 +0300
+Subject: [PATCH 42/95] local/mobile (new)
+
+---
+ local/mobile/README.md                |  18 ++
+ local/mobile/check.php                |  83 ++++++
+ local/mobile/checkconfiguration.php   | 106 ++++++++
+ local/mobile/db/services.php          | 255 ++++++++++++++++++
+ local/mobile/db/upgrade.php           |  78 ++++++
+ local/mobile/externallib.php          | 469 ++++++++++++++++++++++++++++++++++
+ local/mobile/futurelib.php            | 162 ++++++++++++
+ local/mobile/lang/en/local_mobile.php |  43 ++++
+ local/mobile/launch.php               | 236 +++++++++++++++++
+ local/mobile/settings.php             |  49 ++++
+ local/mobile/version.php              |  31 +++
+ 11 files changed, 1530 insertions(+)
+ create mode 100755 local/mobile/README.md
+ create mode 100755 local/mobile/check.php
+ create mode 100755 local/mobile/checkconfiguration.php
+ create mode 100755 local/mobile/db/services.php
+ create mode 100755 local/mobile/db/upgrade.php
+ create mode 100755 local/mobile/externallib.php
+ create mode 100755 local/mobile/futurelib.php
+ create mode 100755 local/mobile/lang/en/local_mobile.php
+ create mode 100755 local/mobile/launch.php
+ create mode 100755 local/mobile/settings.php
+ create mode 100755 local/mobile/version.php
+
+diff --git a/local/mobile/README.md b/local/mobile/README.md
+new file mode 100755
+index 0000000..86fb19c
+--- /dev/null
++++ b/local/mobile/README.md
+@@ -0,0 +1,18 @@
++moodle-local_mobile
++===================
++
++Local plugin for adding new features to the current Moodle Mobile app.
++
++This add-on provides new features and web services which are currently only available in latest Moodle versions.
++
++How it works
++============
++
++Once installed the plugin creates a new service "Moodle Mobile additional features".
++
++The Mobile app checks if this service is enabled. If not, the Mobile app falls backs to the standard core Mobile app service.
++
++
++Installation instructions and additional information:
++
++https://docs.moodle.org/en/Moodle_Mobile_additional_features
+\ No newline at end of file
+diff --git a/local/mobile/check.php b/local/mobile/check.php
+new file mode 100755
+index 0000000..4353bb4
+--- /dev/null
++++ b/local/mobile/check.php
+@@ -0,0 +1,83 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++/**
++ * JSON Rest service to check several Moodle Mobile settings:
++ * - Web Services enabled
++ * - Mobile Services enabled
++ * - Site is in maintenance mode
++ * - The user has to login in the  site using the browser (instead in the app)
++ *
++ * @package    local_mobile
++ * @copyright  2014 Juan Leyva <juan@moodle.com>
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++define('AJAX_SCRIPT', true);
++define('REQUIRE_CORRECT_ACCESS', true);
++define('NO_MOODLE_COOKIES', true);
++
++require_once(dirname(__FILE__) . '/../../config.php');
++
++$serviceshortname  = required_param('service',  PARAM_ALPHANUMEXT);
++
++// Allow CORS requests.
++header('Access-Control-Allow-Origin: *');
++echo $OUTPUT->header();
++
++$response = new stdClass();
++$response->error = 0;
++$response->code  = 0;    // Code is used for both success or failure status.
++
++if (!empty($CFG->maintenance_enabled)) {
++    $response->error = 1;
++    $response->code  = 1;
++    echo json_encode($response);
++    die;
++}
++
++if (!$CFG->enablewebservices) {
++    $response->error = 1;
++    $response->code  = 2;
++    echo json_encode($response);
++    die;
++}
++
++// Check if the service exists and is enabled.
++if (!$DB->record_exists('external_services', array('shortname' => $serviceshortname , 'enabled' => 1))) {
++    $response->error = 1;
++
++    // There is at least one mobile service enabled.
++    if ($DB->record_exists('external_services', array('shortname' => MOODLE_OFFICIAL_MOBILE_SERVICE , 'enabled' => 1))) {
++        $response->code  = 3;
++    }
++    else {
++        $response->code  = 4;
++    }
++    echo json_encode($response);
++    die;
++}
++
++// Normal login using the app.
++$response->code  = 1;
++
++$typeoflogin = get_config('local_mobile', 'typeoflogin');
++if (!empty($typeoflogin)) {
++    $response->code = $typeoflogin;
++}
++
++echo json_encode($response);
++die;
+\ No newline at end of file
+diff --git a/local/mobile/checkconfiguration.php b/local/mobile/checkconfiguration.php
+new file mode 100755
+index 0000000..4598f47
+--- /dev/null
++++ b/local/mobile/checkconfiguration.php
+@@ -0,0 +1,106 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++/**
++ * Check the plugin configuration to see if everything is correctly set-up
++ *
++ * @package    local_mobile
++ * @copyright  2016 Juan Leyva <juan@moodle.com>
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++require('../../config.php');
++
++$PAGE->set_url(new moodle_url('/admin/settings.php?section=local_mobile'));
++$PAGE->set_context(context_system::instance());
++$PAGE->set_pagelayout('admin');
++
++require_login();
++require_sesskey();
++require_capability('moodle/site:config', context_system::instance());
++
++$strheading = get_string('checkpluginconfiguration', 'local_mobile');
++$PAGE->navbar->add($strheading);
++
++$PAGE->set_heading($strheading);
++$PAGE->set_title($strheading);
++
++echo $OUTPUT->header();
++
++$table = new html_table();
++$table->head = array(get_string('step', 'webservice'), get_string('status'), get_string('description'));
++$table->colclasses = array('leftalign step', 'leftalign status', 'leftalign description');
++$table->id = 'onesystemcontrol';
++$table->attributes['class'] = 'admintable wsoverview generaltable';
++$table->data = array();
++
++// 1. Enable Web Services.
++$row = array();
++$url = new moodle_url("/admin/search.php?query=enablewebservices");
++$row[0] = "1. " . html_writer::tag('a', get_string('enablews', 'webservice'),
++                array('href' => $url));
++$status = html_writer::tag('span', get_string('no'), array('class' => 'statuscritical'));
++if ($CFG->enablewebservices) {
++    $status = get_string('yes');
++}
++$row[1] = $status;
++$row[2] = get_string('enablewsdescription', 'webservice');
++$table->data[] = $row;
++
++// 2. Enable Mobile services.
++$row = array();
++$url = new moodle_url("/admin/settings.php?section=mobile");
++$row[0] = "2. " . html_writer::tag('a', get_string('enablemobilewebservice', 'admin'), array('href' => $url));
++$status = html_writer::tag('span', get_string('no'), array('class' => 'statuscritical'));
++if ($CFG->enablemobilewebservice) {
++    $status = get_string('yes');
++}
++$row[1] = $status;
++$enablemobiledocurl = new moodle_url(get_docs_url('Enable_mobile_web_services'));
++$enablemobiledoclink = html_writer::link($enablemobiledocurl, new lang_string('documentation'));
++$row[2] = get_string('configenablemobilewebservice', 'admin', $enablemobiledoclink);
++$table->data[] = $row;
++
++// 3. Enable the Moodle Mobile additional features service.
++$row = array();
++$service = $DB->get_record('external_services', array('shortname' => 'local_mobile'));
++$url = new moodle_url("/admin/webservice/service.php?id=" . $service->id);
++$row[0] = "3. " . html_writer::tag('a', get_string('enableadditionalservice', 'local_mobile'), array('href' => $url));
++$status = html_writer::tag('span', get_string('no'), array('class' => 'statuscritical'));
++if ($service->enabled) {
++    $status = get_string('yes');
++}
++$row[1] = $status;
++$row[2] = get_string('enableadditionalservicedescription', 'local_mobile');
++$table->data[] = $row;
++
++// 4. Allow permissions.
++$row = array();
++$url = new moodle_url("/admin/roles/define.php?action=edit&roleid=" . $CFG->defaultuserroleid);
++$row[0] = "4. " . html_writer::tag('a', get_string('allowpermissions', 'local_mobile'), array('href' => $url));
++$status = html_writer::tag('span', get_string('no'), array('class' => 'statuscritical'));
++if ($DB->record_exists('role_capabilities', array('permission' => CAP_ALLOW, 'roleid' => $CFG->defaultuserroleid,
++                                                    'capability' => 'moodle/webservice:createtoken'))) {
++    $status = get_string('yes');
++}
++$row[1] = $status;
++$row[2] = get_string('allowpermissionsdescription', 'local_mobile');
++$table->data[] = $row;
++
++
++echo html_writer::table($table);
++
++echo $OUTPUT->footer();
+diff --git a/local/mobile/db/services.php b/local/mobile/db/services.php
+new file mode 100755
+index 0000000..908ad5e
+--- /dev/null
++++ b/local/mobile/db/services.php
+@@ -0,0 +1,255 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++/**
++ * External functions and service definitions.
++ *
++ * @package    local_mobile
++ * @copyright  2014 Juan Leyva <juan@moodle.com>
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++defined('MOODLE_INTERNAL') || die;
++
++$functions = array(
++    'local_mobile_get_plugin_settings' => array(
++        'classname'   => 'local_mobile_external',
++        'methodname'  => 'get_plugin_settings',
++        'classpath'   => 'local/mobile/externallib.php',
++        'description' => 'Retrieve the plugin settings.',
++        'type'        => 'read',
++    ),
++
++    'local_mobile_mod_quiz_get_quizzes_by_courses' => array(
++        'classname'     => 'local_mobile_external',
++        'methodname'    => 'mod_quiz_get_quizzes_by_courses',
++        'description'   => 'Returns a list of quizzes in a provided list of courses,
++                            if no list is provided all quizzes that the user can view will be returned.',
++        'type'          => 'read',
++        'capabilities'  => 'mod/quiz:view',
++    ),
++
++    'local_mobile_mod_quiz_get_attempt_data' => array(
++        'classname'     => 'local_mobile_external',
++        'methodname'    => 'mod_quiz_get_attempt_data',
++        'description'   => 'Returns information for the given attempt page for a quiz attempt in progress.',
++        'type'          => 'read',
++        'capabilities'  => 'mod/quiz:attempt',
++    ),
++
++    'local_mobile_mod_quiz_start_attempt' => array(
++        'classname'     => 'local_mobile_external',
++        'methodname'    => 'mod_quiz_start_attempt',
++        'description'   => 'Starts a new attempt at a quiz.',
++        'type'          => 'write',
++        'capabilities'  => 'mod/quiz:attempt',
++    ),
++
++    'local_mobile_mod_quiz_save_attempt' => array(
++        'classname'     => 'local_mobile_external',
++        'methodname'    => 'mod_quiz_save_attempt',
++        'description'   => 'Processes save requests during the quiz.
++                            This function is intended for the quiz auto-save feature.',
++        'type'          => 'write',
++        'capabilities'  => 'mod/quiz:attempt',
++    ),
++    'local_mobile_mod_quiz_process_attempt' => array(
++        'classname'     => 'local_mobile_external',
++        'methodname'    => 'mod_quiz_process_attempt',
++        'description'   => 'Process responses during an attempt at a quiz and also deals with attempts finishing.',
++        'type'          => 'write',
++        'capabilities'  => 'mod/quiz:attempt',
++    ),
++
++);
++
++$services = array(
++   'Moodle Mobile additional features service'  => array(
++        'functions' => array (
++            'core_badges_get_user_badges',
++            'core_calendar_get_calendar_events',
++            'core_comment_get_comments',
++            'core_competency_list_course_competencies',
++            'core_competency_grade_competency_in_course',
++            'core_competency_get_scale_values',
++            'core_competency_delete_evidence',
++            'core_competency_competency_viewed',
++            'core_competency_user_competency_viewed',
++            'core_competency_user_competency_viewed_in_plan',
++            'core_competency_user_competency_viewed_in_course',
++            'core_competency_user_competency_plan_viewed',
++            'core_completion_get_activities_completion_status',
++            'core_completion_get_course_completion_status',
++            'core_completion_mark_course_self_completed',
++            'core_completion_update_activity_completion_status_manually',
++            'core_course_get_contents',
++            'core_course_get_course_module',
++            'core_course_get_course_module_by_instance',
++            'core_course_get_courses',
++            'core_course_search_courses',
++            'core_course_view_course',
++            'core_enrol_get_enrolled_users',
++            'core_enrol_get_users_courses',
++            'core_enrol_get_course_enrolment_methods',
++            'core_get_component_strings',   // Don't remove this, the app relies on this to check the min version.
++            'core_group_get_activity_allowed_groups',
++            'core_group_get_activity_groupmode',
++            'core_group_get_course_user_groups',
++            'core_files_get_files',
++            'core_message_block_contacts',
++            'core_message_create_contacts',
++            'core_message_delete_contacts',
++            'core_message_get_blocked_users',
++            'core_message_get_contacts',
++            'core_message_get_messages',
++            'core_message_mark_message_read',
++            'core_message_search_contacts',
++            'core_notes_delete_notes',
++            'core_message_send_instant_messages',
++            'core_message_unblock_contacts',
++            'core_message_delete_message',
++            'core_notes_create_notes',
++            'core_notes_get_course_notes',
++            'core_notes_view_notes',
++            'core_rating_get_item_ratings',
++            'core_user_add_user_device',
++            'core_user_add_user_private_files',
++            'core_user_get_course_user_profiles',
++            'core_user_get_users_by_field',
++            'core_user_get_users_by_id',
++            'core_user_remove_user_device',
++            'core_user_view_user_list',
++            'core_user_view_user_profile',
++            'core_webservice_get_site_info',
++            'enrol_self_enrol_user',
++            'enrol_self_get_instance_info',
++            'enrol_guest_get_instance_info',
++            'get_plugin_settings',
++            'gradereport_user_get_grades_table',
++            'gradereport_user_view_grade_report',
++            'message_airnotifier_are_notification_preferences_configured',
++            'message_airnotifier_is_system_configured',
++            'mod_assign_get_assignments',
++            'mod_assign_get_submission_status',
++            'mod_assign_get_submissions',
++            'mod_assign_save_submission',
++            'mod_assign_submit_for_grading',
++            'mod_assign_view_grading_table',
++            'mod_assign_list_participants',
++            'mod_assign_view_submission_status',
++            'mod_assign_get_user_mappings',
++            'mod_book_view_book',
++            'mod_chat_get_chat_latest_messages',
++            'mod_chat_get_chat_users',
++            'mod_chat_get_chats_by_courses',
++            'mod_chat_login_user',
++            'mod_chat_send_chat_message',
++            'mod_chat_view_chat',
++            'mod_choice_delete_choice_responses',
++            'mod_choice_get_choice_options',
++            'mod_choice_get_choice_results',
++            'mod_choice_get_choices_by_courses',
++            'mod_choice_submit_choice_response',
++            'mod_choice_view_choice',
++            'mod_data_get_databases_by_courses',
++            'mod_folder_view_folder',
++            'mod_forum_add_discussion',
++            'mod_forum_add_discussion_post',
++            'mod_forum_can_add_discussion',
++            'mod_forum_get_forums_by_courses',
++            'mod_forum_get_forum_discussions_paginated',
++            'mod_forum_get_forum_discussion_posts',
++            'mod_forum_view_forum',
++            'mod_forum_view_forum_discussion',
++            'mod_glossary_get_glossaries_by_courses',
++            'mod_glossary_view_glossary',
++            'mod_glossary_view_entry',
++            'mod_glossary_get_entries_by_letter',
++            'mod_glossary_get_entries_by_date',
++            'mod_glossary_get_categories',
++            'mod_glossary_get_entries_by_category',
++            'mod_glossary_get_authors',
++            'mod_glossary_get_entries_by_author',
++            'mod_glossary_get_entries_by_author_id',
++            'mod_glossary_get_entries_by_search',
++            'mod_glossary_get_entries_by_term',
++            'mod_glossary_get_entries_to_approve',
++            'mod_glossary_get_entry_by_id',
++            'mod_imscp_view_imscp',
++            'mod_lti_get_ltis_by_courses',
++            'mod_lti_get_tool_launch_data',
++            'mod_lti_view_lti',
++            'mod_page_view_page',
++            'local_mobile_mod_quiz_get_quizzes_by_courses',
++            'mod_quiz_view_quiz',
++            'mod_quiz_get_user_attempts',
++            'mod_quiz_get_user_best_grade',
++            'mod_quiz_get_combined_review_options',
++            'local_mobile_mod_quiz_start_attempt',
++            'local_mobile_mod_quiz_get_attempt_data',
++            'mod_quiz_get_attempt_summary',
++            'local_mobile_mod_quiz_save_attempt',
++            'local_mobile_mod_quiz_process_attempt',
++            'mod_quiz_get_attempt_review',
++            'mod_quiz_view_attempt',
++            'mod_quiz_view_attempt_summary',
++            'mod_quiz_view_attempt_review',
++            'mod_quiz_get_quiz_feedback_for_grade',
++            'mod_quiz_get_quiz_access_information',
++            'mod_quiz_get_attempt_access_information',
++            'mod_quiz_get_quiz_required_qtypes',
++            'mod_resource_view_resource',
++            'mod_scorm_get_scorm_attempt_count',
++            'mod_scorm_get_scorm_sco_tracks',
++            'mod_scorm_get_scorm_scoes',
++            'mod_scorm_get_scorm_user_data',
++            'mod_scorm_get_scorms_by_courses',
++            'mod_scorm_insert_scorm_tracks',
++            'mod_scorm_launch_sco',
++            'mod_scorm_view_scorm',
++            'mod_survey_get_questions',
++            'mod_survey_get_surveys_by_courses',
++            'mod_survey_submit_answers',
++            'mod_survey_view_survey',
++            'mod_url_view_url',
++            'mod_wiki_get_wikis_by_courses',
++            'mod_wiki_view_wiki',
++            'mod_wiki_view_page',
++            'mod_wiki_get_subwikis',
++            'mod_wiki_get_subwiki_pages',
++            'mod_wiki_get_page_contents',
++            'mod_wiki_get_subwiki_files',
++            'mod_wiki_get_page_for_editing',
++            'mod_wiki_new_page',
++            'mod_wiki_edit_page',
++            'local_mobile_get_plugin_settings',
++            'tool_lp_data_for_plans_page',
++            'tool_lp_data_for_plan_page',
++            'tool_lp_data_for_user_evidence_list_page',
++            'tool_lp_data_for_user_evidence_page',
++            'tool_lp_data_for_user_competency_summary',
++            'tool_lp_data_for_user_competency_summary_in_plan',
++            'tool_lp_data_for_user_competency_summary_in_course',
++            'tool_lp_data_for_course_competencies_page',
++            'tool_mobile_get_plugins_supporting_mobile',
++        ),
++        'enabled' => 0,
++        'restrictedusers' => 0,
++        'shortname' => 'local_mobile',
++        'downloadfiles' => 1,
++        'uploadfiles' => 1
++    ),
++);
+\ No newline at end of file
+diff --git a/local/mobile/db/upgrade.php b/local/mobile/db/upgrade.php
+new file mode 100755
+index 0000000..217e327
+--- /dev/null
++++ b/local/mobile/db/upgrade.php
+@@ -0,0 +1,78 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++/**
++ * This file keeps track of upgrades to the local_mobile plugin.
++ *
++ * @package    local_mobile
++ * @copyright  2014 Juan Leyva <juan@moodle.com>
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++defined('MOODLE_INTERNAL') || die;
++
++function xmldb_local_mobile_upgrade($oldversion) {
++    global $DB;
++
++    $dbman = $DB->get_manager();
++
++    if ($oldversion < 2014060300) {
++        // Define table local_mobile_user_devices to be dropped.
++        $oldtable = new xmldb_table('local_mobile_user_devices');
++        $newtable = new xmldb_table('user_devices');
++        $airnotifier = new xmldb_table('message_airnotifier_devices');
++
++        // We must be sure that the new table exists.
++        if ($dbman->table_exists($newtable) and $dbman->table_exists($oldtable)) {
++            // Copy the old records to the new table, we cant use and INSERT INTO SELECT FROM for avoid unique keys problems.
++            if ($devices = $DB->get_records('local_mobile_user_devices')) {
++                $mappings = array();
++
++                foreach ($devices as $d) {
++                    $oldid = $d->id;
++                    unset($d->id);
++                    try {
++                        $newid = $DB->insert_record('user_devices', $d, true, true);
++                        // Map oldid to newid.
++                        $mappings[$oldid] = $newid;
++                    } catch (dml_exception $e) {
++                        // Unique keys problems, for non upgrades 2.6 or 2.7 versions may
++                        // happen due to incorrect unique key definitions. Continue then.
++                    }
++                }
++                if (!empty($mappings) and $dbman->table_exists($airnotifier)) {
++                    // Update the ids in the message_airnotifier table if exists.
++                    if ($airdevices = $DB->get_records('message_airnotifier_devices')) {
++                        foreach ($airdevices as $d) {
++                            if (empty($mappings[$d->userdeviceid])) {
++                                // Delete non-existent devices.
++                                $DB->delete_records('message_airnotifier_devices', array('id' => $d->id));
++                            } else {
++                                // Set the userdeviceid to the new one (in the nes table).
++                                $DB->set_field('message_airnotifier_devices', 'userdeviceid', $mappings[$d->userdeviceid],
++                                            array('id' => $d->id));
++                            }
++                        }
++                    }
++                }
++            }
++            $dbman->drop_table($oldtable);
++        }
++
++        upgrade_plugin_savepoint(true, 2014060300, 'local', 'mobile');
++    }
++    return true;
++}
+\ No newline at end of file
+diff --git a/local/mobile/externallib.php b/local/mobile/externallib.php
+new file mode 100755
+index 0000000..0c30072
+--- /dev/null
++++ b/local/mobile/externallib.php
+@@ -0,0 +1,469 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++/**
++ * External functions backported.
++ *
++ * @package    local_mobile
++ * @copyright  2014 Juan Leyva <juan@moodle.com>
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++defined('MOODLE_INTERNAL') || die;
++
++require_once("$CFG->libdir/externallib.php");
++require_once("$CFG->dirroot/local/mobile/futurelib.php");
++
++class local_mobile_external extends external_api {
++
++    /**
++     * Returns description of method parameters
++     *
++     * @return external_function_parameters
++     */
++    public static function get_plugin_settings_parameters() {
++        return new external_function_parameters(
++            array()
++        );
++    }
++
++    /**
++     * Get all the plugin settings.
++     * PLEASE DO NOT DELETE THIS FUNCTION.
++     * The Mobile app relies in this function to detect if the site is using the local_mobile plugin.
++     *
++     * @return array of settings
++     */
++    public static function get_plugin_settings() {
++
++        // Warnings array, it can be empty at the end but is mandatory.
++        $warnings = array();
++        $settings = array();
++
++        $pluginsettings = get_config('local_mobile');
++        foreach ($pluginsettings as $key => $val) {
++            $settings[] = array(
++                'name' => $key,
++                'value' => $val,
++            );
++        }
++
++        $results = array(
++            'settings' => $settings,
++            'warnings' => $warnings
++        );
++        return $results;
++    }
++
++    /**
++     * Returns description of method result value
++     *
++     * @return external_description
++     */
++    public static function get_plugin_settings_returns() {
++        return new external_single_structure(
++            array(
++                'settings' => new external_multiple_structure(
++                    new external_single_structure(
++                        array(
++                            'name' => new external_value(PARAM_NOTAGS, 'setting name'),
++                            'value' => new external_value(PARAM_RAW, 'setting value'),
++                        )
++                    )
++                ),
++                'warnings' => new external_warnings(),
++            )
++        );
++    }
++
++    /**
++     * Describes the parameters for get_quizzes_by_courses.
++     *
++     * @return external_external_function_parameters
++     * @since Moodle 3.1
++     */
++    public static function mod_quiz_get_quizzes_by_courses_parameters() {
++        return local_mobile_mod_quiz_external::get_quizzes_by_courses_parameters();
++    }
++    /**
++     * Returns a list of quizzes in a provided list of courses,
++     * if no list is provided all quizzes that the user can view will be returned.
++     *
++     * @param array $courseids Array of course ids
++     * @return array of quizzes details
++     * @since Moodle 3.1
++     */
++    public static function mod_quiz_get_quizzes_by_courses($courseids = array()) {
++        global $USER, $DB;
++        $warnings = array();
++        $returnedquizzes = array();
++        $params = array(
++            'courseids' => $courseids,
++        );
++        $params = self::validate_parameters(self::mod_quiz_get_quizzes_by_courses_parameters(), $params);
++        $mycourses = array();
++        if (empty($params['courseids'])) {
++            $mycourses = enrol_get_my_courses();
++            $params['courseids'] = array_keys($mycourses);
++        }
++        // Ensure there are courseids to loop through.
++        if (!empty($params['courseids'])) {
++            list($courses, $warnings) = external_util::validate_courses($params['courseids'], $mycourses);
++            // Get the quizzes in this course, this function checks users visibility permissions.
++            // We can avoid then additional validate_context calls.
++            $quizzes = get_all_instances_in_courses("quiz", $courses);
++            foreach ($quizzes as $quiz) {
++                $context = context_module::instance($quiz->coursemodule);
++                // Update quiz with override information.
++                $quiz = quiz_update_effective_access($quiz, $USER->id);
++                // Entry to return.
++                $quizdetails = array();
++                // First, we return information that any user can see in the web interface.
++                $quizdetails['id'] = $quiz->id;
++                $quizdetails['coursemodule']      = $quiz->coursemodule;
++                $quizdetails['course']            = $quiz->course;
++                $quizdetails['name']              = external_format_string($quiz->name, $context->id);
++                if (has_capability('mod/quiz:view', $context)) {
++                    // Format intro.
++                    list($quizdetails['intro'], $quizdetails['introformat']) = external_format_text($quiz->intro,
++                                                                    $quiz->introformat, $context->id, 'mod_quiz', 'intro', null);
++                    $viewablefields = array('timeopen', 'timeclose', 'grademethod', 'section', 'visible', 'groupmode',
++                                            'groupingid');
++                    $timenow = time();
++                    $quizobj = quiz::create($quiz->id, $USER->id);
++                    $accessmanager = new quiz_access_manager($quizobj, $timenow, has_capability('mod/quiz:ignoretimelimits',
++                                                                $context, null, false));
++                    // Fields the user could see if have access to the quiz.
++                    if (!$accessmanager->prevent_access()) {
++                        // Some times this function returns just empty.
++                        $hasfeedback = quiz_has_feedback($quiz);
++                        $quizdetails['hasfeedback'] = (!empty($hasfeedback)) ? 1 : 0;
++                        $quizdetails['hasquestions'] = (int) $quizobj->has_questions();
++                        $quizdetails['autosaveperiod'] = get_config('quiz', 'autosaveperiod');
++                        $additionalfields = array('timelimit', 'attempts', 'attemptonlast', 'grademethod', 'decimalpoints',
++                                                    'questiondecimalpoints', 'reviewattempt', 'reviewcorrectness', 'reviewmarks',
++                                                    'reviewspecificfeedback', 'reviewgeneralfeedback', 'reviewrightanswer',
++                                                    'reviewoverallfeedback', 'questionsperpage', 'navmethod', 'sumgrades', 'grade',
++                                                    'browsersecurity', 'delay1', 'delay2', 'showuserpicture', 'showblocks',
++                                                    'completionattemptsexhausted', 'completionpass', 'overduehandling',
++                                                    'graceperiod', 'preferredbehaviour', 'canredoquestions');
++                        $viewablefields = array_merge($viewablefields, $additionalfields);
++                    }
++                    // Fields only for managers.
++                    if (has_capability('moodle/course:manageactivities', $context)) {
++                        $additionalfields = array('shuffleanswers', 'timecreated', 'timemodified', 'password', 'subnet');
++                        $viewablefields = array_merge($viewablefields, $additionalfields);
++                    }
++                    foreach ($viewablefields as $field) {
++                        $quizdetails[$field] = $quiz->{$field};
++                    }
++                    // Return the password hashed with SHA1 for non-managers.
++                    if (!empty($quiz->password) and empty($quizdetails['password'])) {
++                        $quizdetails['password'] = sha1($quiz->password);
++                    }
++                    // Check for allow offline attempts.
++                    $quizdetails['allowofflineattempts'] = 0;
++                    $dbman = $DB->get_manager();
++                    $attemptstable = new xmldb_table('quizaccess_offlineattempts');
++                    if ($dbman->table_exists($attemptstable)) {
++                        $conditions = array('quizid' => $quiz->id);
++                        if ($DB->get_field('quizaccess_offlineattempts', 'allowofflineattempts', $conditions)) {
++                            $quizdetails['allowofflineattempts'] = 1;
++                        }
++                    }
++                }
++                $returnedquizzes[] = $quizdetails;
++            }
++        }
++        $result = array();
++        $result['quizzes'] = $returnedquizzes;
++        $result['warnings'] = $warnings;
++        return $result;
++    }
++    /**
++     * Describes the get_quizzes_by_courses return value.
++     *
++     * @return external_single_structure
++     * @since Moodle 3.1
++     */
++    public static function mod_quiz_get_quizzes_by_courses_returns() {
++        return new external_single_structure(
++            array(
++                'quizzes' => new external_multiple_structure(
++                    new external_single_structure(
++                        array(
++                            'id' => new external_value(PARAM_INT, 'Standard Moodle primary key.'),
++                            'course' => new external_value(PARAM_INT, 'Foreign key reference to the course this quiz is part of.'),
++                            'coursemodule' => new external_value(PARAM_INT, 'Course module id.'),
++                            'name' => new external_value(PARAM_RAW, 'Quiz name.'),
++                            'intro' => new external_value(PARAM_RAW, 'Quiz introduction text.', VALUE_OPTIONAL),
++                            'introformat' => new external_format_value('intro', VALUE_OPTIONAL),
++                            'timeopen' => new external_value(PARAM_INT, 'The time when this quiz opens. (0 = no restriction.)',
++                                                                VALUE_OPTIONAL),
++                            'timeclose' => new external_value(PARAM_INT, 'The time when this quiz closes. (0 = no restriction.)',
++                                                                VALUE_OPTIONAL),
++                            'timelimit' => new external_value(PARAM_INT, 'The time limit for quiz attempts, in seconds.',
++                                                                VALUE_OPTIONAL),
++                            'overduehandling' => new external_value(PARAM_ALPHA, 'The method used to handle overdue attempts.
++                                                                    \'autosubmit\', \'graceperiod\' or \'autoabandon\'.',
++                                                                    VALUE_OPTIONAL),
++                            'graceperiod' => new external_value(PARAM_INT, 'The amount of time (in seconds) after the time limit
++                                                                runs out during which attempts can still be submitted,
++                                                                if overduehandling is set to allow it.', VALUE_OPTIONAL),
++                            'preferredbehaviour' => new external_value(PARAM_ALPHANUMEXT, 'The behaviour to ask questions to use.',
++                                                                        VALUE_OPTIONAL),
++                            'canredoquestions' => new external_value(PARAM_INT, 'Allows students to redo any completed question
++                                                                        within a quiz attempt.', VALUE_OPTIONAL),
++                            'attempts' => new external_value(PARAM_INT, 'The maximum number of attempts a student is allowed.',
++                                                                VALUE_OPTIONAL),
++                            'attemptonlast' => new external_value(PARAM_INT, 'Whether subsequent attempts start from the answer
++                                                                    to the previous attempt (1) or start blank (0).',
++                                                                    VALUE_OPTIONAL),
++                            'grademethod' => new external_value(PARAM_INT, 'One of the values QUIZ_GRADEHIGHEST, QUIZ_GRADEAVERAGE,
++                                                                    QUIZ_ATTEMPTFIRST or QUIZ_ATTEMPTLAST.', VALUE_OPTIONAL),
++                            'decimalpoints' => new external_value(PARAM_INT, 'Number of decimal points to use when displaying
++                                                                    grades.', VALUE_OPTIONAL),
++                            'questiondecimalpoints' => new external_value(PARAM_INT, 'Number of decimal points to use when
++                                                                            displaying question grades.
++                                                                            (-1 means use decimalpoints.)', VALUE_OPTIONAL),
++                            'reviewattempt' => new external_value(PARAM_INT, 'Whether users are allowed to review their quiz
++                                                                    attempts at various times. This is a bit field, decoded by the
++                                                                    mod_quiz_display_options class. It is formed by ORing together
++                                                                    the constants defined there.', VALUE_OPTIONAL),
++                            'reviewcorrectness' => new external_value(PARAM_INT, 'Whether users are allowed to review their quiz
++                                                                        attempts at various times.
++                                                                        A bit field, like reviewattempt.', VALUE_OPTIONAL),
++                            'reviewmarks' => new external_value(PARAM_INT, 'Whether users are allowed to review their quiz attempts
++                                                                at various times. A bit field, like reviewattempt.',
++                                                                VALUE_OPTIONAL),
++                            'reviewspecificfeedback' => new external_value(PARAM_INT, 'Whether users are allowed to review their
++                                                                            quiz attempts at various times. A bit field, like
++                                                                            reviewattempt.', VALUE_OPTIONAL),
++                            'reviewgeneralfeedback' => new external_value(PARAM_INT, 'Whether users are allowed to review their
++                                                                            quiz attempts at various times. A bit field, like
++                                                                            reviewattempt.', VALUE_OPTIONAL),
++                            'reviewrightanswer' => new external_value(PARAM_INT, 'Whether users are allowed to review their quiz
++                                                                        attempts at various times. A bit field, like
++                                                                        reviewattempt.', VALUE_OPTIONAL),
++                            'reviewoverallfeedback' => new external_value(PARAM_INT, 'Whether users are allowed to review their quiz
++                                                                            attempts at various times. A bit field, like
++                                                                            reviewattempt.', VALUE_OPTIONAL),
++                            'questionsperpage' => new external_value(PARAM_INT, 'How often to insert a page break when editing
++                                                                        the quiz, or when shuffling the question order.',
++                                                                        VALUE_OPTIONAL),
++                            'navmethod' => new external_value(PARAM_ALPHA, 'Any constraints on how the user is allowed to navigate
++                                                                around the quiz. Currently recognised values are
++                                                                \'free\' and \'seq\'.', VALUE_OPTIONAL),
++                            'shuffleanswers' => new external_value(PARAM_INT, 'Whether the parts of the question should be shuffled,
++                                                                    in those question types that support it.', VALUE_OPTIONAL),
++                            'sumgrades' => new external_value(PARAM_FLOAT, 'The total of all the question instance maxmarks.',
++                                                                VALUE_OPTIONAL),
++                            'grade' => new external_value(PARAM_FLOAT, 'The total that the quiz overall grade is scaled to be
++                                                            out of.', VALUE_OPTIONAL),
++                            'timecreated' => new external_value(PARAM_INT, 'The time when the quiz was added to the course.',
++                                                                VALUE_OPTIONAL),
++                            'timemodified' => new external_value(PARAM_INT, 'Last modified time.',
++                                                                    VALUE_OPTIONAL),
++                            'password' => new external_value(PARAM_RAW, 'A password that the student must enter before starting or
++                                                                continuing a quiz attempt.', VALUE_OPTIONAL),
++                            'subnet' => new external_value(PARAM_RAW, 'Used to restrict the IP addresses from which this quiz can
++                                                            be attempted. The format is as requried by the address_in_subnet
++                                                            function.', VALUE_OPTIONAL),
++                            'browsersecurity' => new external_value(PARAM_ALPHANUMEXT, 'Restriciton on the browser the student must
++                                                                    use. E.g. \'securewindow\'.', VALUE_OPTIONAL),
++                            'delay1' => new external_value(PARAM_INT, 'Delay that must be left between the first and second attempt,
++                                                            in seconds.', VALUE_OPTIONAL),
++                            'delay2' => new external_value(PARAM_INT, 'Delay that must be left between the second and subsequent
++                                                            attempt, in seconds.', VALUE_OPTIONAL),
++                            'showuserpicture' => new external_value(PARAM_INT, 'Option to show the user\'s picture during the
++                                                                    attempt and on the review page.', VALUE_OPTIONAL),
++                            'showblocks' => new external_value(PARAM_INT, 'Whether blocks should be shown on the attempt.php and
++                                                                review.php pages.', VALUE_OPTIONAL),
++                            'completionattemptsexhausted' => new external_value(PARAM_INT, 'Mark quiz complete when the student has
++                                                                                exhausted the maximum number of attempts',
++                                                                                VALUE_OPTIONAL),
++                            'completionpass' => new external_value(PARAM_INT, 'Whether to require passing grade', VALUE_OPTIONAL),
++                            'allowofflineattempts' => new external_value(PARAM_INT, 'Whether to allow the quiz to be attempted
++                                                                            offline in the mobile app', VALUE_OPTIONAL),
++                            'autosaveperiod' => new external_value(PARAM_INT, 'Auto-save delay', VALUE_OPTIONAL),
++                            'hasfeedback' => new external_value(PARAM_INT, 'Whether the quiz has any non-blank feedback text',
++                                                                VALUE_OPTIONAL),
++                            'hasquestions' => new external_value(PARAM_INT, 'Whether the quiz has questions', VALUE_OPTIONAL),
++                            'section' => new external_value(PARAM_INT, 'Course section id', VALUE_OPTIONAL),
++                            'visible' => new external_value(PARAM_INT, 'Module visibility', VALUE_OPTIONAL),
++                            'groupmode' => new external_value(PARAM_INT, 'Group mode', VALUE_OPTIONAL),
++                            'groupingid' => new external_value(PARAM_INT, 'Grouping id', VALUE_OPTIONAL),
++                        )
++                    )
++                ),
++                'warnings' => new external_warnings(),
++            )
++        );
++    }
++
++    /**
++     * Describes the parameters for get_attempt_data.
++     *
++     * @return external_external_function_parameters
++     * @since Moodle 3.1
++     */
++    public static function mod_quiz_get_attempt_data_parameters() {
++        return local_mobile_mod_quiz_external::get_attempt_data_parameters();
++    }
++    /**
++     * Returns information for the given attempt page for a quiz attempt in progress.
++     *
++     * @param int $attemptid attempt id
++     * @param int $page page number
++     * @param array $preflightdata preflight required data (like passwords)
++     * @return array of warnings and the attempt data, next page, message and questions
++     * @since Moodle 3.1
++     * @throws moodle_quiz_exceptions
++     */
++    public static function mod_quiz_get_attempt_data($attemptid, $page, $preflightdata = array()) {
++        $result = local_mobile_mod_quiz_external::get_attempt_data($attemptid, $page, $preflightdata);
++        $attemptobj = quiz_attempt::create($attemptid);
++
++        $result['questions'] = local_mobile_mod_quiz_external::get_attempt_questions_data($attemptobj, false, $page);
++        return $result;
++    }
++    /**
++     * Describes the get_attempt_data return value.
++     *
++     * @return external_single_structure
++     * @since Moodle 3.1
++     */
++    public static function mod_quiz_get_attempt_data_returns() {
++        return new external_single_structure(
++            array(
++                'attempt' => local_mobile_mod_quiz_external::attempt_structure(),
++                'messages' => new external_multiple_structure(
++                    new external_value(PARAM_TEXT, 'access message'),
++                    'access messages, will only be returned for users with mod/quiz:preview capability,
++                    for other users this method will throw an exception if there are messages'),
++                'nextpage' => new external_value(PARAM_INT, 'next page number'),
++                'questions' => new external_multiple_structure(local_mobile_mod_quiz_external::question_structure()),
++                'warnings' => new external_warnings(),
++            )
++        );
++    }
++
++    /**
++     * Describes the parameters for start_attempt.
++     *
++     * @return external_external_function_parameters
++     * @since Moodle 3.1
++     */
++    public static function mod_quiz_start_attempt_parameters() {
++        return local_mobile_mod_quiz_external::start_attempt_parameters();
++    }
++    /**
++     * Starts a new attempt at a quiz.
++     *
++     * @param int $quizid quiz instance id
++     * @param array $preflightdata preflight required data (like passwords)
++     * @param bool $forcenew Whether to force a new attempt or not.
++     * @return array of warnings and the attempt basic data
++     * @since Moodle 3.1
++     * @throws moodle_quiz_exception
++     */
++    public static function mod_quiz_start_attempt($quizid, $preflightdata = array(), $forcenew = false) {
++        global $DB;
++        $result = local_mobile_mod_quiz_external::start_attempt($quizid, $preflightdata, $forcenew);
++        local_mobile_mod_quiz_external::set_offline_time($result['attempt']->id, time());
++        return $result;
++    }
++    /**
++     * Describes the start_attempt return value.
++     *
++     * @return external_single_structure
++     * @since Moodle 3.1
++     */
++    public static function mod_quiz_start_attempt_returns() {
++        return local_mobile_mod_quiz_external::start_attempt_returns();
++    }
++
++    /**
++     * Describes the parameters for save_attempt.
++     *
++     * @return external_external_function_parameters
++     * @since Moodle 3.1
++     */
++    public static function mod_quiz_save_attempt_parameters() {
++        return local_mobile_mod_quiz_external::save_attempt_parameters();
++    }
++    /**
++     * Processes save requests during the quiz. This function is intended for the quiz auto-save feature.
++     *
++     * @param int $attemptid attempt id
++     * @param array $data the data to be saved
++     * @param  array $preflightdata preflight required data (like passwords)
++     * @return array of warnings and execution result
++     * @since Moodle 3.1
++     */
++    public static function mod_quiz_save_attempt($attemptid, $data, $preflightdata = array()) {
++        global $DB;
++        $result = local_mobile_mod_quiz_external::save_attempt($attemptid, $data, $preflightdata);
++        local_mobile_mod_quiz_external::set_offline_time($attemptid, time());
++        return $result;
++    }
++    /**
++     * Describes the save_attempt return value.
++     *
++     * @return external_single_structure
++     * @since Moodle 3.1
++     */
++    public static function mod_quiz_save_attempt_returns() {
++        return local_mobile_mod_quiz_external::save_attempt_returns();
++    }
++
++    /**
++     * Describes the parameters for process_attempt.
++     *
++     * @return external_external_function_parameters
++     * @since Moodle 3.1
++     */
++    public static function mod_quiz_process_attempt_parameters() {
++        return local_mobile_mod_quiz_external::process_attempt_parameters();
++    }
++    /**
++     * Process responses during an attempt at a quiz and also deals with attempts finishing.
++     *
++     * @param int $attemptid attempt id
++     * @param array $data the data to be saved
++     * @param bool $finishattempt whether to finish or not the attempt
++     * @param bool $timeup whether the WS was called by a timer when the time is up
++     * @param array $preflightdata preflight required data (like passwords)
++     * @return array of warnings and the attempt state after the processing
++     * @since Moodle 3.1
++     */
++    public static function mod_quiz_process_attempt($attemptid, $data, $finishattempt = false, $timeup = false, $preflightdata = array()) {
++        global $DB;
++        $result = local_mobile_mod_quiz_external::process_attempt($attemptid, $data, $finishattempt, $timeup, $preflightdata);
++        local_mobile_mod_quiz_external::set_offline_time($attemptid, time());
++        return $result;
++    }
++    /**
++     * Describes the process_attempt return value.
++     *
++     * @return external_single_structure
++     * @since Moodle 3.1
++     */
++    public static function mod_quiz_process_attempt_returns() {
++        return local_mobile_mod_quiz_external::process_attempt_returns();
++    }
++
++}
+\ No newline at end of file
+diff --git a/local/mobile/futurelib.php b/local/mobile/futurelib.php
+new file mode 100755
+index 0000000..833c72f
+--- /dev/null
++++ b/local/mobile/futurelib.php
+@@ -0,0 +1,162 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++/**
++ * Backported functions that in a future exists.
++ *
++ * @package    local_mobile
++ * @copyright  2014 Juan Leyva <juan@moodle.com>
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++defined('MOODLE_INTERNAL') || die;
++require_once("$CFG->dirroot/mod/quiz/locallib.php");
++
++class local_mobile_mod_quiz_external extends mod_quiz_external {
++
++    /**
++     * Public accessor.
++     *
++     * @param  array $params Array of parameters including the attemptid and preflight data
++     * @param  bool $checkaccessrules whether to check the quiz access rules or not
++     * @param  bool $failifoverdue whether to return error if the attempt is overdue
++     * @return  array containing the attempt object and access messages
++     */
++    public static function validate_attempt($params, $checkaccessrules = true, $failifoverdue = true) {
++        return parent::validate_attempt($params, $checkaccessrules, $failifoverdue);
++    }
++
++    /**
++     * Describes a single attempt structure.
++     *
++     * @return external_single_structure the attempt structure
++     */
++    public static function attempt_structure() {
++        return new external_single_structure(
++            array(
++                'id' => new external_value(PARAM_INT, 'Attempt id.', VALUE_OPTIONAL),
++                'quiz' => new external_value(PARAM_INT, 'Foreign key reference to the quiz that was attempted.',
++                                                VALUE_OPTIONAL),
++                'userid' => new external_value(PARAM_INT, 'Foreign key reference to the user whose attempt this is.',
++                                                VALUE_OPTIONAL),
++                'attempt' => new external_value(PARAM_INT, 'Sequentially numbers this students attempts at this quiz.',
++                                                VALUE_OPTIONAL),
++                'uniqueid' => new external_value(PARAM_INT, 'Foreign key reference to the question_usage that holds the
++                                                    details of the the question_attempts that make up this quiz
++                                                    attempt.', VALUE_OPTIONAL),
++                'layout' => new external_value(PARAM_RAW, 'Attempt layout.', VALUE_OPTIONAL),
++                'currentpage' => new external_value(PARAM_INT, 'Attempt current page.', VALUE_OPTIONAL),
++                'preview' => new external_value(PARAM_INT, 'Whether is a preview attempt or not.', VALUE_OPTIONAL),
++                'state' => new external_value(PARAM_ALPHA, 'The current state of the attempts. \'inprogress\',
++                                                \'overdue\', \'finished\' or \'abandoned\'.', VALUE_OPTIONAL),
++                'timestart' => new external_value(PARAM_INT, 'Time when the attempt was started.', VALUE_OPTIONAL),
++                'timefinish' => new external_value(PARAM_INT, 'Time when the attempt was submitted.
++                                                    0 if the attempt has not been submitted yet.', VALUE_OPTIONAL),
++                'timemodified' => new external_value(PARAM_INT, 'Last modified time.', VALUE_OPTIONAL),
++                'timecheckstate' => new external_value(PARAM_INT, 'Next time quiz cron should check attempt for
++                                                        state changes.  NULL means never check.', VALUE_OPTIONAL),
++                'sumgrades' => new external_value(PARAM_FLOAT, 'Total marks for this attempt.', VALUE_OPTIONAL),
++            )
++        );
++    }
++
++    /**
++     * Describes a single question structure.
++     *
++     * @return external_single_structure the question structure
++     * @since  Moodle 3.1
++     */
++    public static function question_structure() {
++        return new external_single_structure(
++            array(
++                'slot' => new external_value(PARAM_INT, 'slot number'),
++                'type' => new external_value(PARAM_ALPHANUMEXT, 'question type, i.e: multichoice'),
++                'page' => new external_value(PARAM_INT, 'page of the quiz this question appears on'),
++                'html' => new external_value(PARAM_RAW, 'the question rendered'),
++                'sequencecheck' => new external_value(PARAM_INT, 'the number of real steps in this attempt'),
++                'lastactiontime' => new external_value(PARAM_INT, 'the timestamp of the most recent step in this question attempt'),
++                'hasautosavedstep' => new external_value(PARAM_BOOL, 'whether this question attempt has autosaved data'),
++                'flagged' => new external_value(PARAM_BOOL, 'whether the question is flagged or not'),
++                'number' => new external_value(PARAM_INT, 'question ordering number in the quiz', VALUE_OPTIONAL),
++                'state' => new external_value(PARAM_ALPHA, 'the state where the question is in', VALUE_OPTIONAL),
++                'status' => new external_value(PARAM_RAW, 'current formatted state of the question', VALUE_OPTIONAL),
++                'mark' => new external_value(PARAM_RAW, 'the mark awarded', VALUE_OPTIONAL),
++                'maxmark' => new external_value(PARAM_FLOAT, 'the maximum mark possible for this question attempt', VALUE_OPTIONAL),
++            )
++        );
++    }
++    /**
++     * Return questions information for a given attempt.
++     *
++     * @param  quiz_attempt  $attemptobj  the quiz attempt object
++     * @param  bool  $review  whether if we are in review mode or not
++     * @param  mixed  $page  string 'all' or integer page number
++     * @return array array of questions including data
++     */
++    public static function get_attempt_questions_data(quiz_attempt $attemptobj, $review, $page = 'all') {
++        global $PAGE;
++        $questions = array();
++        $contextid = $attemptobj->get_quizobj()->get_context()->id;
++        $displayoptions = $attemptobj->get_display_options($review);
++        $renderer = $PAGE->get_renderer('mod_quiz');
++        foreach ($attemptobj->get_slots($page) as $slot) {
++            $question = array(
++                'slot' => $slot,
++                'type' => $attemptobj->get_question_type_name($slot),
++                'page' => $attemptobj->get_question_page($slot),
++                'flagged' => $attemptobj->is_question_flagged($slot),
++                'html' => $attemptobj->render_question($slot, $review, $renderer) . $PAGE->requires->get_end_code(),
++                'sequencecheck' => $attemptobj->get_question_attempt($slot)->get_sequence_check_count(),
++                'lastactiontime' => $attemptobj->get_question_attempt($slot)->get_last_step()->get_timecreated(),
++                'hasautosavedstep' => $attemptobj->get_question_attempt($slot)->has_autosaved_step()
++            );
++            if ($attemptobj->is_real_question($slot)) {
++                $question['number'] = $attemptobj->get_question_number($slot);
++                $question['state'] = (string) $attemptobj->get_question_state($slot);
++                $question['status'] = $attemptobj->get_question_status($slot, $displayoptions->correctness);
++            }
++            if ($displayoptions->marks >= question_display_options::MAX_ONLY) {
++                $question['maxmark'] = $attemptobj->get_question_attempt($slot)->get_max_mark();
++            }
++            if ($displayoptions->marks >= question_display_options::MARK_AND_MAX) {
++                $question['mark'] = $attemptobj->get_question_mark($slot);
++            }
++            $questions[] = $question;
++        }
++        return $questions;
++    }
++
++    public static function set_offline_time($attemptid, $time) {
++        global $DB;
++
++        if (WS_SERVER) {
++            $dbman = $DB->get_manager();
++            $attemptstable = new xmldb_table('quizaccess_offlineattempts_a');
++            if ($dbman->table_exists($attemptstable)) {
++                if ($attempt = $DB->get_record('quizaccess_offlineattempts_a', array('attemptid' => $attemptid))) {
++                    $attempt->timemodifiedoffline = $time;
++                    $DB->update_record('quizaccess_offlineattempts_a', $attempt);
++                } else {
++                    $attempt = new stdClass;
++                    $attempt->attemptid = $attemptid;
++                    $attempt->timemodifiedoffline = $time;
++                    $DB->insert_record('quizaccess_offlineattempts_a', $attempt);
++                }
++            }
++        }
++    }
++
++}
+\ No newline at end of file
+diff --git a/local/mobile/lang/en/local_mobile.php b/local/mobile/lang/en/local_mobile.php
+new file mode 100755
+index 0000000..f2f2445
+--- /dev/null
++++ b/local/mobile/lang/en/local_mobile.php
+@@ -0,0 +1,43 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++/**
++ * Strings for component 'local_mobile', language 'en'.
++ *
++ * @package   local_mobile
++ * @copyright 2014 Juan Leyva <juan@moodle.com>
++ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++$string['cannotcreatetoken'] = 'Automatic token generation is not available to site administrators (they must create a token manually in the site)';
++$string['local_mobiledescription'] = 'Plugin that extends the Mobile service features';
++$string['pluginname'] = 'Moodle Mobile additional features';
++$string['pluginnotenabledorconfigured'] = 'The Moodle Mobile local plugin must be enabled and configured in order to launch the app';
++$string['local_mobilesettings'] = 'Settings';
++$string['local_mobiletypeoflogin'] = 'Choose the type of login';
++$string['local_mobiletypeoflogin_key'] = 'Type of login';
++$string['local_mobileurlscheme'] = 'Use this setting to force the URL scheme for login via a browser window. In most of the cases it should be left empty.';
++$string['local_mobileurlscheme_key'] = 'URL scheme';
++
++$string['loginintheapp'] = 'Via the app';
++$string['logininthebrowser'] = 'Via a browser window (for SSO plugins)';
++$string['loginintheinappbrowser'] = 'Via an embedded browser (for SSO plugins)';
++$string['checkpluginconfiguration'] = 'Check plugin configuration';
++$string['enableadditionalservice'] = 'Enable the Moodle Mobile additional features service';
++$string['enableadditionalservicedescription'] = 'This service must be enabled.';
++$string['allowpermissions'] = 'Grant permissions to the authenticated user role';
++$string['allowpermissionsdescription'] = 'Edit the Authenticated user role and allow the capability moodle/webservice:createtoken';
++$string['clickheretolaunchtheapp'] = 'Please, click here if the app does not open automatically';
+diff --git a/local/mobile/launch.php b/local/mobile/launch.php
+new file mode 100755
+index 0000000..9810fca
+--- /dev/null
++++ b/local/mobile/launch.php
+@@ -0,0 +1,236 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++/**
++ * Launch script, launch the app using custom URL schemes.
++ *
++ * @package    local_mobile
++ * @copyright  2014 Juan Leyva <juan@moodle.com>
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++require_once(dirname(__FILE__) . '/../../config.php');
++
++function is_ios() {
++    $useragent = core_useragent::get_user_agent_string();
++    if ($useragent === false) {
++        return false;
++    }
++    if (strpos($useragent, 'AppleWebKit') === false) {
++        return false;
++    }
++    // Look for AppleWebKit, excluding strings with OmniWeb, Shiira and SymbianOS and any other mobile devices.
++    if (strpos($useragent, 'OmniWeb')) {
++        // Reject OmniWeb.
++        return false;
++    }
++    if (strpos($useragent, 'Shiira')) {
++        // Reject Shiira.
++        return false;
++    }
++    if (strpos($useragent, 'SymbianOS')) {
++        // Reject SymbianOS.
++        return false;
++    }
++    if (strpos($useragent, 'Android')) {
++        // Reject Androids too.
++        return false;
++    }
++    if (strpos($useragent, 'Chrome')) {
++        // Reject chrome browsers - it needs to be tested explicitly.
++        // This will also reject Edge, which pretends to be both Chrome, and Safari.
++        return false;
++    }
++
++    if (empty($version)) {
++        return true; // No version specified.
++    }
++    if (preg_match("/AppleWebKit\/([0-9.]+)/i", $useragent, $match)) {
++        if (version_compare($match[1], $version) >= 0) {
++            return true;
++        }
++    }
++    return false;
++}
++
++$serviceshortname  = required_param('service',  PARAM_ALPHANUMEXT);
++$passport          = required_param('passport',  PARAM_RAW);    // Passport send from the app to validate the response URL.
++$urlscheme         = optional_param('urlscheme', 'moodlemobile', PARAM_NOTAGS);
++
++// If the user is not logged, this will redirect him to the login page.
++// Once logged, it will be redirected again to this page and the app launched.
++require_login(0, false);
++
++// Check web services enabled.
++if (!$CFG->enablewebservices) {
++    throw new moodle_exception('enablewsdescription', 'webservice');
++}
++
++// Check if the service exists and is enabled.
++$service = $DB->get_record('external_services', array('shortname' => $serviceshortname, 'enabled' => 1));
++if (empty($service)) {
++    throw new moodle_exception('servicenotavailable', 'webservice');
++}
++
++// Check if the plugin is properly configured.
++$typeoflogin = get_config('local_mobile', 'typeoflogin');
++if ($typeoflogin != 2 and $typeoflogin != 3) {
++    throw new moodle_exception('pluginnotenabledorconfigured', 'local_mobile');
++}
++
++// Check if there is any required system capability.
++if ($service->requiredcapability and !has_capability($service->requiredcapability, context_system::instance())) {
++    throw new moodle_exception('missingrequiredcapability', 'webservice', '', $service->requiredcapability);
++}
++
++// Specific checks related to user restricted service.
++if ($service->restrictedusers) {
++    $authoriseduser = $DB->get_record('external_services_users',
++        array('externalserviceid' => $service->id, 'userid' => $USER->id));
++
++    if (empty($authoriseduser)) {
++        throw new moodle_exception('usernotallowed', 'webservice', '', $serviceshortname);
++    }
++
++    if (!empty($authoriseduser->validuntil) and $authoriseduser->validuntil < time()) {
++        throw new moodle_exception('invalidtimedtoken', 'webservice');
++    }
++}
++
++// Check if a token has already been created for this user and this service.
++
++$conditions = array(
++    'userid' => $USER->id,
++    'externalserviceid' => $service->id,
++    'tokentype' => EXTERNAL_TOKEN_PERMANENT
++);
++$tokens = $DB->get_records('external_tokens', $conditions, 'timecreated ASC', 'id, sid, token, validuntil, iprestriction');
++
++// A bit of sanity checks.
++foreach ($tokens as $key => $token) {
++
++    // Checks related to a specific token. (script execution continue).
++    $unsettoken = false;
++    // If sid is set then there must be a valid associated session no matter the token type.
++    if (!empty($token->sid)) {
++        if (!\core\session\manager::session_exists($token->sid)) {
++            // This token will never be valid anymore, delete it.
++            $DB->delete_records('external_tokens', array('sid' => $token->sid));
++            $unsettoken = true;
++        }
++    }
++
++    // Remove token is not valid anymore.
++    if (!empty($token->validuntil) and $token->validuntil < time()) {
++        $DB->delete_records('external_tokens', array('token' => $token->token, 'tokentype' => EXTERNAL_TOKEN_PERMANENT));
++        $unsettoken = true;
++    }
++
++    // Remove token if its ip not in whitelist.
++    if (isset($token->iprestriction) and !address_in_subnet(getremoteaddr(), $token->iprestriction)) {
++        $unsettoken = true;
++    }
++
++    if ($unsettoken) {
++        unset($tokens[$key]);
++    }
++}
++
++// If some valid tokens exist then use the most recent.
++if (count($tokens) > 0) {
++    $token = array_pop($tokens);
++} else {
++    // Check if the user can create tokens for mobile access.
++    if (($serviceshortname == MOODLE_OFFICIAL_MOBILE_SERVICE and
++            has_capability('moodle/webservice:createmobiletoken', context_system::instance()))
++            or (!is_siteadmin($USER) && has_capability('moodle/webservice:createtoken', context_system::instance()))) {
++
++        // Create a new token.
++        $token = new stdClass;
++        $token->token = md5(uniqid(rand(), 1));
++        $token->userid = $USER->id;
++        $token->tokentype = EXTERNAL_TOKEN_PERMANENT;
++        $token->contextid = context_system::instance()->id;
++        $token->creatorid = $USER->id;
++        $token->timecreated = time();
++        $token->externalserviceid = $service->id;
++        // MDL-43119 Token valid for 3 months (12 weeks).
++        $token->validuntil = $token->timecreated + 12 * WEEKSECS;
++        $token->id = $DB->insert_record('external_tokens', $token);
++
++        // Moodle 2.6 and onwards.
++        if (class_exists('\core\event\webservice_token_created')) {
++            $params = array(
++                'objectid' => $token->id,
++                'relateduserid' => $USER->id,
++                'other' => array(
++                    'auto' => true
++                )
++            );
++            $event = \core\event\webservice_token_created::create($params);
++            $event->add_record_snapshot('external_tokens', $token);
++            $event->trigger();
++        }
++    } else {
++        throw new moodle_exception('cannotcreatetoken', 'local_mobile');
++    }
++}
++
++// Log token access.
++$DB->set_field('external_tokens', 'lastaccess', time(), array('id' => $token->id));
++
++// Moodle 2.6 and onwards.
++if (class_exists('\core\event\webservice_token_sent')) {
++    $params = array(
++        'objectid' => $token->id,
++    );
++    $event = \core\event\webservice_token_sent::create($params);
++    $event->add_record_snapshot('external_tokens', $token);
++    $event->trigger();
++}
++
++// This is some type of security.
++// Passport is generated in the app, so the app opening can be validated using that variable.
++// Passports are valid only one time, it's deleted in the app once used.
++
++$siteid = md5($CFG->wwwroot . $passport);   // Passport is used here as salt.
++$apptoken = base64_encode($siteid . ':::' . $token->token);
++
++// Redirect using the custom URL scheme.
++$forcedurlscheme = get_config('local_mobile', 'urlscheme');
++if (!empty($forcedurlscheme)) {
++    $urlscheme = $forcedurlscheme;
++}
++$location = "$urlscheme://token=$apptoken";
++
++if (is_ios()) {
++    $PAGE->set_context(null);
++    $PAGE->set_url('/local/mobile/launch.php', array('service' => $serviceshortname, 'passport' => $passport, 'urlscheme' => $urlscheme));
++    echo $OUTPUT->header();
++    $notice = get_string('clickheretolaunchtheapp', 'local_mobile');
++?>
++    <p><a id="launchapp" href="<?php echo $location; ?>"><?php echo $notice; ?></a></p>
++    <script>
++        window.onload = function() {
++            document.getElementById('launchapp').click();
++        };
++    </script>
++<?php
++    echo $OUTPUT->footer();
++} else {
++    header('Location: ' . $location);
++    die;
++}
+diff --git a/local/mobile/settings.php b/local/mobile/settings.php
+new file mode 100755
+index 0000000..ab1a5a8
+--- /dev/null
++++ b/local/mobile/settings.php
+@@ -0,0 +1,49 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++/**
++ * Plugin settings
++ *
++ * @package    local_mobile
++ * @copyright  2014 Juan Leyva <juan@moodle.com>
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++defined('MOODLE_INTERNAL') || die;
++
++if ($hassiteconfig) {
++
++    $settings = new admin_settingpage('local_mobile', new lang_string('pluginname', 'local_mobile'));
++    $ADMIN->add('localplugins', $settings);
++
++    $options = array(
++        1 => new lang_string('loginintheapp', 'local_mobile'),
++        2 => new lang_string('logininthebrowser', 'local_mobile'),
++        3 => new lang_string('loginintheinappbrowser', 'local_mobile'),
++    );
++
++    $settings->add(new admin_setting_configselect('local_mobile/typeoflogin',
++                        get_string('local_mobiletypeoflogin_key', 'local_mobile'),
++                        get_string('local_mobiletypeoflogin', 'local_mobile'), 1, $options));
++
++    $settings->add(new admin_setting_configtext('local_mobile/urlscheme',
++                        get_string('local_mobileurlscheme_key', 'local_mobile'),
++                        get_string('local_mobileurlscheme', 'local_mobile'), '', PARAM_NOTAGS));
++
++    $url = new moodle_url('/local/mobile/checkconfiguration.php', array('sesskey' => sesskey()));
++    $link = html_writer::link($url, get_string('checkpluginconfiguration', 'local_mobile'));
++    $settings->add(new admin_setting_heading('checkpluginconfiguration', '', $link));
++}
+\ No newline at end of file
+diff --git a/local/mobile/version.php b/local/mobile/version.php
+new file mode 100755
+index 0000000..70d5ca8
+--- /dev/null
++++ b/local/mobile/version.php
+@@ -0,0 +1,31 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++/**
++ * Version information
++ *
++ * @package    local_mobile
++ * @copyright  2014 Juan Leyva <juan@moodle.com>
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++defined('MOODLE_INTERNAL') || die();
++
++$plugin->version   = 2016050102;            // The current plugin version (Date: YYYYMMDDXX)
++$plugin->requires  = 2016050400;            // Requires this Moodle version.
++$plugin->component = 'local_mobile';        // Full name of the plugin (used for diagnostics).
++$plugin->maturity  = MATURITY_STABLE;
++$plugin->release   = '3.1.312';
+-- 
+1.8.3.1
+

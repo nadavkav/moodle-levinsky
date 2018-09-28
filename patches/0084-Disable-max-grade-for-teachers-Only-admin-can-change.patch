@@ -1,0 +1,50 @@
+From fb71b041e5174858cc97430f983ddddded58854f Mon Sep 17 00:00:00 2001
+From: Nadav Kavalerchik <nadavkav@gmail.com>
+Date: Sun, 5 Nov 2017 13:25:04 +0200
+Subject: [PATCH 84/95] Disable max grade for teachers, Only admin can change
+ activity's max grade
+
+---
+ lib/form/modgrade.php | 19 +++++++++++++++++--
+ 1 file changed, 17 insertions(+), 2 deletions(-)
+
+diff --git a/lib/form/modgrade.php b/lib/form/modgrade.php
+index f9c23f9..3c8ff8a 100644
+--- a/lib/form/modgrade.php
++++ b/lib/form/modgrade.php
+@@ -155,8 +155,19 @@ class MoodleQuickForm_modgrade extends MoodleQuickForm_group {
+ 
+         // Maximum grade textbox.
+         $langmaxgrade = get_string('modgrademaxgrade', 'grades');
+-        $this->maxgradeformelement = $this->createFormElement('text', 'modgrade_point', $langmaxgrade, array());
+-        $this->maxgradeformelement->setHiddenLabel(true);
++
++        // Disable max grade for teachers, Only admin can change activity's max grade. (nadavkav)
++        if (has_capability('moodle/site:config', context_system::instance())) {
++            $this->maxgradeformelement = $this->createFormElement('text', 'modgrade_point', $langmaxgrade, array());
++            $this->maxgradeformelement->setHiddenLabel(true);
++        } else {
++            $this->maxgradeformelement = $this->createFormElement('static', 'modgrade_point', $langmaxgrade, array());
++
++            $this->maxgradeformelement_hidden = $this->createFormElement('hidden', 'modgrade_point', $CFG->gradepointdefault, array());
++            //$this->maxgradeformelement_hidden->setHiddenLabel(true);
++            $maxgradeformelementid_hidden = $this->generate_modgrade_subelement_id('modgrade_point');
++            $this->maxgradeformelement->updateAttributes(array('id' => $maxgradeformelementid_hidden));
++        }
+         $maxgradeformelementid = $this->generate_modgrade_subelement_id('modgrade_point');
+         $this->maxgradeformelement->updateAttributes(array('id' => $maxgradeformelementid));
+ 
+@@ -239,6 +250,10 @@ class MoodleQuickForm_modgrade extends MoodleQuickForm_group {
+                 array('for' => $this->maxgradeformelement->getAttribute('id')));
+             $this->_elements[] = $this->createFormElement('static', 'pointlabel', '', $label);
+             $this->_elements[] = $this->maxgradeformelement;
++            // Disable max grade for teachers, Only admin can change activity's max grade. (nadavkav)
++            if (!has_capability('moodle/site:config', context_system::instance())) {
++                $this->_elements[] = $this->maxgradeformelement_hidden;
++            }
+             $this->_elements[] = $this->createFormElement('static', 'pointspacer', '', '<br />');
+         }
+     }
+-- 
+1.8.3.1
+

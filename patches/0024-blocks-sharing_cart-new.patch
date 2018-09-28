@@ -1,0 +1,3294 @@
+From 03cefdb906e9612ad62d2ea2a0494e249588d1b9 Mon Sep 17 00:00:00 2001
+From: Nadav Kavalerchik <nadavkav@gmail.com>
+Date: Wed, 11 Oct 2017 21:15:21 +0300
+Subject: [PATCH 24/95] blocks/sharing_cart (new)
+
+---
+ blocks/sharing_cart/README.md                      |  90 +++
+ .../moodle2/restore_fix_missing_questions.php      | 153 ++++
+ .../moodle2/restore_root_task_fix_missings.php     |  33 +
+ .../util/helper/restore_fix_missings_helper.php    |  54 ++
+ blocks/sharing_cart/block_sharing_cart.php         | 170 +++++
+ blocks/sharing_cart/bulkdelete.php                 | 182 +++++
+ blocks/sharing_cart/classes/controller.php         | 479 ++++++++++++
+ blocks/sharing_cart/classes/exception.php          |  25 +
+ blocks/sharing_cart/classes/record.php             | 132 ++++
+ blocks/sharing_cart/classes/renderer.php           | 148 ++++
+ blocks/sharing_cart/classes/scoped.php             |  35 +
+ blocks/sharing_cart/classes/storage.php            |  77 ++
+ blocks/sharing_cart/custom.css                     |   3 +
+ blocks/sharing_cart/db/access.php                  |  15 +
+ blocks/sharing_cart/db/install.xml                 |  37 +
+ blocks/sharing_cart/db/upgrade.php                 |  71 ++
+ blocks/sharing_cart/lang/en/block_sharing_cart.php |  53 ++
+ blocks/sharing_cart/lang/es/block_sharing_cart.php |  52 ++
+ blocks/sharing_cart/lang/ja/block_sharing_cart.php |  52 ++
+ blocks/sharing_cart/lib/settingslib.php            | 145 ++++
+ blocks/sharing_cart/module.js                      | 838 +++++++++++++++++++++
+ blocks/sharing_cart/pix/bulkdelete.gif             | Bin 0 -> 204 bytes
+ blocks/sharing_cart/pix/bulkdelete.png             | Bin 0 -> 275 bytes
+ blocks/sharing_cart/pix/bulkdelete.svg             |  10 +
+ blocks/sharing_cart/pix/dropzone_arrow.svg         |  18 +
+ blocks/sharing_cart/rest.php                       |  60 ++
+ blocks/sharing_cart/restore.php                    |  37 +
+ blocks/sharing_cart/settings.php                   |  24 +
+ blocks/sharing_cart/styles.css                     |  23 +
+ blocks/sharing_cart/version.php                    |   9 +
+ 30 files changed, 3025 insertions(+)
+ create mode 100644 blocks/sharing_cart/README.md
+ create mode 100644 blocks/sharing_cart/backup/moodle2/restore_fix_missing_questions.php
+ create mode 100644 blocks/sharing_cart/backup/moodle2/restore_root_task_fix_missings.php
+ create mode 100644 blocks/sharing_cart/backup/util/helper/restore_fix_missings_helper.php
+ create mode 100644 blocks/sharing_cart/block_sharing_cart.php
+ create mode 100644 blocks/sharing_cart/bulkdelete.php
+ create mode 100644 blocks/sharing_cart/classes/controller.php
+ create mode 100644 blocks/sharing_cart/classes/exception.php
+ create mode 100644 blocks/sharing_cart/classes/record.php
+ create mode 100644 blocks/sharing_cart/classes/renderer.php
+ create mode 100644 blocks/sharing_cart/classes/scoped.php
+ create mode 100644 blocks/sharing_cart/classes/storage.php
+ create mode 100644 blocks/sharing_cart/custom.css
+ create mode 100644 blocks/sharing_cart/db/access.php
+ create mode 100644 blocks/sharing_cart/db/install.xml
+ create mode 100644 blocks/sharing_cart/db/upgrade.php
+ create mode 100644 blocks/sharing_cart/lang/en/block_sharing_cart.php
+ create mode 100644 blocks/sharing_cart/lang/es/block_sharing_cart.php
+ create mode 100644 blocks/sharing_cart/lang/ja/block_sharing_cart.php
+ create mode 100644 blocks/sharing_cart/lib/settingslib.php
+ create mode 100644 blocks/sharing_cart/module.js
+ create mode 100644 blocks/sharing_cart/pix/bulkdelete.gif
+ create mode 100644 blocks/sharing_cart/pix/bulkdelete.png
+ create mode 100644 blocks/sharing_cart/pix/bulkdelete.svg
+ create mode 100644 blocks/sharing_cart/pix/dropzone_arrow.svg
+ create mode 100644 blocks/sharing_cart/rest.php
+ create mode 100644 blocks/sharing_cart/restore.php
+ create mode 100644 blocks/sharing_cart/settings.php
+ create mode 100644 blocks/sharing_cart/styles.css
+ create mode 100644 blocks/sharing_cart/version.php
+
+diff --git a/blocks/sharing_cart/README.md b/blocks/sharing_cart/README.md
+new file mode 100644
+index 0000000..0f77f31
+--- /dev/null
++++ b/blocks/sharing_cart/README.md
+@@ -0,0 +1,90 @@
++Sharing Cart
++============
++
++version 3.2, release 1 - 2017.02.01
++
++The "master" branch is no longer compatible with Moodle 2.2 or earlier.
++
++* Moodle 2.2 => "MOODLE_22_STABLE" branch
++* Moodle 1.9 => "MOODLE_19_STABLE" branch
++
++Change Log
++----------
++* 3.0, release 1
++  * Compatible with Moodle 3.0
++* 2.9, release 1
++  * Compatible with Moodle 2.9
++* 2.6, release 1 patch 7
++  * Improve javascript
++* 2.6, release 1 patch 6
++  * Support frontpage
++* 2.6, release 1 patch 5
++  * Support Moodle 2.7
++* 2.6, release 1 patch 4
++  * Fixed issue #16
++* 2.6, release 1 patch 3
++  * Fixed issue: https://tracker.moodle.org/browse/MDLSITE-2806
++* 2.6, release 1 patch 2
++  * Support experimental setting "Enable new backup format"
++* 2.6, release 1 patch 1
++  * Fixed issue: PHP's numeric string does not work properly
++  * Improved indentation of cart items
++* 2.6, release 1
++  * Rename version number
++* 2.4, release 1 patch 9
++  * Improved capability checking (issue #10)
++* 2.4, release 1 patch 8
++  * Support Moodle 2.6
++* 2.4, release 1 patch 7
++  * Removed block/sharing_cart:myaddinstance capability (issue #6)
++  * Reduced unused strings and moved help content into lang file (issue #7)
++* 2.4, release 1 patch 6
++  * Add block/sharing_cart:myaddinstance capability (issue #6)
++  * Used wrong string from core in bulkdelete.php (issue #8)
++* 2.4, release 1 patch 5
++  * Fixed Sharing cart causing file upload box to hang (issue #3 of old repository)
++* 2.4, release 1 patch 4
++  * Improve icon usage and themability for Moodle 2.4 (pull request #2)
++  * Add element's html code to clipboard div without indents (issue #5)
++  * Notify user that JavaScript is needed for Sharing Cart functionality (issue #3)
++* 2.4, release 1 patch 3
++  * IE8 JavaScript workaround (CONTRIB-4209)
++  * HTML visible on settings screen (issue #1)
++* 2.4, release 1 patch 2
++  * Limit applicable formats (issue #2 of old repository)
++  * lib.php is no longer required
++* 2.4, release 1 patch 1
++  * Set instance_can_be_docked to false
++* 2.4, release 1
++  * Support Moodle 2.4
++* 2.3, release 2
++  * New feature: Workaround for question bank restore issue (error_question_match_sub_missing_in_db)
++* 2.3, release 1
++  * Some minor fixes
++* 2.3, release candidate 1
++  * New feature: Option to copy with user data (for Wiki, Forum, Database, etc.)
++  * Improvement: Ajaxify
++
++
++Purpose
++-------
++
++The Sharing Cart is a block that enables sharing of Moodle content
++(resources, activities) between multiple courses on your site.
++You can share among teachers or among your own courses.
++It copies and moves single course items without user data
++-- similar to the "Import" function in Course Administration.
++Items can be collected and saved on the Sharing Cart indefinitely,
++serving as a library of frequently used course items available for duplication.
++
++
++Requirements
++------------
++
++Moodle 2.3.1 or later, with AJAX enabled
++
++
++License
++-------
++
++GPL v3
+diff --git a/blocks/sharing_cart/backup/moodle2/restore_fix_missing_questions.php b/blocks/sharing_cart/backup/moodle2/restore_fix_missing_questions.php
+new file mode 100644
+index 0000000..fb2250b
+--- /dev/null
++++ b/blocks/sharing_cart/backup/moodle2/restore_fix_missing_questions.php
+@@ -0,0 +1,153 @@
++<?php
++/**
++ *  Sharing Cart
++ *  
++ *  @author  VERSION2, Inc.
++ *  @version $Id: restore_fix_missing_questions.php 890 2012-11-01 10:02:14Z malu $
++ */
++
++defined('MOODLE_INTERNAL') || die();
++
++/**
++ *  The execution step that fixes missing questions
++ *  
++ *  This step must be inserted between restore_process_categories_and_questions
++ *  and restore_create_categories_and_questions of restore_root_task
++ */
++class restore_fix_missing_questions extends restore_execution_step
++{
++    /**
++     *  Checks if mapped questions are exact valid, or marks them to be created
++     *  
++     *  @global $DB
++     *  @throws moodle_exception
++     */
++    protected function define_execution()
++    {
++        global $DB;
++
++        $restoreid = $this->get_restoreid();
++        $courseid = $this->get_courseid();
++        $userid = $this->task->get_userid();
++
++        $workaround_qtypes = explode(',', get_config('block_sharing_cart', 'workaround_qtypes'));
++
++        // @see /backup/util/dbops/restore_dbops.class.php#prechek_precheck_qbanks_by_level
++        $contexts = restore_dbops::restore_get_question_banks($restoreid);
++        foreach ($contexts as $contextid => $contextlevel) {
++            $categories = restore_dbops::restore_get_question_categories($restoreid, $contextid);
++            $canadd = false;
++            if ($targetcontext = restore_dbops::restore_find_best_target_context($categories, $courseid, $contextlevel)) {
++                $canadd = has_capability('moodle/question:add', $targetcontext, $userid);
++            }
++            foreach ($categories as $category) {
++                $questions = restore_dbops::restore_get_questions($restoreid, $category->id);
++                foreach ($questions as $question) {
++                    if (!in_array($question->qtype, $workaround_qtypes))
++                        continue;
++                    $mapping = restore_dbops::get_backup_ids_record($restoreid, 'question', $question->id);
++                    if ($mapping && $mapping->newitemid &&
++                        !self::is_question_valid($question->qtype, $mapping->newitemid))
++                    {
++                        if (!$canadd)
++                            throw new moodle_exception('questioncannotberestored', 'backup', '', $question);
++                        $catmapping = restore_dbops::get_backup_ids_record($restoreid, 'question_category', $category->id);
++                        $matchquestions = $DB->get_records('question', array(
++                            'category' => $catmapping->newitemid,
++                            'qtype'    => $question->qtype,
++                            'stamp'    => $question->stamp,
++                            'version'  => $question->version
++                            ));
++                        $newitemid = 0; // to be created if no valid duplicate exists
++                        foreach ($matchquestions as $q) {
++                            if ($q->id == $mapping->newitemid)
++                                continue;
++                            if (self::is_question_valid($question->qtype, $q->id)) {
++                                $newitemid = $q->id; // updates mapping if a valid one found
++                                break;
++                            }
++                        }
++                        $this->update_mapping($mapping, $newitemid);
++                    }
++                }
++            }
++        }
++    }
++
++    /**
++     *  Updates existing mapping
++     *  
++     *  @param object $record
++     *  @param int $newitemid
++     */
++    private function update_mapping($record, $newitemid)
++    {
++        $restoreid = $this->get_restoreid();
++        $key = "{$record->itemid} {$record->itemname} {$restoreid}";
++        $extrarecord = array('newitemid' => $newitemid);
++
++        // restore_dbops::update_backup_cached_record($record, $extrarecord, $key, $existingrecord = null);
++        $reflector = new ReflectionMethod('restore_dbops', 'update_backup_cached_record');
++        $reflector->setAccessible(true);
++        $reflector->invoke(null, $record, $extrarecord, $key, $record);
++    }
++
++    /**
++     *  Checks if a question is valid
++     *  
++     *  @global $DB
++     *  @param string $qtypename
++     *  @param int $questionid
++     *  @return boolean
++     */
++    private static function is_question_valid($qtypename, $questionid)
++    {
++        global $DB;
++
++        // checks if the question exists by question_type->get_question_options()
++        $question = (object)array('id' => $questionid);
++        try {
++            // qtype_multianswer expects that options property is an object instead of undefined
++            $question->options = new stdClass;
++            $oldhandler = set_error_handler(function ($n, $s, $f, $l) { return true; });
++            question_bank::get_qtype($qtypename)->get_question_options($question);
++            isset($oldhandler) and set_error_handler($oldhandler);
++            if (count(get_object_vars($question->options)) == 0) {
++                if ($qtypename === 'random') {
++                    // qtype_random does nothing, but is valid
++                } else {
++                    return false;
++                }
++            }
++        } catch (moodle_exception $ex) {
++            isset($oldhandler) and set_error_handler($oldhandler);
++            return false;
++        }
++        // somehow, subquestions might go away, but inconsistency of them causes restore interruption
++        // @see /question/type/match/backup/moodle2/restore_qtype_match_plugin.class.php#process_match
++        if (property_exists($question->options, 'subquestions')) {
++            if (empty($question->options->subquestions))
++                return false;
++            // so, let's check deep -- is there any faster way??
++            $dbman = $DB->get_manager();
++            if ($dbman->table_exists("question_{$qtypename}") &&
++                $dbman->field_exists("question_{$qtypename}", 'question') &&
++                $dbman->table_exists("question_{$qtypename}_sub") &&
++                $dbman->field_exists("question_{$qtypename}_sub", 'question'))
++            {
++                // checks if all the subquestions exist
++                $q = $DB->get_record("question_{$qtypename}", array('question' => $question->id));
++                if (!$q || empty($q->subquestions))
++                    return false;
++                $subquestionids = explode(',', $q->subquestions);
++                list ($sql, $params) = $DB->get_in_or_equal($subquestionids);
++                $sql .= ' AND question = ?';
++                $params[] = $question->id;
++                $count = $DB->get_field_select("question_{$qtypename}_sub", 'COUNT(*)', "id $sql", $params);
++                if ($count != count($subquestionids))
++                    return false;
++            }
++        }
++        return true;
++    }
++}
+diff --git a/blocks/sharing_cart/backup/moodle2/restore_root_task_fix_missings.php b/blocks/sharing_cart/backup/moodle2/restore_root_task_fix_missings.php
+new file mode 100644
+index 0000000..cbf8e17
+--- /dev/null
++++ b/blocks/sharing_cart/backup/moodle2/restore_root_task_fix_missings.php
+@@ -0,0 +1,33 @@
++<?php
++/**
++ *  Sharing Cart
++ *  
++ *  @author  VERSION2, Inc.
++ *  @version $Id: restore_root_task_fix_missings.php 882 2012-11-01 05:06:21Z malu $
++ */
++
++defined('MOODLE_INTERNAL') || die();
++
++require_once __DIR__.'/restore_fix_missing_questions.php';
++
++/**
++ *  The root task that fixes missings before execution
++ */
++class restore_root_task_fix_missings extends restore_root_task
++{
++    public function build()
++    {
++        parent::build();
++
++        // inserts a restore_fix_missing_questions step
++        // before restore_create_categories_and_questions
++        $fix_missing_questions = new restore_fix_missing_questions('fix_missing_questions');
++        $fix_missing_questions->set_task($this);
++        foreach ($this->steps as $i => $step) {
++            if ($step instanceof restore_create_categories_and_questions) {
++                array_splice($this->steps, $i, 0, array($fix_missing_questions));
++                break;
++            }
++        }
++    }
++}
+diff --git a/blocks/sharing_cart/backup/util/helper/restore_fix_missings_helper.php b/blocks/sharing_cart/backup/util/helper/restore_fix_missings_helper.php
+new file mode 100644
+index 0000000..deb81b9
+--- /dev/null
++++ b/blocks/sharing_cart/backup/util/helper/restore_fix_missings_helper.php
+@@ -0,0 +1,54 @@
++<?php
++/**
++ *  Sharing Cart
++ *  
++ *  @author  VERSION2, Inc.
++ *  @version $Id: restore_fix_missings_helper.php 882 2012-11-01 05:06:21Z malu $
++ */
++
++defined('MOODLE_INTERNAL') || die();
++
++require_once __DIR__.'/../../moodle2/restore_root_task_fix_missings.php';
++
++/**
++ *  The helper class that fixes restore plan
++ */
++final class restore_fix_missings_helper
++{
++    /**
++     *  Fixes a restore plan to perform a workaround for question bank restore issue
++     *  
++     *  @param restore_plan $plan
++     */
++    public static function fix_plan(restore_plan $plan)
++    {
++        // replaces an existing restore_root_task with a restore_root_task_fix_missings
++        $tasks = $plan->get_tasks();
++        foreach ($tasks as $i => $task) {
++            if ($task instanceof restore_root_task) {
++                $task = new restore_root_task_fix_missings('root_task');
++                // since the task settings already defined by restore_root_task,
++                // we need to inject the plan instead of calling set_plan(),
++                // to avoid 'error/multiple_settings_by_name_found' error
++                self::set_protected_property($task, 'plan', $plan);
++                $tasks[$i] = $task;
++                break;
++            }
++        }
++        self::set_protected_property($plan, 'tasks', $tasks);
++    }
++
++    /**
++     *  Sets a protected/private property
++     *  
++     *  @param object $obj
++     *  @param string $prop
++     *  @param mixed $value
++     */
++    private static function set_protected_property($obj, $prop, $value)
++    {
++        $reflector = new ReflectionProperty(get_class($obj), $prop);
++        $reflector->setAccessible(true);
++        $reflector->setValue($obj, $value);
++    }
++}
+diff --git a/blocks/sharing_cart/block_sharing_cart.php b/blocks/sharing_cart/block_sharing_cart.php
+new file mode 100644
+index 0000000..c004055
+--- /dev/null
++++ b/blocks/sharing_cart/block_sharing_cart.php
+@@ -0,0 +1,170 @@
++<?php
++/**
++ *  Sharing Cart block
++ *  
++ *  @author  VERSION2, Inc.
++ *  @version $Id: block_sharing_cart.php 948 2013-03-28 12:14:34Z malu $
++ */
++
++require_once __DIR__.'/classes/controller.php';
++
++class block_sharing_cart extends block_base
++{
++	public function init()
++	{
++		$this->title   = get_string('pluginname', __CLASS__);
++		$this->version = 2015012700;
++	}
++
++	public function applicable_formats()
++	{
++		return array(
++			'site'            => true,
++			'course'          => true,
++			'course-category' => false,
++			'mod'             => false,
++			'my'              => false,
++			'tag'             => false,
++			'admin'           => false,
++			);
++	}
++
++	public function instance_can_be_docked()
++	{
++		return false; // AJAX won't work with Dock
++	}
++
++	public function has_config()
++	{
++		return true;
++	}
++
++	/**
++	 *  Get the block content
++	 *  
++	 *  @global object $CFG
++	 *  @global object $USER
++	 *  @return object|string
++	 */
++	public function get_content()
++	{
++		global $CFG, $USER;
++		
++		if ($this->content !== null)
++			return $this->content;
++		
++		if (!$this->page->user_is_editing())
++			return $this->content = '';
++		
++		$context = context_course::instance($this->page->course->id);
++		if (!has_capability('moodle/backup:backupactivity', $context))
++			return $this->content = '';
++		
++		$controller = new sharing_cart\controller();
++		$html = $controller->render_tree($USER->id);
++		
++        /* Place the <noscript> tag to give out an error message if JavaScript is not enabled in the browser.
++         * Adding bootstrap classes to show colored info in bootstrap based themes. */
++        $noscript = html_writer::tag('noscript',
++            html_writer::tag('div', get_string('requirejs', __CLASS__), array('class' => 'error alert alert-danger'))
++            );
++        $html = $noscript . $html;
++		
++		$this->page->requires->css('/blocks/sharing_cart/styles.css');
++		if ($this->is_special_version()) {
++			$this->page->requires->css('/blocks/sharing_cart/custom.css');
++		}
++		$this->page->requires->js('/blocks/sharing_cart/module.js');
++		$this->page->requires->yui_module('block_sharing_cart', 'M.block_sharing_cart.init', array(), null, true);
++		$this->page->requires->strings_for_js(
++			array('yes', 'no', 'ok', 'cancel', 'error', 'edit', 'move', 'delete', 'movehere'),
++			'moodle'
++			);
++		$this->page->requires->strings_for_js(
++			array('copyhere', 'notarget', 'backup', 'restore', 'movedir', 'clipboard',
++					'confirm_backup', 'confirm_userdata', 'confirm_delete'),
++			__CLASS__
++			);
++		
++		$footer = '<div style="display:none;">'
++				. '<div class="header-commands">' . $this->get_header() . '</div>'
++				. '</div>';
++		return $this->content = (object)array('text' => $html, 'footer' => $footer);
++	}
++
++	/**
++	 *  Get the block header
++	 *  
++	 *  @global core_renderer $OUTPUT
++	 *  @return string
++	 */
++	private function get_header()
++	{
++		global $OUTPUT;
++		// link to bulkdelete
++		$alt = get_string('bulkdelete', __CLASS__);
++		$src = $OUTPUT->pix_url('bulkdelete', __CLASS__);
++		$url = new moodle_url('/blocks/sharing_cart/bulkdelete.php', array('course' => $this->page->course->id));
++		
++		return $this->get_bulk_delete($src, $alt, $url) . $this->get_help_icon();
++	}
++	
++	/**
++	 *  Get bulk delete
++	 *  
++	 *  @param string $src
++	 *  @param string $alt
++	 *  @param moodle_url $url
++	 *  @return string
++	 */
++	private function get_bulk_delete($src, $alt, $url)
++	{	
++		$bulkdelete = '<a class="editing_bulkdelete" title="' . s($alt) . '" href="' . s($url) . '">'
++		        . '<img src="' . s($src) . '" alt="' . s($alt) . '" />'
++		                . '</a>';
++		
++		return $bulkdelete;
++	}
++	
++	/**
++	 *  Get help icon
++	 *  
++	 *  @return string
++	 */
++	private function get_help_icon()
++	{
++		global $OUTPUT;
++		$helpicon = $OUTPUT->help_icon('sharing_cart', __CLASS__);
++		$helpicon = str_replace('class="', 'class="help-icon ', $helpicon);
++		return $helpicon;
++	}
++	
++	/**
++	 *  Check Moodle 3.2 or later
++	 * 
++	 *  @return boolean
++	 */
++	private function is_special_version()
++	{
++		return moodle_major_version() >= 3.2;
++	}
++
++	/**
++	 *  Get the block content for no-AJAX
++	 *  
++	 *  @global core_renderer $OUTPUT
++	 *  @return string
++	 */
++	private function get_content_noajax()
++	{
++		global $OUTPUT;
++		
++		$html = '<div class="error">' . get_string('requireajax', __CLASS__) . '</div>';
++		if (has_capability('moodle/site:config', context_system::instance())) {
++			$url = new moodle_url('/admin/settings.php?section=ajax');
++			$link = '<a href="' . s($url) . '">' . get_string('ajaxuse') . '</a>';
++			$html .= '<div>' . $OUTPUT->rarrow() . ' ' . $link . '</div>';
++		}
++		return $html;
++	}
++}
+diff --git a/blocks/sharing_cart/bulkdelete.php b/blocks/sharing_cart/bulkdelete.php
+new file mode 100644
+index 0000000..e2c741b
+--- /dev/null
++++ b/blocks/sharing_cart/bulkdelete.php
+@@ -0,0 +1,182 @@
++<?php
++/**
++ *  Sharing Cart - Bulk Delete Operation
++ *  
++ *  @author  VERSION2, Inc.
++ *  @version $Id: bulkdelete.php 942 2013-03-28 10:42:54Z malu $
++ */
++
++require_once '../../config.php';
++
++require_once __DIR__.'/classes/storage.php';
++require_once __DIR__.'/classes/record.php';
++require_once __DIR__.'/classes/renderer.php';
++
++if (false) {
++    $DB     = new mysqli_native_moodle_database;
++    $CFG    = new stdClass;
++    $USER   = new stdClass;
++    $PAGE   = new moodle_page;
++    $OUTPUT = new core_renderer;
++}
++
++$courseid = required_param('course', PARAM_INT);
++$returnurl = new moodle_url('/course/view.php', array('id' => $courseid));
++
++require_login($courseid);
++
++$delete_param = function_exists('optional_param_array')
++	? optional_param_array('delete', null, PARAM_RAW)
++	: optional_param('delete', null, PARAM_RAW);
++if (is_array($delete_param)) try {
++	
++	confirm_sesskey();
++	set_time_limit(0);
++	
++	$delete_ids = array_map('intval', array_keys($delete_param));
++	
++	list ($sql, $params) = $DB->get_in_or_equal($delete_ids);
++	$records = $DB->get_records_select(sharing_cart\record::TABLE, "userid = $USER->id AND id $sql", $params);
++	if (!$records)
++		throw new sharing_cart\exception('recordnotfound');
++	
++	$storage = new sharing_cart\storage();
++	
++	$deleted_ids = array();
++	foreach ($records as $record) {
++		$storage->delete($record->filename);
++		$deleted_ids[] = $record->id;
++	}
++	
++	list ($sql, $params) = $DB->get_in_or_equal($deleted_ids);
++	$DB->delete_records_select(sharing_cart\record::TABLE, "id $sql", $params);
++	
++	sharing_cart\record::renumber($USER->id);
++	
++	redirect($returnurl);
++} catch (sharing_cart\exception $ex) {
++	print_error($ex->errorcode, $ex->module, $returnurl, $ex->a);
++} catch (Exception $ex) {
++	if (!empty($CFG->debug) and $CFG->debug >= DEBUG_DEVELOPER) {
++		print_error('notlocalisederrormessage', 'error', '', $ex->__toString());
++	} else {
++		print_error('unexpectederror', 'block_sharing_cart', $returnurl);
++	}
++}
++
++$orderby = 'tree,weight,modtext';
++if ($DB->get_dbfamily() == 'mssql' || $DB->get_dbfamily() == 'oracle') {
++	// SQL Server and Oracle do not support ordering by TEXT field.
++	$orderby = 'tree,weight,CAST(modtext AS VARCHAR(255))';
++}
++$items = $DB->get_records(sharing_cart\record::TABLE, array('userid' => $USER->id), $orderby);
++
++$title = get_string('bulkdelete', 'block_sharing_cart');
++
++$PAGE->set_pagelayout('standard');
++$PAGE->set_url('/blocks/sharing_cart/bulkdelete.php', array('course' => $courseid));
++$PAGE->set_title($title);
++$PAGE->set_heading($title);
++$PAGE->navbar->add(get_string('pluginname', 'block_sharing_cart'))->add($title, '');
++
++echo $OUTPUT->header();
++{
++	echo $OUTPUT->heading($title);
++	
++	echo '
++	<div style="width:100%; text-align:center;">';
++	if (empty($items)) {
++		echo '
++		<div>
++			<input type="button" onclick="history.back();" value="', get_string('back'), '" />
++		</div>';
++	} else {
++		echo '
++		<script type="text/javascript">
++		//<![CDATA[
++			function get_checks()
++			{
++				var els = document.forms["form"].elements;
++				var ret = new Array();
++				for (var i = 0; i < els.length; i++) {
++					var el = els[i];
++					if (el.type == "checkbox" && el.name.match(/^delete\b/)) {
++						ret.push(el);
++					}
++				}
++				return ret;
++			}
++			function check_all(check)
++			{
++				var checks = get_checks();
++				for (var i = 0; i < checks.length; i++) {
++					checks[i].checked = check.checked;
++				}
++				document.forms["form"].elements["delete_checked"].disabled = !check.checked;
++			}
++			function confirm_delete_selected()
++			{
++				return confirm("', s(
++					get_string('confirm_delete_selected', 'block_sharing_cart')
++				), '");
++			}
++			function check()
++			{
++				var delete_checked = document.forms["form"].elements["delete_checked"];
++				var checks = get_checks();
++				for (var i = 0; i < checks.length; i++) {
++					if (checks[i].checked) {
++						delete_checked.disabled = false;
++						return;
++					}
++				}
++				delete_checked.disabled = true;
++			}
++		//]]>
++		</script>
++		<form action="', $PAGE->url->out_omit_querystring(), '"
++		 method="post" id="form" onsubmit="return confirm_delete_selected();">
++		<input type="hidden" name="sesskey" value="', s(sesskey()), '" />
++		<div style="display:none;">
++			' . html_writer::input_hidden_params($PAGE->url) . '
++		</div>
++		<div><label style="cursor:default;">
++			<input type="checkbox" checked="checked" onclick="check_all(this);"
++			 style="height:16px; vertical-align:middle;" />
++			<span>', get_string('selectall'), '</span>
++		</label></div>';
++		
++		$i = 0;
++		echo '
++		<ul style="list-style-type:none; float:left;">';
++		foreach ($items as $id => $item) {
++			echo '
++			<li style="list-style-type:none; clear:left;">
++				<input type="checkbox" name="delete['.$id.']" checked="checked" onclick="check();"
++				 style="float:left; height:16px;" id="delete_'.$id.'" />
++				<div style="float:left;">', sharing_cart\renderer::render_modicon($item), '</div>
++				<div style="float:left;">
++					<label for="delete_'.$id.'">', format_string($item->modtext), '</label>
++				</div>
++			</li>';
++			if (++$i % 10 == 0) {
++				echo '
++		</ul>
++		<ul style="list-style-type:none; float:left;">';
++			}
++		}
++		echo '
++		</ul>';
++		
++		echo '
++		<div style="clear:both;"><!-- clear floating --></div>
++		<div>
++			<input type="button" onclick="history.back();" value="', s(get_string('cancel')), '" />
++			<input type="submit" name="delete_checked" value="', s(get_string('deleteselected')), '" />
++		</div>
++		</form>';
++	}
++	echo '
++	</div>';
++}
++echo $OUTPUT->footer();
+diff --git a/blocks/sharing_cart/classes/controller.php b/blocks/sharing_cart/classes/controller.php
+new file mode 100644
+index 0000000..d5012c8
+--- /dev/null
++++ b/blocks/sharing_cart/classes/controller.php
+@@ -0,0 +1,479 @@
++<?php
++/**
++ *  Sharing Cart
++ *  
++ *  @author  VERSION2, Inc.
++ *  @version $Id: controller.php 882 2012-11-01 05:06:21Z malu $
++ */
++namespace sharing_cart;
++
++require_once __DIR__.'/storage.php';
++require_once __DIR__.'/record.php';
++require_once __DIR__.'/scoped.php';
++
++/**
++ *  Sharing Cart action controller
++ */
++class controller
++{
++	/** @const int  The maximum length of a backup file name */
++	const MAX_FILENAME = 20;
++	
++	/**
++	 *  Constructor
++	 *  
++	 *  @throws \require_login_exception
++	 */
++	public function __construct()
++	{
++		\require_login(null, false, null, false, true);
++	}
++	
++	
++	/**
++	 *  Render an item tree
++	 *  
++	 *  @global \moodle_database $DB
++	 *  @global object $USER
++	 *  @param int $userid = $USER->id
++	 *  @return string HTML
++	 */
++	public function render_tree($userid = null)
++	{
++		global $DB, $USER;
++
++		require_once __DIR__.'/renderer.php';
++		
++		// build an item tree from flat records
++		$records = $DB->get_records(record::TABLE,
++			array('userid' => $userid ?: $USER->id)
++			);
++		$tree = array();
++		foreach ($records as $record) {
++			$components = explode('/', trim($record->tree, '/'));
++			$node_ptr = &$tree;
++			do {
++				$dir = (string)array_shift($components);
++				isset($node_ptr[$dir]) or $node_ptr[$dir] = array();
++				$node_ptr = &$node_ptr[$dir];
++			} while ($dir !== '');
++			$node_ptr[] = $record;
++		}
++		
++		// sort tree nodes and leaves
++		$sort_node = function (array &$node) use (&$sort_node)
++		{
++			uksort($node, function ($lhs, $rhs)
++			{
++				// items follow directory
++				if ($lhs === '') return +1;
++				if ($rhs === '') return -1;
++				return strnatcasecmp($lhs, $rhs);
++			});
++			foreach ($node as $name => &$leaf) {
++				if ($name !== '') {
++					$sort_node($leaf);
++				} else {
++					usort($leaf, function ($lhs, $rhs)
++					{
++						if ($lhs->weight < $rhs->weight) return -1;
++						if ($lhs->weight > $rhs->weight) return +1;
++						return strnatcasecmp($lhs->modtext, $rhs->modtext);
++					});
++				}
++			}
++		};
++		$sort_node($tree);
++		
++		return renderer::render_tree($tree);
++	}
++	
++	/**
++	 *  Get whether a module is userdata copyable and the logged-in user has enough capabilities
++	 *  
++	 *  @param int $cmid
++	 *  @return boolean
++	 */
++	public function is_userdata_copyable($cmid)
++	{
++		$cm = \get_coursemodule_from_id(null, $cmid, 0, false, MUST_EXIST);
++		$modtypes = \get_config('block_sharing_cart', 'userdata_copyable_modtypes');
++		$context = \context_module::instance($cm->id);
++		return in_array($cm->modname, explode(',', $modtypes))
++			&& \has_capability('moodle/backup:userinfo', $context)
++			&& \has_capability('moodle/backup:anonymise', $context)
++			&& \has_capability('moodle/restore:userinfo', $context);
++	}
++	
++	/**
++	 *  Backup a module into Sharing Cart
++	 *  
++	 *  @global object $CFG
++	 *  @global \moodle_database $DB
++	 *  @global object $USER
++	 *  @param int     $cmid
++	 *  @param boolean $userdata
++	 *  @throws \moodle_exception
++	 */
++	public function backup($cmid, $userdata)
++	{
++		global $CFG, $DB, $USER;
++		
++		require_once __DIR__.'/../../../backup/util/includes/backup_includes.php';
++		
++		// validate parameters and capabilities
++		$cm = \get_coursemodule_from_id(null, $cmid, 0, false, MUST_EXIST);
++		$context = \context_module::instance($cm->id);
++		\require_capability('moodle/backup:backupactivity', $context);
++		if ($userdata) {
++			\require_capability('moodle/backup:userinfo', $context);
++			\require_capability('moodle/backup:anonymise', $context);
++			\require_capability('moodle/restore:userinfo', $context);
++		}
++		self::validate_sesskey();
++		
++		// generate a filename from the module info
++		$modtext = $cm->modname == 'label' ? self::get_cm_intro($cm) : $cm->name;
++		$cleanname = \clean_filename(strip_tags($modtext));
++		if ($this->get_string_length($cleanname) > self::MAX_FILENAME)
++			$cleanname = $this->get_sub_string($cleanname, 0, self::MAX_FILENAME) . '_';
++		$filename = sprintf('%s-%s.mbz', $cleanname, date('Ymd-His'));
++		
++		// backup the module into the predefined area
++		//    - user/backup ... if userdata not included
++		//    - backup/activity ... if userdata included
++		$settings = array(
++			'role_assignments' => false,
++			'activities'       => true,
++			'blocks'           => false,
++			'filters'          => false,
++			'comments'         => false,
++			'calendarevents'   => false,
++			'userscompletion'  => false,
++			'logs'             => false,
++			'grade_histories'  => false,
++			);
++		if (\has_capability('moodle/backup:userinfo', $context) &&
++			\has_capability('moodle/backup:anonymise', $context) &&
++			\has_capability('moodle/restore:userinfo', $context))
++		{
++			// set the userdata flags only if the operator has capability
++			$settings += array(
++				'users'     => $userdata,
++				'anonymize' => false,
++				);
++		}
++		$controller = new \backup_controller(
++			\backup::TYPE_1ACTIVITY,
++			$cm->id,
++			\backup::FORMAT_MOODLE,
++			\backup::INTERACTIVE_NO,
++			\backup::MODE_GENERAL,
++			$USER->id
++			);
++		$plan = $controller->get_plan();
++		foreach ($settings as $name => $value) {
++			if ($plan->setting_exists($name))
++				$plan->get_setting($name)->set_value($value);
++		}
++		$plan->get_setting('filename')->set_value($filename);
++		
++		set_time_limit(0);
++		$controller->set_status(\backup::STATUS_AWAITING);
++		$controller->execute_plan();
++		
++		// move the backup file to user/backup area if it is not in there
++		$results = $controller->get_results();
++		$file = $results['backup_destination'];
++		if ($file->get_component() != storage::COMPONENT ||
++			$file->get_filearea()  != storage::FILEAREA)
++		{
++			$storage = new storage($USER->id);
++			$storage->copy_from($file);
++			$file->delete();
++		}
++		
++		$controller->destroy();
++		
++		// insert an item record
++		$record = new record(array(
++			'modname'  => $cm->modname,
++			'modicon'  => self::get_cm_icon($cm),
++			'modtext'  => $modtext,
++			'filename' => $filename,
++		));
++		$record->insert();
++	}
++	
++	/**
++	 * Multibyte safe get_string_length() function, uses mbstring or iconv for UTF-8, falls back to typo3.
++	 *
++	 * @param string $text input string
++	 * @return int number of characters
++	 */
++	private function get_string_length($text)
++	{
++		$textlength = 0;
++		if (method_exists('textlib', 'strlen')) {
++			$textlength = \textlib::strlen($text);
++		} else if (method_exists('core_text', 'strlen')) {
++			$textlength = \core_text::strlen($text);
++		}
++		return $textlength;
++	}
++	
++	/**
++	 * Multibyte safe get_sub_string() function, uses mbstring or iconv for UTF-8, falls back to typo3.
++	 *
++	 * @param string $text string to truncate
++	 * @param int $start negative value means from end
++	 * @param int $len maximum length of characters beginning from start
++	 * @return string portion of string specified by the $start and $len
++	 */
++    private function get_sub_string($text, $start, $length)
++	{
++		$result = 0;
++		if (method_exists('textlib', 'substr')) {
++			$result = \textlib::substr($text, $start, $length);
++		} else if (method_exists('core_text', 'substr')) {
++			$result = \core_text::substr($text, $start, $length);
++		}
++		return $result;
++	}
++	
++	/**
++	 *  Restore an item into a course section
++	 *  
++	 *  @global object $CFG
++	 *  @global \moodle_database $DB
++	 *  @global object $USER
++	 *  @param int $id
++	 *  @param int $courseid
++	 *  @param int $sectionnumber
++	 *  @throws \moodle_exception
++	 */
++	public function restore($id, $courseid, $sectionnumber)
++	{
++		global $CFG, $DB, $USER;
++		
++		require_once __DIR__.'/../../../backup/util/includes/restore_includes.php';
++		require_once __DIR__.'/../backup/util/helper/restore_fix_missings_helper.php';
++		
++		// cleanup temporary files when we exit this scope
++		$tempfiles = array();
++		$scope = new scoped(function () use (&$tempfiles)
++		{
++			foreach ($tempfiles as $tempfile)
++				\fulldelete($tempfile);
++		});
++		
++		// validate parameters and capabilities
++		$record = record::from_id($id);
++		if ($record->userid != $USER->id)
++			throw new exception('forbidden');
++		$course = $DB->get_record('course', array('id' => $courseid), '*', MUST_EXIST);
++		$section = $DB->get_record('course_sections',
++			array('course' => $course->id, 'section' => $sectionnumber), '*', MUST_EXIST);
++		\require_capability('moodle/restore:restorecourse',
++			\context_course::instance($course->id)
++			);
++		self::validate_sesskey();
++		
++		// prepare the temporary directory and generate a temporary name
++		$tempdir = self::get_tempdir();
++		$tempname = \restore_controller::get_tempdir_name($course->id, $USER->id);
++		
++		// copy the backup archive into the temporary directory
++		$storage = new storage();
++		$file = $storage->get($record->filename);
++		$file->copy_content_to("$tempdir/$tempname.mbz");
++		$tempfiles[] = "$tempdir/$tempname.mbz";
++		
++		// extract the archive in the temporary directory
++		$packer = \get_file_packer('application/vnd.moodle.backup');
++		$packer->extract_to_pathname("$tempdir/$tempname.mbz", "$tempdir/$tempname");
++		$tempfiles[] = "$tempdir/$tempname";
++		
++		// restore a module from the extracted files
++		$controller = new \restore_controller($tempname, $course->id,
++			\backup::INTERACTIVE_NO, \backup::MODE_GENERAL, $USER->id,
++			\backup::TARGET_EXISTING_ADDING);
++		foreach ($controller->get_plan()->get_tasks() as $task) {
++			if ($task->setting_exists('overwrite_conf'))
++				$task->get_setting('overwrite_conf')->set_value(false);
++		}
++		if (\get_config('block_sharing_cart', 'workaround_qtypes')) {
++			\restore_fix_missings_helper::fix_plan($controller->get_plan());
++		}
++		$controller->set_status(\backup::STATUS_AWAITING);
++		$controller->execute_plan();
++		
++		// move the restored module to desired section
++		foreach ($controller->get_plan()->get_tasks() as $task) {
++			if ($task instanceof \restore_activity_task) {
++				$cmid = $task->get_moduleid();
++				$cm = \get_coursemodule_from_id(null, $cmid, 0, false, MUST_EXIST);
++				\moveto_module($cm, $section);
++			}
++		}
++		\rebuild_course_cache($course->id);
++		
++		$controller->destroy();
++	}
++	
++	/**
++	 *  Move a shared item into a directory
++	 *  
++	 *  @global object $USER
++	 *  @param int $id
++	 *  @param string $path
++	 */
++	public function movedir($id, $path)
++	{
++		global $USER;
++
++		$record = record::from_id($id);
++		if ($record->userid != $USER->id)
++			throw new exception('forbidden');
++		self::validate_sesskey();
++		
++		$components = array_filter(explode('/', $path), 'strlen');
++		$path = implode('/', $components);
++		if (strcmp($record->tree, $path) != 0) {
++			$record->tree   = $path;
++			$record->weight = record::WEIGHT_BOTTOM;
++			$record->update();
++		}
++	}
++	
++	/**
++	 *  Move a shared item to a position of another item
++	 *  
++	 *  @global \moodle_database $DB
++	 *  @global object $USER
++	 *  @param int $id  The record ID to move
++	 *  @param int $to  The record ID of the desired position or zero for move to bottom
++	 */
++	public function move($id, $to)
++	{
++		global $DB, $USER;
++
++		$record = record::from_id($id);
++		if ($record->userid != $USER->id)
++			throw new exception('forbidden');
++		self::validate_sesskey();
++		
++		// get the weight of desired position
++		$record->weight = $to != 0
++			? record::from_id($to)->weight
++			: record::WEIGHT_BOTTOM;
++		
++		// shift existing items under the desired position
++		$DB->execute(
++			'UPDATE {' . record::TABLE . '} SET weight = weight + 1
++			 WHERE userid = ? AND tree = ? AND weight >= ?',
++			array($USER->id, $record->tree, $record->weight)
++			);
++		
++		$record->update();
++	}
++	
++	/**
++	 *  Delete a shared item by record ID
++	 *  
++	 *  @global object $USER
++	 *  @param int $id
++	 *  @throws \moodle_exception
++	 */
++	public function delete($id)
++	{
++		global $USER;
++
++		$record = record::from_id($id);
++		if ($record->userid != $USER->id)
++			throw new exception('forbidden');
++		self::validate_sesskey();
++		
++		$storage = new storage();
++		$storage->delete($record->filename);
++		
++		$record->delete();
++	}
++	
++	/**
++	 *  Get the path to the temporary directory for backup
++	 *  
++	 *  @global object $CFG
++	 *  @return string
++	 *  @throws exception
++	 */
++	public static function get_tempdir()
++	{
++		global $CFG;
++		$tempdir = $CFG->tempdir . '/backup';
++		if (!\check_dir_exists($tempdir, true, true))
++			throw new exception('unexpectederror');
++		return $tempdir;
++	}
++	
++	/**
++	 *  Check if the given session key is valid
++	 *  
++	 *  @param string $sesskey = \required_param('sesskey', PARAM_RAW)
++	 *  @throws exception
++	 */
++	public static function validate_sesskey($sesskey = null)
++	{
++		try {
++			if (\confirm_sesskey($sesskey))
++				return;
++		} catch (\moodle_exception $ex) {
++			unset($ex);
++		}
++		throw new exception('invalidoperation');
++	}
++	
++	/**
++	 *  Get the intro HTML of the course module
++	 *  
++	 *  @global \moodle_database $DB
++	 *  @param object $cm
++	 *  @return string
++	 */
++	public static function get_cm_intro($cm)
++	{
++		global $DB;
++		if (!property_exists($cm, 'extra')) {
++			$mod = $DB->get_record_sql(
++				'SELECT m.id, m.name, m.intro, m.introformat
++					FROM {'.$cm->modname.'} m, {course_modules} cm
++					WHERE m.id = cm.instance AND cm.id = :cmid',
++				array('cmid' => $cm->id)
++				);
++			$cm->extra = \format_module_intro($cm->modname, $mod, $cm->id, false);
++		}
++		return $cm->extra;
++	}
++	
++	/**
++	 *  Get the icon for the course module
++	 *  
++	 *  @global object $CFG
++	 *  @param object $cm
++	 *  @return string
++	 */
++	public static function get_cm_icon($cm)
++	{
++		global $CFG;
++		if (file_exists("$CFG->dirroot/mod/$cm->modname/lib.php")) {
++			include_once"$CFG->dirroot/mod/$cm->modname/lib.php";
++			if (function_exists("{$cm->modname}_get_coursemodule_info")) {
++				$info = call_user_func("{$cm->modname}_get_coursemodule_info", $cm);
++				if (!empty($info->icon) && empty($info->iconcomponent))
++					return $info->icon;
++				// TODO: add a field for iconcomponent to block_sharing_cart table?
++			}
++		}
++		return '';
++	}
++}
+diff --git a/blocks/sharing_cart/classes/exception.php b/blocks/sharing_cart/classes/exception.php
+new file mode 100644
+index 0000000..9e83703
+--- /dev/null
++++ b/blocks/sharing_cart/classes/exception.php
+@@ -0,0 +1,25 @@
++<?php
++/**
++ *  Sharing Cart
++ *  
++ *  @author  VERSION2, Inc.
++ *  @version $Id: exception.php 776 2012-09-05 10:16:15Z malu $
++ */
++namespace sharing_cart;
++
++/**
++ *  Sharing Cart exception
++ */
++class exception extends \moodle_exception
++{
++    /**
++     *  Constructor
++     *  
++     *  @param string $errcode  The error string ID
++     *  @param mixed  $a        (Optional) Additional parameter
++     */
++    public function __construct($errcode, $a = null)
++    {
++        parent::__construct($errcode, 'block_sharing_cart', '', $a);
++    }
++}
+diff --git a/blocks/sharing_cart/classes/record.php b/blocks/sharing_cart/classes/record.php
+new file mode 100644
+index 0000000..2d4fb5c
+--- /dev/null
++++ b/blocks/sharing_cart/classes/record.php
+@@ -0,0 +1,132 @@
++<?php
++/**
++ *  Sharing Cart
++ *  
++ *  @author  VERSION2, Inc.
++ *  @version $Id: record.php 790 2012-09-11 09:57:28Z malu $
++ */
++namespace sharing_cart;
++
++require_once __DIR__.'/exception.php';
++
++/**
++ *  Sharing Cart record manager
++ */
++class record
++{
++	const TABLE = 'block_sharing_cart';
++	
++	const WEIGHT_BOTTOM = 9999;
++	
++	public $id       = null;
++	public $userid   = null;
++	public $modname  = null;
++	public $modicon  = '';
++	public $modtext  = null;
++	public $ctime    = null;
++	public $filename = null;
++	public $tree     = '';
++	public $weight   = 0;
++	
++	/**
++	 *  Constructor
++	 *  
++	 *  @param mixed $record = empty
++	 */
++	public function __construct($record = array())
++	{
++		foreach ((array)$record as $field => $value)
++			$this->{$field} = $value;
++		
++		// default values
++		$this->userid or $this->userid = $GLOBALS['USER']->id;
++		$this->ctime or $this->ctime = time();
++	}
++	
++	/**
++	 *  Create record instance from record ID
++	 *  
++	 *  @param int $id
++	 *  @return record
++	 *  @throws exception
++	 */
++	public static function from_id($id)
++	{
++		$record = $GLOBALS['DB']->get_record(self::TABLE, array('id' => $id));
++		if (!$record)
++			throw new exception('recordnotfound');
++		return new self($record);
++	}
++	
++	/**
++	 *  Insert record
++	 *  
++	 *  @throws exception
++	 */
++	public function insert()
++	{
++		if (!$this->weight)
++			$this->weight = self::WEIGHT_BOTTOM;
++		$this->id = $GLOBALS['DB']->insert_record(self::TABLE, $this);
++		if (!$this->id)
++			throw new exception('unexpectederror');
++		self::renumber($this->userid);
++	}
++	
++	/**
++	 *  Update record
++	 *  
++	 *  @throws exception
++	 */
++	public function update()
++	{
++		if (!$GLOBALS['DB']->update_record(self::TABLE, $this))
++			throw new exception('unexpectederror');
++		self::renumber($this->userid);
++	}
++	
++	/**
++	 *  Delete record
++	 *  
++	 *  @throws exception
++	 */
++	public function delete()
++	{
++		$GLOBALS['DB']->delete_records(self::TABLE, array('id' => $this->id));
++		self::renumber($this->userid);
++	}
++	
++	/**
++	 *  Renumber all items sequentially
++	 *  
++	 * @global \moodle_database $DB
++	 * @global \stdClass $USER
++	 * @param int $userid = $USER->id
++	 * @throws exception
++	 */
++	public static function renumber($userid = null)
++	{
++		global $DB, $USER;
++		if ($items = $DB->get_records(self::TABLE, array('userid' => $userid ?: $USER->id))) {
++			$tree = array();
++			foreach ($items as $it) {
++				if (!isset($tree[$it->tree]))
++					$tree[$it->tree] = array();
++				$tree[$it->tree][] = $it;
++			}
++			foreach ($tree as $items) {
++				usort($items, function ($lhs, $rhs)
++				{
++					// keep their order if already weighted
++					if ($lhs->weight < $rhs->weight) return -1;
++					if ($lhs->weight > $rhs->weight) return +1;
++					// order by modtext otherwise
++					return strnatcasecmp($lhs->modtext, $rhs->modtext);
++				});
++				foreach ($items as $i => $it) {
++					$DB->set_field(self::TABLE, 'weight', 1 + $i, array('id' => $it->id));
++				}
++			}
++		}
++	}
++}
+diff --git a/blocks/sharing_cart/classes/renderer.php b/blocks/sharing_cart/classes/renderer.php
+new file mode 100644
+index 0000000..a7494a1
+--- /dev/null
++++ b/blocks/sharing_cart/classes/renderer.php
+@@ -0,0 +1,148 @@
++<?php
++/**
++ *  Sharing Cart
++ *  
++ *  @author  VERSION2, Inc.
++ *  @version $Id: renderer.php 799 2012-09-13 07:53:58Z malu $
++ */
++namespace sharing_cart;
++
++/**
++ *  Sharing Cart item tree renderer
++ */
++class renderer
++{
++	/**
++	 *  Render an item tree
++	 *  
++	 *  @param array & $tree
++	 *  @return string
++	 */
++	public static function render_tree(array & $tree)
++	{
++		return '<ul class="tree list" style="font-size:90%;">'
++		     . self::render_node($tree, '/')
++		     . '</ul>';
++	}
++
++	/**
++	 *  Render a node of item tree
++	 *  
++	 *  @param array & $node
++	 *  @param string  $path
++	 *  @return string
++	 */
++	private static function render_node(array & $node, $path)
++	{
++		$html = '';
++		foreach ($node as $name => & $leaf) {
++			if ($name !== '') {
++				$next = rtrim($path, '/') . '/' . $name;
++				$html .= self::render_dir_open($next);
++				$html .= self::render_node($leaf, $next);
++				$html .= self::render_dir_close();
++			} else {
++				foreach ($leaf as $item)
++					$html .= self::render_item($path, $item);
++			}
++		}
++		return $html;
++	}
++	/**
++	 *  Render a directory open
++	 *  
++	 *  @global \core_renderer $OUTPUT
++	 *  @param string $path
++	 *  @return string
++	 */
++	private static function render_dir_open($path)
++	{
++		global $OUTPUT;
++
++		$components = explode('/', trim($path, '/'));
++		$depth = count($components) - 1;
++		return '
++		<li class="directory">
++			<div class="sc-indent-' . $depth . '" title="' . s($path) . '">
++				<img class="activityicon iconsmall iconcustom" src="' . s($OUTPUT->pix_url('f/folder')) . '" alt="" />
++				<span class="instancename">' . format_string(end($components)) . '</span>
++			</div>
++			<ul class="list" style="display:none;">';
++	}
++	/**
++	 *  Render an item
++	 *  
++	 *  @param string $path
++	 *  @param record $item
++	 *  @return string
++	 */
++	private static function render_item($path, $item)
++	{
++		$components = array_filter(explode('/', trim($path, '/')), 'strlen');
++		$depth = count($components);
++		$class = $item->modname . ' ' . "modtype_{$item->modname}";
++
++		if ($item->modname == 'label') {
++			$item->modtext = self::render_label($item->modtext);
++		}
++
++		return '
++				<li class="activity ' . $class . '" id="block_sharing_cart-item-' . $item->id . '">
++					<div class="sc-indent-' . $depth . '">
++						' . self::render_modicon($item) . '
++						<span class="instancename">' . format_string($item->modtext) . '</span>
++						<span class="commands"></span>
++					</div>
++				</li>';
++	}
++	/**
++	 *  Render a directory close
++	 *  
++	 *  @return string
++	 */
++	private static function render_dir_close()
++	{
++		return '
++			</ul>
++		</li>';
++	}
++
++	/**
++	 *  Render a module icon
++	 *  
++	 *  @global \core_renderer $OUTPUT
++	 *  @param object $item
++	 *  @return string
++	 */
++	public static function render_modicon($item)
++	{
++		global $OUTPUT;
++
++		if ($item->modname === 'label')
++			return '';
++		$src = $OUTPUT->pix_url('icon', $item->modname);
++		if (!empty($item->modicon)) {
++			// @see /lib/modinfolib.php#get_icon_url()
++			if (strncmp($item->modicon, 'mod/', 4) == 0) {
++				list ($modname, $iconname) = explode('/', substr($item->modicon, 4), 2);
++				$src = $OUTPUT->pix_url($iconname, $modname);
++			} else {
++				$src = $OUTPUT->pix_url($item->modicon);
++			}
++		}
++		return '<img class="activityicon iconsmall iconcustom" src="' . s($src) . '" alt="" />';
++	}
++
++	public static function render_label($modtext)
++	{
++		preg_match('/<img(.*)src(.*)=(.*)"(.*)"/U', $modtext, $result);
++		$img_src = array_pop($result);
++
++		if (!empty($img_src)) {
++			$path_parts = pathinfo($img_src);
++			$modtext = urldecode($path_parts['filename']);
++		}
++
++		return $modtext;
++	}
++}
+diff --git a/blocks/sharing_cart/classes/scoped.php b/blocks/sharing_cart/classes/scoped.php
+new file mode 100644
+index 0000000..c1f4bda
+--- /dev/null
++++ b/blocks/sharing_cart/classes/scoped.php
+@@ -0,0 +1,35 @@
++<?php
++/**
++ *  Sharing Cart
++ *  
++ *  @author  VERSION2, Inc.
++ *  @version $Id: scoped.php 783 2012-09-11 06:48:57Z malu $
++ */
++namespace sharing_cart;
++
++/**
++ *  Scoped closure
++ */
++class scoped
++{
++	/** @var callable */
++	private $callback;
++	
++	/**
++	 *  Constructor
++	 *  
++	 *  @param callable $callback
++	 */
++	public function __construct(/*callable*/ $callback)
++	{
++		$this->callback = $callback;
++	}
++	
++	/**
++	 *  Destructor
++	 */
++	public function __destruct()
++	{
++		call_user_func($this->callback);
++	}
++}
+diff --git a/blocks/sharing_cart/classes/storage.php b/blocks/sharing_cart/classes/storage.php
+new file mode 100644
+index 0000000..88ff9a9
+--- /dev/null
++++ b/blocks/sharing_cart/classes/storage.php
+@@ -0,0 +1,77 @@
++<?php
++/**
++ *  Sharing Cart
++ *  
++ *  @author  VERSION2, Inc.
++ *  @version $Id: storage.php 778 2012-09-07 08:41:56Z malu $
++ */
++namespace sharing_cart;
++
++/**
++ *  Sharing Cart file storage manager
++ */
++class storage
++{
++	const COMPONENT = 'user';
++	const FILEAREA  = 'backup';
++	const ITEMID    = 0;
++	const FILEPATH  = '/';
++	
++	/** @var \file_storage */
++	private $storage;
++	/** @var \context */
++	private $context;
++	
++	/**
++	 *  Constructor
++	 *  
++	 *  @param int $userid = $USER->id
++	 */
++	public function __construct($userid = null)
++	{
++		$this->storage = \get_file_storage();
++		$this->context = \context_user::instance($userid ?: $GLOBALS['USER']->id);
++	}
++	
++	/**
++	 *  Copy a stored file into storage
++	 *  
++	 *  @param \stored_file $file
++	 */
++	public function copy_from(\stored_file $file)
++	{
++		$filerecord = (object)array(
++			'contextid' => $this->context->id,
++			'component' => self::COMPONENT,
++			'filearea'  => self::FILEAREA,
++			'itemid'    => self::ITEMID,
++			'filepath'  => self::FILEPATH,
++			);
++		$this->storage->create_file_from_storedfile($filerecord, $file);
++	}
++	
++	/**
++	 *  Get a stored_file instance by filename
++	 *  
++	 *  @param string $filename
++	 *  @return \stored_file
++	 */
++	public function get($filename)
++	{
++		return $this->storage->get_file($this->context->id,
++			self::COMPONENT, self::FILEAREA, self::ITEMID, self::FILEPATH,
++			$filename);
++	}
++	
++	/**
++	 *  Delete a file in the storage by filename
++	 *  
++	 *  @param string $filename
++	 *  @return boolean
++	 */
++	public function delete($filename)
++	{
++		$file = $this->get($filename);
++		return $file && $file->delete();
++	}
++}
+diff --git a/blocks/sharing_cart/custom.css b/blocks/sharing_cart/custom.css
+new file mode 100644
+index 0000000..8a8eebc
+--- /dev/null
++++ b/blocks/sharing_cart/custom.css
+@@ -0,0 +1,3 @@
++img.iconcustom {margin: 0; padding: 0.3em; width: 20px; height: 20px;}
++.header-commands {margin-top: 5px;}
++.header-commands img {margin-left: 0 !important;}
+\ No newline at end of file
+diff --git a/blocks/sharing_cart/db/access.php b/blocks/sharing_cart/db/access.php
+new file mode 100644
+index 0000000..3630c25
+--- /dev/null
++++ b/blocks/sharing_cart/db/access.php
+@@ -0,0 +1,15 @@
++<?php // $Id: access.php 941 2013-03-28 10:37:21Z malu $
++
++defined('MOODLE_INTERNAL') || die;
++
++$capabilities = array(
++    'block/sharing_cart:addinstance' => array(
++        'captype' => 'write',
++        'contextlevel' => CONTEXT_BLOCK,
++        'archetypes' => array(
++            'editingteacher' => CAP_ALLOW,
++            'manager' => CAP_ALLOW,
++        ),
++        'clonepermissionsfrom' => 'moodle/site:manageblocks',
++    ),
++);
+diff --git a/blocks/sharing_cart/db/install.xml b/blocks/sharing_cart/db/install.xml
+new file mode 100644
+index 0000000..9504ce9
+--- /dev/null
++++ b/blocks/sharing_cart/db/install.xml
+@@ -0,0 +1,37 @@
++<?xml version="1.0" encoding="UTF-8" ?><!-- $Id: install.xml 872 2012-10-29 05:11:52Z malu $ -->
++<XMLDB PATH="blocks/sharing_cart/db" VERSION="2012050800" COMMENT="XMLDB file for Moodle sharing cart"
++    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
++    xsi:noNamespaceSchemaLocation="../../../lib/xmldb/xmldb.xsd"
++>
++  <TABLES>
++    <TABLE NAME="block_sharing_cart" COMMENT="table to store sharing data" NEXT="block_sharing_cart_plugins">
++      <FIELDS>
++        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="true" SEQUENCE="true" NEXT="userid"/>
++        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" PREVIOUS="id" NEXT="modname"/>
++        <FIELD NAME="modname" TYPE="char" LENGTH="32" NOTNULL="true" SEQUENCE="false" PREVIOUS="userid" NEXT="modicon"/>
++        <FIELD NAME="modicon" TYPE="char" LENGTH="32" NOTNULL="true" SEQUENCE="false" PREVIOUS="modname" NEXT="modtext"/>
++        <FIELD NAME="modtext" TYPE="text" NOTNULL="true" SEQUENCE="false" PREVIOUS="modicon" NEXT="ctime"/>
++        <FIELD NAME="ctime" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" PREVIOUS="modtext" NEXT="filename"/>
++        <FIELD NAME="filename" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false" PREVIOUS="ctime" NEXT="tree"/>
++        <FIELD NAME="tree" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false" PREVIOUS="filename" NEXT="weight"/>
++        <FIELD NAME="weight" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" PREVIOUS="tree"/>
++      </FIELDS>
++      <KEYS>
++        <KEY NAME="primary" TYPE="primary" FIELDS="id" />
++        <KEY NAME="userid" TYPE="foreign" FIELDS="userid" REFTABLE="user" REFFIELDS="id" PREVIOUS="primary"/>
++      </KEYS>
++    </TABLE>
++
++    <TABLE NAME="block_sharing_cart_plugins" COMMENT="table to store sharing cart plugins data" PREVIOUS="block_sharing_cart">
++      <FIELDS>
++        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="true" SEQUENCE="true" NEXT="plugin"/>
++        <FIELD NAME="plugin" TYPE="char" LENGTH="32" NOTNULL="true" SEQUENCE="false" PREVIOUS="id" NEXT="userid"/>
++        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" PREVIOUS="plugin" NEXT="data"/>
++        <FIELD NAME="data" TYPE="text" NOTNULL="true" SEQUENCE="false" PREVIOUS="userid"/>
++      </FIELDS>
++      <KEYS>
++        <KEY NAME="primary" TYPE="primary" FIELDS="id" />
++      </KEYS>
++    </TABLE>
++  </TABLES>
++</XMLDB>
+diff --git a/blocks/sharing_cart/db/upgrade.php b/blocks/sharing_cart/db/upgrade.php
+new file mode 100644
+index 0000000..3bc0a1a
+--- /dev/null
++++ b/blocks/sharing_cart/db/upgrade.php
+@@ -0,0 +1,71 @@
++<?php // $Id: upgrade.php 905 2012-12-05 05:36:52Z malu $/
++
++defined('MOODLE_INTERNAL') || die;
++
++/**
++ *  Sharing Cart upgrade
++ *  
++ *  @global moodle_database $DB
++ */
++function xmldb_block_sharing_cart_upgrade($oldversion = 0)
++{
++	global $DB;
++	
++	$dbman = $DB->get_manager();
++	
++	if ($oldversion < 2011111100) {
++		$table = new xmldb_table('sharing_cart');
++		
++		$field = new xmldb_field('user', XMLDB_TYPE_INTEGER, 10, XMLDB_UNSIGNED, XMLDB_NOTNULL, null, null);
++		$dbman->rename_field($table, $field, 'userid');
++		
++		$field = new xmldb_field('name', XMLDB_TYPE_CHAR, 32, null, XMLDB_NOTNULL, null, null);
++		$dbman->rename_field($table, $field, 'modname');
++		
++		$field = new xmldb_field('icon', XMLDB_TYPE_CHAR, 32, null, XMLDB_NOTNULL, null, null);
++		$dbman->rename_field($table, $field, 'modicon');
++		
++		$field = new xmldb_field('text', XMLDB_TYPE_CHAR, 255, null, XMLDB_NOTNULL, null, null);
++		$dbman->rename_field($table, $field, 'modtext');
++		$field = new xmldb_field('modtext', XMLDB_TYPE_TEXT, null, null, XMLDB_NOTNULL, null, null);
++		$dbman->change_field_type($table, $field);
++		
++		$field = new xmldb_field('time', XMLDB_TYPE_INTEGER, 10, XMLDB_UNSIGNED, XMLDB_NOTNULL, null, null);
++		$dbman->rename_field($table, $field, 'ctime');
++		
++		$field = new xmldb_field('file', XMLDB_TYPE_CHAR, 255, null, XMLDB_NOTNULL, null, null);
++		$dbman->rename_field($table, $field, 'filename');
++		
++		$field = new xmldb_field('sort', XMLDB_TYPE_INTEGER, 10, XMLDB_UNSIGNED, XMLDB_NOTNULL, null, null);
++		$dbman->rename_field($table, $field, 'weight');
++	}
++	
++	if ($oldversion < 2011111101) {
++		$table = new xmldb_table('sharing_cart_plugins');
++		
++		$field = new xmldb_field('user', XMLDB_TYPE_INTEGER, 10, XMLDB_UNSIGNED, XMLDB_NOTNULL, null, null);
++		$dbman->rename_field($table, $field, 'userid');
++	}
++	
++	if ($oldversion < 2012050800) {
++		$table = new xmldb_table('sharing_cart');
++		$dbman->rename_table($table, 'block_sharing_cart');
++		
++		$table = new xmldb_table('sharing_cart_plugins');
++		$dbman->rename_table($table, 'block_sharing_cart_plugins');
++	}
++	
++	if ($oldversion < 2016032900) {
++		// Define key userid (foreign) to be added to block_sharing_cart.
++		$table = new xmldb_table('block_sharing_cart');
++		$key = new xmldb_key('userid', XMLDB_KEY_FOREIGN, array('userid'), 'user', array('id'));
++		
++		// Launch add key userid.
++		$dbman->add_key($table, $key);
++	
++		// Sharing_cart savepoint reached.
++		upgrade_block_savepoint(true, 2016032900, 'sharing_cart');
++	}
++	
++	return true;
++}
+diff --git a/blocks/sharing_cart/lang/en/block_sharing_cart.php b/blocks/sharing_cart/lang/en/block_sharing_cart.php
+new file mode 100644
+index 0000000..c733d56
+--- /dev/null
++++ b/blocks/sharing_cart/lang/en/block_sharing_cart.php
+@@ -0,0 +1,53 @@
++<?php
++
++$string['pluginname'] = 'Sharing Cart';
++$string['sharing_cart'] = 'Sharing Cart';
++$string['sharing_cart_help'] = '<h2 class="helpheading">Operation</h2>
++<dl style="margin-left:0.5em;">
++<dt>Copying from course to Sharing Cart</dt>
++    <dd>You will notice a small "Copy to Sharing Cart" icon which appears after each
++        resource or activity in a course.
++        Click on that icon to send a copy of that resource/activity into Sharing Cart.
++        Only the activity itself, without user data, will be cloned.</dd>
++<dt>Copying from Sharing Cart to course</dt>
++    <dd>Click a "Copy to course" icon in Sharing Cart and select one of target markers on each section.
++        Or click "Cancel" icon which is above those.</dd>
++<dt>Making folders inside Sharing Cart</dt>
++    <dd>Click a "Move into folder" icon in a Sharing Cart item.
++        An input box for new folder name will appear if there\'s no folder.
++        Or you can select an existing folder in drop-down list.
++        Which will be replaced with an input box if you click "Edit" icon.</dd>
++</dl>';
++$string['sharing_cart:addinstance'] = 'Add a new Sharing Cart block';
++
++$string['backup'] = 'Copy to Sharing Cart';
++$string['restore'] = 'Copy to course';
++$string['movedir'] = 'Move into folder';
++$string['copyhere'] = 'Copy here';
++$string['notarget'] = 'Target not found';
++$string['clipboard'] = 'Copying this shared item';
++$string['bulkdelete'] = 'Bulk delete';
++$string['confirm_backup'] = 'Do you want to copy this activity into Sharing Cart?';
++$string['confirm_userdata'] = 'Do you want to include user data in a copy of this activity?';
++$string['confirm_restore'] = 'Do you want to copy this item to course?';
++$string['confirm_delete'] = 'Are you sure you want to delete?';
++$string['confirm_delete_selected'] = 'Are you sure you want to delete all selected items?';
++
++$string['settings:userdata_copyable_modtypes'] = 'User data copyable module types';
++$string['settings:userdata_copyable_modtypes_desc'] = 'While copying an activity into the Sharing Cart,
++a dialog shows an option whether a copy of an activity includes its user data or not,
++if its module type is checked in the above and an operator has <strong>moodle/backup:userinfo</strong>,
++<strong>moodle/backup:anonymise</strong> and <strong>moodle/restore:userinfo</strong> capabilities.
++(By default, only manager role has those capabilities.)';
++$string['settings:workaround_qtypes'] = 'Workaround for question types';
++$string['settings:workaround_qtypes_desc'] = 'The workaround for question restore issue will be performed if its question type is checked.
++When the questions to be restored already exist, however, those data look like inconsistent,
++this workaround will try to make another duplicates instead of reusing existing data.
++It may be useful for avoiding some restore errors, such as <i>error_question_match_sub_missing_in_db</i>.';
++
++$string['invalidoperation'] = 'An invalid operation detected';
++$string['unexpectederror'] = 'An unexpected error occurred';
++$string['recordnotfound'] = 'Shared item not found';
++$string['forbidden'] = 'You don\'t have any permissions to access this shared item';
++$string['requirejs'] = 'Sharing Cart requires JavaScript enabled in your browser';
++$string['requireajax'] = 'Sharing Cart requires AJAX';
+diff --git a/blocks/sharing_cart/lang/es/block_sharing_cart.php b/blocks/sharing_cart/lang/es/block_sharing_cart.php
+new file mode 100644
+index 0000000..ce3fd83
+--- /dev/null
++++ b/blocks/sharing_cart/lang/es/block_sharing_cart.php
+@@ -0,0 +1,52 @@
++<?php
++
++$string['pluginname'] = 'Bolsa de recursos';
++$string['sharing_cart'] = 'Bolsa de recursos';
++$string['sharing_cart_help'] = '<h2 class="helpheading">Operación</h2>
++<dl style="margin-left:0.5em;">
++<dt>Copiando del curso a bolsa de recursos</dt>
++    <dd>Aparecerá un pequeño icono de copia de bolsa de recurso al final de cada 
++        recurso o actividad dentro de un curso.
++        Clique ese icono para enviar una copia del recurso o actividad a la bolsa de recursos.
++        Solo se clonará la actividad sin datos de usuario.</dd>
++<dt>Copiando desde bolsa de recusos al curso</dt>
++    <dd>Clique el icono de "copiar a un curso" y seleccione el destino de cada sección.
++        O clique "cancelar" que esta junto a ese icono.</dd>
++<dt>Creando carpetas dentro de bolsa de recursos</dt>
++    <dd>Clique el icono "mover dentro de una carpeta".
++        Un elemento de escritura aparecerá si no hay carpeta.
++        O puede seleccionar una carpeta existente en la lista desplegable.
++        Se remplazará con un elemento de entrada si clica el icono de "editar"</dd>
++</dl>';
++$string['sharing_cart:addinstance'] = 'Añadir un nuevo bloque bolsa de recursos';
++
++$string['backup'] = 'Copiar a la bolsa de recursos';
++$string['restore'] = 'Copiar al curso';
++$string['movedir'] = 'Mover al curso';
++$string['copyhere'] = 'Copiar aquí';
++$string['notarget'] = 'Destino no encontrado';
++$string['clipboard'] = 'Copiar este item compartido';
++$string['bulkdelete'] = 'Borrado masivo';
++$string['confirm_backup'] = '¿Quiere copiar está actividad a la bolsa de recursos?';
++$string['confirm_userdata'] = '¿Quiere incluir datos de usuarui en la copia de esta actividad?';
++$string['confirm_restore'] = '¿Quiere copiar este item al curso?';
++$string['confirm_delete'] = '¿Está seguro de querer borrar?';
++$string['confirm_delete_selected'] = '¿Está seguro de querer borrar todos los elementos seleccionados?';
++
++$string['settings:userdata_copyable_modtypes'] = 'Tipos de módulos que puede ser copiados';
++$string['settings:userdata_copyable_modtypes_desc'] = 'Mientras se copia una actividad en la bolsa de recursos,
++un diálogo muestra si la opción de la copia de la actividad incluye sus datos de usuarios o no,
++y si el tipo de módulo seleccionado anteriormente y el usuario tienen las capacidades: <strong>moodle/backup:userinfo</strong>,
++<strong>moodle/backup:anonymise</strong> y <strong>moodle/restore:userinfo</strong>.
++(Por defecto, solo el rol de administrador tiene esas capacidades.)';
++$string['settings:workaround_qtypes'] = 'Solución para tipos de preguntas';
++$string['settings:workaround_qtypes_desc'] = 'La solución para la restauración de preguntas deberá ser actualizada si el tipo de pregunta está activo.
++Cuando las preguntas a restaurar ya existan, sin embargo, esos datos apareceran como inconsistentes. El remedio intentará crear duplicados en lugar de reclicar los datos existentes.
++Será útil para evitar errores de restauración del tipo <i>error_question_match_sub_missing_in_db</i>.';
++
++$string['invalidoperation'] = 'Se detectón una operación no válida';
++$string['unexpectederror'] = 'Ocurrió un error no esperado';
++$string['recordnotfound'] = 'Elemento compartido no encontrado';
++$string['forbidden'] = 'Usted no tene permisos para acceder a este elemento compartido';
++$string['requirejs'] = 'Recursos compartidos requiere habilitar JavaScript en su navegador';
++$string['requireajax'] = 'Recursos comparridos requiere AJAX';
+diff --git a/blocks/sharing_cart/lang/ja/block_sharing_cart.php b/blocks/sharing_cart/lang/ja/block_sharing_cart.php
+new file mode 100644
+index 0000000..560abb0
+--- /dev/null
++++ b/blocks/sharing_cart/lang/ja/block_sharing_cart.php
+@@ -0,0 +1,52 @@
++<?php
++
++$string['pluginname'] = '共有カート';
++$string['sharing_cart'] = '共有カート';
++$string['sharing_cart_help'] = '<h2 class="helpheading">操作方法</h2>
++<dl style="margin-left:0.5em;">
++<dt>共有カートへコピー</dt>
++    <dd>コースを編集モードに切り替えると、コース上の各コンテンツの操作アイコンの右に
++        「共有カートへコピー」アイコンが追加されます。</dd>
++<dt>コースへコピー</dt>
++    <dd>共有カート内のアイテム操作アイコンの「コースへコピー」をクリックすると、
++        コースの各セクションに「ここへコピー」マーカーが現れるので、
++        いずれかを選択してコピーを完了するか、上部の「キャンセル」をクリックします。</dd>
++<dt>共有カート内にフォルダを作成</dt>
++    <dd>共有カート内で「フォルダ移動」アイコンをクリックすると、
++        既存のフォルダのリストが表示されるので、その中から移動先を選択するか、
++        リスト右の「編集」アイコンをクリックして入力ボックスを表示させ、
++        そこに移動先フォルダ名を入力します。</dd>
++</dl>';
++$string['sharing_cart:addinstance'] = '新しい共有カートブロックを追加する';
++
++$string['backup'] = '共有カートへコピー';
++$string['restore'] = 'コースへコピー';
++$string['movedir'] = 'フォルダ移動';
++$string['copyhere'] = 'ここにコピー';
++$string['notarget'] = 'ターゲットが見つかりません';
++$string['clipboard'] = 'この共有アイテムをコピーする';
++$string['bulkdelete'] = '一括削除';
++$string['confirm_backup'] = '共有カートにコピーしますか？';
++$string['confirm_userdata'] = '共有カートへのコピーにユーザーデータを含めますか？';
++$string['confirm_restore'] = 'コースにコピーしますか？';
++$string['confirm_delete'] = '削除してよろしいですか？';
++$string['confirm_delete_selected'] = '選択したアイテムを全て削除してもよろしいですか？';
++
++$string['settings:userdata_copyable_modtypes'] = 'ユーザーデータをコピー可能なモジュールタイプ';
++$string['settings:userdata_copyable_modtypes_desc'] = '共有カートへコピーする際、コピーしようとしているモジュールがここでチェックを付けたモジュールタイプで、
++かつ、操作しているユーザーが <strong>moodle/backup:userinfo</strong>,
++<strong>moodle/backup:anonymise</strong>, <strong>moodle/restore:userinfo</strong> ケイパビリティを持っていれば、
++そのモジュールに付随するユーザーデータをコピーに含めるかどうかを選択するダイアログを表示します。<br />
++(既定では「マネージャ」ロールのみがこれらのケイパビリティを持ちます。)';
++$string['settings:workaround_qtypes'] = 'リストア不具合対策を行う問題タイプ';
++$string['settings:workaround_qtypes_desc'] = 'チェックを付けた問題タイプに対して、リストア不具合対策を行います。
++これを有効にすると、リストアしようとしている問題と全く同じ問題が既に存在していて、
++しかしながらそのデータに破損が見つかった場合、既存データの再利用を避け、
++その問題を再度リストアするように試みます。この対策は、<i>error_question_match_sub_missing_in_db</i> などのエラー回避に有用です。';
++
++$string['invalidoperation'] = '無効な操作です';
++$string['unexpectederror'] = '予期しないエラーが発生しました';
++$string['recordnotfound'] = '共有アイテムが見つかりません';
++$string['forbidden'] = 'この共有アイテムにアクセスする権限がありません';
++$string['requirejs'] = 'ブラウザの JavaScript を有効にしてください';
++$string['requireajax'] = 'AJAX が有効になっていません';
+diff --git a/blocks/sharing_cart/lib/settingslib.php b/blocks/sharing_cart/lib/settingslib.php
+new file mode 100644
+index 0000000..57fa42d
+--- /dev/null
++++ b/blocks/sharing_cart/lib/settingslib.php
+@@ -0,0 +1,145 @@
++<?php // $Id: settingslib.php 934 2013-03-26 00:50:29Z malu $
++
++defined('MOODLE_INTERNAL') || die;
++
++require_once __DIR__.'/../../../question/engine/bank.php';
++
++/**
++ * Multiple checkboxes with icons for each label
++ */
++class admin_setting_configmulticheckboxwithicon extends admin_setting_configmulticheckbox {
++    /** @var array Array of icons value=>icon */
++    protected $icons;
++
++    /**
++     * Constructor: uses parent::__construct
++     *
++     * @param string $name unique ascii name, either 'mysetting' for settings that in config, or 'myplugin/mysetting' for ones in config_plugins.
++     * @param string $visiblename localised
++     * @param string $description long localised info
++     * @param array $defaultsetting array of selected
++     * @param array $choices array of $value=>$label for each checkbox
++     * @param array $icons array of $value=>$icon for each checkbox
++     */
++    public function __construct($name, $visiblename, $description, $defaultsetting, array $choices, array $icons) {
++        $this->icons = $icons;
++        parent::__construct($name, $visiblename, $description, $defaultsetting, $choices);
++    }
++
++    /**
++     * Returns XHTML field(s) as required by choices
++     *
++     * Relies on data being an array should data ever be another valid vartype with
++     * acceptable value this may cause a warning/error
++     * if (!is_array($data)) would fix the problem
++     *
++     * @todo Add vartype handling to ensure $data is an array
++     *
++     * @param array $data An array of checked values
++     * @param string $query
++     * @return string XHTML field
++     */
++    public function output_html($data, $query='') {
++        if (!$this->load_choices() or empty($this->choices)) {
++            return '';
++        }
++        $default = $this->get_defaultsetting();
++        if (is_null($default)) {
++            $default = array();
++        }
++        if (is_null($data)) {
++            $data = array();
++        }
++        $options = array();
++        $defaults = array();
++        foreach ($this->choices as $key=>$description) {
++            if (!empty($data[$key])) {
++                $checked = 'checked="checked"';
++            } else {
++                $checked = '';
++            }
++            if (!empty($default[$key])) {
++                $defaults[] = $description;
++            }
++
++//            $options[] = '<input type="checkbox" id="'.$this->get_id().'_'.$key.'" name="'.$this->get_full_name().'['.$key.']" value="1" '.$checked.' />'
++//                .'<label for="'.$this->get_id().'_'.$key.'">'.highlightfast($query, $description).'</label>';
++            $options[] = '<input type="checkbox" id="'.$this->get_id().'_'.$key.'" name="'.$this->get_full_name().'['.$key.']" value="1" '.$checked.' />'
++                .'<label for="'.$this->get_id().'_'.$key.'">'.$this->icons[$key].highlightfast($query, $description).'</label>';
++        }
++
++        if (is_null($default)) {
++            $defaultinfo = NULL;
++        } elseif (!empty($defaults)) {
++            $defaultinfo = implode(', ', $defaults);
++        } else {
++            $defaultinfo = get_string('none');
++        }
++
++        $return = '<div class="form-multicheckbox">';
++        $return .= '<input type="hidden" name="'.$this->get_full_name().'[xxxxx]" value="1" />'; // something must be submitted even if nothing selected
++        if ($options) {
++            $return .= '<ul>';
++            foreach ($options as $option) {
++                $return .= '<li>'.$option.'</li>';
++            }
++            $return .= '</ul>';
++        }
++        $return .= '</div>';
++
++        return format_admin_setting($this, $this->visiblename, $return, $this->description, false, '', $defaultinfo, $query);
++    }
++}
++
++/**
++ * Multiple checkboxes for module types
++ */
++class admin_setting_configmulticheckboxmodtypes extends admin_setting_configmulticheckboxwithicon {
++    /**
++     * @global moodle_database $DB
++     * @global core_renderer $OUTPUT
++     * @param string $name
++     * @param string $visiblename
++     * @param string $description
++     * @param array $defaultsetting
++     */
++    public function __construct($name, $visiblename, $description, $defaultsetting = null) {
++        global $DB, $OUTPUT;
++        $choices = array();
++        $icons = array();
++        foreach ($DB->get_records('modules', array(), 'name ASC') as $module) {
++            $choices[$module->name] = get_string('modulename', $module->name);
++            $icons[$module->name] = ' ' . $OUTPUT->pix_icon('icon', '', $module->name, array('class' => 'icon'));
++        }
++        parent::__construct($name, $visiblename, $description, $defaultsetting, $choices, $icons);
++    }
++}
++
++/**
++ * Multiple checkboxes for question types
++ */
++class admin_setting_configmulticheckboxqtypes extends admin_setting_configmulticheckboxwithicon {
++    /**
++     * @global core_renderer $OUTPUT
++     * @param string $name
++     * @param string $visiblename
++     * @param string $description
++     * @param array $defaultsetting
++     */
++    public function __construct($name, $visiblename, $description, $defaultsetting = null) {
++        global $OUTPUT;
++        $choices = array();
++        $icons = array();
++        $qtypes = question_bank::get_all_qtypes();
++        // some qtypes do not need workaround
++        unset($qtypes['missingtype']);
++        unset($qtypes['random']);
++        // question_bank::sort_qtype_array() expects array(name => local_name)
++        $qtypenames = array_map(function ($qtype) { return $qtype->local_name(); }, $qtypes);
++        foreach (question_bank::sort_qtype_array($qtypenames) as $name => $label) {
++            $choices[$name] = $label;
++            $icons[$name] = ' ' . $OUTPUT->pix_icon('icon', '', $qtypes[$name]->plugin_name()) . ' ';
++        }
++        parent::__construct($name, $visiblename, $description, $defaultsetting, $choices, $icons);
++    }
++}
+diff --git a/blocks/sharing_cart/module.js b/blocks/sharing_cart/module.js
+new file mode 100644
+index 0000000..0b8c145
+--- /dev/null
++++ b/blocks/sharing_cart/module.js
+@@ -0,0 +1,838 @@
++/**
++ *  Sharing Cart
++ *  
++ *  @author  VERSION2, Inc.
++ *  @version $Id: module.js 938 2013-03-27 07:06:39Z malu $
++ */
++YUI.add('block_sharing_cart', function (Y)
++{
++    if (!Array.prototype.map) {
++        // IE8 workaround
++        Array.prototype.map = function (callback, thisObject)
++        {
++            var length = this.length;
++            var result = new Array(length);
++            for (var i = 0; i < length; i++)
++                result[i] = callback.call(thisObject, this[i], i, this);
++            return result;
++        }
++    }
++
++    M.block_sharing_cart = new function ()
++    {
++        /** @var {Object}  The icon configurations */
++        var icon = {
++            // actions
++            'backup'  : { css: 'editing_backup' , pix: 'i/backup'  },
++            'movedir' : { css: 'editing_right'  , pix: 't/right'   },
++            'move'    : { css: 'editing_move_'  , pix: 't/move'    },
++            'edit'    : { css: 'editing_update' , pix: 't/edit'    },
++            'cancel'  : { css: 'editing_cancel' , pix: 't/delete'  },
++            'delete'  : { css: 'editing_update' , pix: 't/delete'  },
++            'restore' : { css: 'editing_restore', pix: 'i/restore' },
++            // directories
++            'dir-open'   : { pix: 'f/folder-open'   },
++            'dir-closed' : { pix: 'f/folder' }
++        };
++
++        /** @var {Node}  The Sharing Cart block container node */
++        var $block = Y.Node.one('.block_sharing_cart');
++
++        /** @var {Object}  The current course */
++        var course = new function ()
++        {
++            this.id = Y.Node.one('body').get('className').match(/course-(\d+)/)[1];
++            this.is_frontpage = Y.Node.one('body').hasClass('pagelayout-frontpage');
++        }
++
++        /**
++         *  Returns a localized string
++         *  
++         *  @param {String} identifier
++         *  @return {String}
++         */
++        function str(identifier)
++        {
++            return M.str.block_sharing_cart[identifier]
++                || M.str.moodle[identifier];
++        }
++
++        /**
++         *  Shows an error message with given Ajax error
++         *  
++         *  @param {Object} response  The Ajax response
++         */
++        function show_error(response)
++        {
++            try {
++                var ex = Y.JSON.parse(response.responseText);
++                new M.core.exception({
++                    name: str('pluginname') + " - " + str('error'),
++                    message: ex.message,
++                    fileName: ex.file,
++                    lineNumber: ex.line,
++                    stack: ex.trace.replace(/\n/, '<br />')
++                });
++            } catch (e) {
++                new M.core.exception({
++                    name: str('pluginname') + " - " + str('error'),
++                    message: response.responseText
++                });
++            }
++        }
++
++        /**
++         *  Get an action URL
++         *  
++         *  @param {String} name   The action name
++         *  @param {Object} [args] The action parameters
++         *  @return {String}
++         */
++        function get_action_url(name, args)
++        {
++            var url = M.cfg.wwwroot + '/blocks/sharing_cart/' + name + '.php';
++            if (args) {
++                var q = [];
++                for (var k in args)
++                    q.push(k + '=' + encodeURIComponent(args[k]));
++                url += '?' + q.join('&');
++            }
++            return url;
++        }
++        
++        /**
++         *  Check special layout (theme boost)
++         *  
++         *  @return {Boolean}
++         */
++        function verify_layout()
++        {
++            var menuelement = $block.one('.menubar .dropdown .dropdown-menu');
++            return (typeof menuelement != 'undefined' && menuelement != null);
++        }
++
++        /**
++         *  Create a command icon
++         *  
++         *  @param {String} name  The command name, predefined in icon
++         *  @param {String} [pix] The icon pix name to override
++         */
++        function create_command(name, pix)
++        {
++            var imageelement = Y.Node.create('<img class="iconsmall "/>')
++                        .set('alt', str(name))
++                        .set('src', M.util.image_url(pix || icon[name].pix));
++            if (verify_layout()) {
++                imageelement.addClass('iconcustom');
++            }
++            return Y.Node.create('<a href="javascript:void(0)"/>')
++                .addClass(icon[name].css)
++                .set('title', str(name))
++                .append(imageelement);
++        }
++
++        /**
++         *  Reload the Sharing Cart item tree
++         */
++        function reload_tree()
++        {
++            var $spinner = M.util.add_spinner(Y, $block.one('.commands'));
++            Y.io(get_action_url('rest'), {
++                method: 'POST',
++                data: { 'action': 'render_tree' },
++                on: {
++                    start: function (tid) { $spinner.show(); },
++                    end: function (tid) { $spinner.remove(); },
++                    success: function (tid, response)
++                    {
++                        $block.one('.tree').replace(response.responseText);
++                        M.block_sharing_cart.init_item_tree();
++                    },
++                    failure: function (tid, response) { show_error(response); }
++                }
++            });
++        }
++
++        /**
++         *  Backup an activity
++         *  
++         *  @param {Integer} cmid
++         *  @param {Boolean} userdata
++         */
++        function backup(cmid, userdata)
++        {
++            var $commands = Y.Node.one('#module-' + cmid + ' .commands') ||
++                            Y.Node.one('[data-owner="#module-' + cmid + '"]');
++            var $spinner = M.util.add_spinner(Y, $commands);
++            Y.io(get_action_url('rest'), {
++                method: 'POST',
++                data: { 'action': 'backup', 'cmid': cmid, 'userdata': userdata, 'sesskey': M.cfg.sesskey },
++                on: {
++                    start: function (tid) { $spinner.show(); },
++                    end: function (tid) { $spinner.remove(); },
++                    success: function (tid, response) { reload_tree(); },
++                    failure: function (tid, response) { show_error(response); }
++                }
++            });
++        }
++
++        /**
++         *  @class Targets for moving an item directory
++         */
++        var move_targets = new function ()
++        {
++            var $cancel = null, targets = [];
++            
++            /**
++             *  Hide move targets
++             */
++            this.hide = function ()
++            {
++                if ($cancel) {
++                    var $commands = $cancel.ancestor('.commands');
++                    $cancel.remove();
++                    $cancel = null;
++                    $commands.ancestor('li.activity').setStyle('opacity', 1.0);
++                    $commands.all('a').each(function () { this.show(); });
++                    Y.Array.each(targets, function ($target) { $target.remove(); });
++                    targets = [];
++                }
++            }
++            /**
++             *  Show move targets for a given item
++             *  
++             *  @param {Integer} id  The item ID
++             */
++            this.show = function (id)
++            {
++                this.hide();
++                
++                function move(e)
++                {
++                    var m = e.target.ancestor('a').get('className').match(/move-(\d+)-to-(\d+)/);
++                    var id = m[1], to = m[2];
++                    
++                    Y.io(get_action_url('rest'), {
++                        method: 'POST',
++                        data: { 'action': 'move', 'id': id, 'to': to, 'sesskey': M.cfg.sesskey },
++                        on: {
++                            success: function (tid, response) { reload_tree(); },
++                            failure: function (tid, response) { show_error(response); }
++                        }
++                    });
++                }
++                
++                var $current = $block.one('#block_sharing_cart-item-' + id);
++                var $indent = $current.one('div');
++                var $next = $current.next();
++                var $list = $current.ancestor('ul');
++                
++                var next_id = $next ? $next.get('id').match(/item-(\d+)$/)[1] : 0;
++                
++                function create_target(id, to)
++                {
++                    var $anchor = Y.Node.create('<a href="javascript:void(0)"/>')
++                        .addClass('move-' + id + '-to-' + to)
++                        .set('title', str('movehere'))
++                        .append(
++                            Y.Node.create('<img class="move_target"/>')
++                                .set('alt', str('movehere'))
++                                .set('src', M.util.image_url('movehere'))
++                            );
++                    var $target = Y.Node.create('<li class="activity"/>')
++                        .append($indent.cloneNode(false).append($anchor));
++                    $anchor.on('click', move, this);
++                    return $target;
++                }
++                $list.all('> li.activity').each(function ($item)
++                {
++                    var to = $item.get('id').match(/item-(\d+)$/)[1];
++                    if (to == id) {
++                        $cancel = create_command('cancel', 't/left');
++                        $cancel.on('click', this.hide, this);
++                        var $commands = $item.one('.commands');
++                        $commands.all('a').each(function () { this.hide(); });
++                        $commands.append($cancel);
++                        $item.setStyle('opacity', 0.5);
++                    } else if (to != next_id) {
++                        var $target = create_target(id, to);
++                        $list.insertBefore($target, $item);
++                        targets.push($target);
++                    }
++                }, this);
++                if ($next) {
++                    var $target = create_target(id, 0);
++                    $list.append($target);
++                    targets.push($target);
++                }
++            }
++        }
++
++        /**
++         *  @class Targets for restoring an item
++         */
++        var restore_targets = new function ()
++        {
++            var $clipboard = null, targets = [];
++            
++            function create_target(id, section)
++            {
++                var href = get_action_url('restore', {
++                    'id'     : id,
++                    'course' : course.id,
++                    'section': section,
++                    'sesskey': M.cfg.sesskey
++                });
++                var $target = Y.Node.create('<a/>')
++                    .set('href', href)
++                    .set('title', str('copyhere'))
++                    .append(
++                        Y.Node.create('<img class="move_target"/>')
++                            .set('alt', str('copyhere'))
++                            .set('src', M.util.image_url('movehere'))
++                        );
++                targets.push($target);
++                return $target;
++            }
++            
++            /**
++             *  Hide restore targets
++             */
++            this.hide = function ()
++            {
++                if ($clipboard) {
++                    $clipboard.remove();
++                    $clipboard = null;
++                    Y.Array.each(targets, function ($target) { $target.remove(); });
++                    targets = [];
++                }
++            }
++            /**
++             *  Show restore targets for a given item
++             *  
++             *  @param {Integer} id  The item ID
++             */
++            this.show = function (id)
++            {
++                this.hide();
++                
++                var $item = $block.one('#block_sharing_cart-item-' + id);
++                
++                $clipboard = Y.Node.create('<div class="clipboard"/>');
++                var $cancel = create_command('cancel');
++                var $view = $item.one('div').cloneNode(true).setStyle('display', 'inline');
++                $view.set('className', $view.get('className').replace(/mod-indent-\d+/, ''));
++                $view.one('.commands').remove();
++                $cancel.on('click', this.hide, this);
++                $clipboard.append(str('clipboard') + ":").append($view).append($cancel);
++                
++                if (course.is_frontpage) {
++                    var $sitetopic = Y.Node.one('.sitetopic');
++                    var $mainmenu = Y.Node.one('.block_site_main_menu');
++                    if ($sitetopic)
++                        $sitetopic.insertBefore($clipboard, $sitetopic.one('*'));
++                    else if ($mainmenu)
++                        $mainmenu.insertBefore($clipboard, $mainmenu.one('.content'));
++                    // mainmenu = section #0, sitetopic = section #1
++                    if ($mainmenu)
++                        $mainmenu.insertBefore(create_target(id, 0), $mainmenu.one('.footer'));
++                    if ($sitetopic)
++                        $sitetopic.one('ul.section').append(create_target(id, 1));
++                } else {
++                    var $container = Y.Node.one('.course-content');
++                    $container.insertBefore($clipboard, $container.one('*'));
++                    $container.all(M.course.format.get_section_wrapper(Y)).each(function ($section)
++                    {
++                        var section = $section.get('id').match(/(\d+)$/)[1];
++                        $section.one('ul.section').append(create_target(id, section));
++                    }, this);
++                }
++            }
++        }
++
++        /**
++         *  @class Directory states manager
++         */
++        var directories = new function ()
++        {
++            var KEY = 'block_sharing_cart-dirs';
++            
++            var opens = (Y.Cookie.get(KEY) + '').split(',').map(function (v) { return parseInt(v); });
++            
++            function save()
++            {
++                var expires = new Date();
++                expires.setDate(expires.getDate() + 30);
++                Y.Cookie.set(KEY, opens.join(','), { expires: expires });
++            }
++            function open($dir, visible)
++            {
++                var pix = icon[visible ? 'dir-open' : 'dir-closed'].pix;
++                $dir.one('> div img').set('src', M.util.image_url(pix));
++                $dir.one('> ul.list')[visible ? 'show' : 'hide']();
++            }
++            function toggle(e)
++            {
++                var $dir = e.target.ancestor('li.directory');
++                var i = $dir.get('id').match(/(\d+)$/)[1];
++                var v = $dir.one('> ul.list').getStyle('display') == 'none';
++                
++                open($dir, v);
++                opens[i] = v ? 1 : 0;
++                save();
++            }
++            
++            /**
++             *  Initialize directory states
++             */
++            this.init = function ()
++            {
++                var i = 0;
++                $block.all('li.directory').each(function ($dir)
++                {
++                    $dir.set('id', 'block_sharing_cart-dir-' + i);
++                    if (i >= opens.length)
++                        opens.push(0);
++                    else if (opens[i])
++                        open($dir, true);
++                    $dir.one('> div').setStyle('cursor', 'pointer').on('click', toggle, this);
++                    i++;
++                });
++            }
++            /**
++             *  Reset directory states
++             */
++            this.reset = function ()
++            {
++                opens = [];
++                this.init();
++                save();
++            }
++        }
++
++        /**
++         *  Initialize the Sharing Cart block
++         */
++        this.init = function ()
++        {
++            M.str.block_sharing_cart['pluginname'] = this.get_plugin_name();
++            
++            // arrange header icons (bulkdelete, help)
++            this.init_block_header();
++            this.init_item_tree();
++            this.init_activity_commands();
++        }
++        
++		/**
++         *  Initialize the Sharing Cart block header
++         */
++        this.init_block_header = function ()
++        {
++            var isspeciallayout = verify_layout();
++            this.init_bulk_delete(isspeciallayout);
++            this.init_help_icon(isspeciallayout);
++        }
++        
++		/**
++         *  Initialize the delete bulk
++         */
++        this.init_bulk_delete = function (isspeciallayout)
++        {
++            var bulkdelete = $block.one('.header-commands .editing_bulkdelete');
++            if (typeof bulkdelete != 'undefined' && bulkdelete != null) {
++                if (isspeciallayout) {
++                    bulkdelete = bulkdelete.setAttribute('role', 'menuitem').addClass('dropdown-item menu-action');
++                    bulkdelete.one('img').addClass('icon');
++                    bulkdelete.append(Y.Node.create('<span class="menu-action-text"/>').addClass('sc-space-5').append(bulkdelete.get('title')));
++                    $block.one('.menubar .dropdown .dropdown-menu').append(bulkdelete);
++                } else {
++                    $block.one('.header .commands').append(bulkdelete);
++                }
++            }
++        }
++        
++        /**
++         *  Initialize the help icon
++         */
++        this.init_help_icon = function (isspeciallayout)
++        {
++            var helpicon = $block.one('.header-commands .help-icon');
++            if (isspeciallayout) {
++                helpicon = helpicon.setAttribute('data-placement', 'left');
++                helpicon = helpicon.prepend(Y.Node.create('<span/>').append(M.str.block_sharing_cart['pluginname']));
++                $block.one('.header-commands').get('parentNode').setStyle('display', 'block');
++            } else {
++                $block.one('.header .commands').append(helpicon);
++            }
++        }
++        
++        /**
++         *  Get plugin name
++         */
++        this.get_plugin_name = function ()
++        {
++            var $headertext = '';
++            var $blockheader = $block.one('h2');
++            if (typeof $blockheader == 'undefined' || $blockheader == null) {
++                //process for moodle 3.2
++                $blockheader = $block.one('h3');
++                if (typeof $blockheader != 'undefined' && $blockheader != null) {
++                    $headertext = $blockheader.get('text');
++                }
++            } else {
++                $headertext = $blockheader.get('text');
++            }
++            return $headertext;
++        }
++
++        /**
++         *  On backup command clicked
++         *  
++         *  @param {DOMEventFacade} e
++         */
++        this.on_backup = function (e)
++        {
++            var cmid = (function ($backup)
++            {
++                var $activity = $backup.ancestor('li.activity');
++                if ($activity)
++                    return $activity.get('id').match(/(\d+)$/)[1];
++                var $commands = $backup.ancestor('.commands');
++                var dataowner = $commands.get('data-owner');
++                if (dataowner)
++                    return dataowner.match(/(\d+)$/)[1];
++                return $commands.one('a.editing_delete').get('href').match(/delete=(\d+)/)[1];
++            })(e.target);
++            
++            (function (on_success)
++            {
++                Y.io(get_action_url('rest'), {
++                    method: 'POST',
++                    data: { 'action': 'is_userdata_copyable', 'cmid': cmid },
++                    on: {
++                        success: function (tid, response) { on_success(response); },
++                        failure: function (tid, response) { show_error(response); }
++                    }
++                });
++            })(function (response)
++            {
++                function embed_cmid(cmid)
++                {
++                    return '<!-- #cmid=' + cmid + ' -->';
++                }
++                function parse_cmid(question)
++                {
++                    return /#cmid=(\d+)/.exec(question)[1];
++                }
++                var copyable = response.responseText == '1';
++                if (copyable) {
++                    var $yesnocancel = new M.block_sharing_cart.yesnocancel({
++                        title: str('backup'),
++                        question: str('confirm_userdata') + embed_cmid(cmid),
++                        yesLabel: str('yes'), noLabel: str('no'), cancelLabel: str('cancel')
++                    });
++                    $yesnocancel.on('complete-yes', function (e)
++                    {
++                        backup(parse_cmid(this.get('question')), true);
++                    });
++                    $yesnocancel.on('complete-no', function (e)
++                    {
++                        backup(parse_cmid(this.get('question')), false);
++                    });
++                    $yesnocancel.show();
++                } else {
++                    //if (confirm(str('confirm_backup')))
++                    //    backup(cmid, false);
++                    var $okcancel = new M.core.confirm({
++                        title: str('backup'),
++                        question: str('confirm_backup') + embed_cmid(cmid),
++                        yesLabel: str('ok'), noLabel: str('cancel')
++                    });
++                    $okcancel.on('complete-yes', function (e)
++                    {
++                        backup(parse_cmid(this.get('question')), false);
++                    });
++                    $okcancel.show();
++                }
++            });
++        }
++
++        /**
++         *  On movedir command clicked
++         *  
++         *  @param {DOMEventFacade} e
++         */
++        this.on_movedir = function (e)
++        {
++            var $commands = e.target.ancestor('.commands');
++            
++            var $current_dir = $commands.ancestor('li.directory');
++            var current_path = $current_dir ? $current_dir.one('div').get('title') : '/';
++            
++            var id = e.target.ancestor('li.activity').get('id').match(/(\d+)$/)[1];
++            
++            var dirs = [];
++            $block.all('li.directory').each(function ()
++            {
++                dirs.push(this.one('div').get('title'));
++            });
++            
++            var $form = Y.Node.create('<form/>').setStyle('display', 'inline');
++            $form.set('action', 'javascript:void(0)');
++            function submit(e)
++            {
++                var to = $form.one('[name="to"]').get('value');
++                Y.io(get_action_url('rest'), {
++                    method: 'POST',
++                    data: { 'action': 'movedir', 'id': id, 'to': to, 'sesskey': M.cfg.sesskey },
++                    on: {
++                        success: function (tid, response) { reload_tree(); directories.reset(); },
++                        failure: function (tid, response) { show_error(response); }
++                    }
++                });
++            }
++            $form.on('submit', submit);
++            if (dirs.length == 0) {
++                $form.append(
++                    Y.Node.create('<input type="text" name="to"/>').set('value', current_path)
++                    );
++            } else {
++                dirs.unshift('/');
++                var $select = Y.Node.create('<select name="to"/>');
++                for (var i = 0; i < dirs.length; i++) {
++                    $select.append(Y.Node.create('<option/>').set('value', dirs[i]).append(dirs[i]));
++                    if (dirs[i] == current_path)
++                        $select.set('selectedIndex', i);
++                }
++                $select.on('change', submit);
++                $form.append($select);
++                
++                var $edit = create_command('edit');
++                $edit.on('click', function (e)
++                {
++                    var $input = Y.Node.create('<input type="text" name="to"/>').set('value', current_path);
++                    $select.remove();
++                    $edit.replace($input);
++                    $input.focus();
++                });
++                $form.append($edit);
++            }
++            var $cancel = create_command('cancel');
++            $cancel.on('click', function (e)
++            {
++                $form.remove();
++                $commands.all('a').show();
++            });
++            $form.append($cancel);
++            
++            //$commands.all('a').hide();
++            $commands.all('a').each(function () { this.hide(); });
++            $commands.append($form);
++        }
++
++        /**
++         *  On move command clicked
++         *  
++         *  @param {DOMEventFacade} e
++         */
++        this.on_move = function (e)
++        {
++            var $item = e.target.ancestor('li.activity');
++            var id = $item.get('id').match(/(\d+)$/)[1];
++            
++            move_targets.show(id);
++        }
++
++        /**
++         *  On delete command clicked
++         *  
++         *  @param {DOMEventFacade} e
++         */
++        this.on_delete = function (e)
++        {
++            if (!confirm(str('confirm_delete')))
++                return;
++            
++            var $item = e.target.ancestor('li.activity');
++            var id = $item.get('id').match(/(\d+)$/)[1];
++            
++            var $spinner = M.util.add_spinner(Y, e.target.ancestor('.commands'));
++            
++            Y.io(get_action_url('rest'), {
++                method: 'POST',
++                data: { 'action': 'delete', 'id': id, 'sesskey': M.cfg.sesskey },
++                on: {
++                    start: function (tid) { $spinner.show(); },
++                    end: function (tid) { $spinner.remove(); },
++                    success: function (tid, response) { $item.remove(); },
++                    failure: function (tid, response) { show_error(response); }
++                }
++            });
++            e.stopPropagation();
++        }
++
++        /**
++         *  On restore command clicked
++         *  
++         *  @param {DOMEventFacade} e
++         */
++        this.on_restore = function (e)
++        {
++            var $item = e.target.ancestor('li.activity');
++            var id = $item.get('id').match(/(\d+)$/)[1];
++            
++            restore_targets.show(id);
++        }
++
++        /**
++         *  Initialize the Sharing Cart item tree
++         */
++        this.init_item_tree = function ()
++        {
++            var actions = [ 'movedir', 'move', 'delete' ];
++            if (course)
++                actions.push('restore');
++            
++            // initialize items
++            $block.all('li.activity').each(function ($item)
++            {
++                var $commands = $item.one('.commands');
++                Y.Array.each(actions, function (action)
++                {
++                    var $command = create_command(action);
++                    $command.on('click', this['on_' + action], this);
++                    $commands.append($command);
++                }, this);
++            }, this);
++            
++            // initialize directories
++            directories.init();
++        }
++
++        /**
++         *  Initialize activity commands
++         */
++        this.init_activity_commands = function ()
++        {
++            function add_backup_command($activity)
++            {
++                var $backup = create_command('backup');
++                var $menu = $activity.one('ul[role="menu"]');
++                if ($menu) {
++                    $menu.append(Y.Node.create('<li role="presentation"/>').append($backup.set('role', 'menuitem')));
++                    if ($menu.getStyle('display') == 'none') {
++                        $backup.append(Y.Node.create('<span class="menu-action-text"/>').append($backup.get('title')));
++                    }
++                    if ($menu.one('i.fa')) { // Essential theme
++                        $backup.one('img').replace(Y.Node.create('<i class="fa fa-cloud-download icon"/>'));
++                    }
++                } else {
++                    $menu = $activity.one('div[role="menu"]');
++                    if ($menu) {
++                        $backup = create_special_activity_command('backup');
++                        $menu.append($backup.set('role', 'menuitem'));
++                        if ($menu.getStyle('display') == 'none') {
++                            $backup.append(Y.Node.create('<span class="menu-action-text"/>').append($backup.get('title')));
++                        }
++                        if ($menu.one('i.fa')) { // Essential theme
++                            $backup.one('img').replace(Y.Node.create('<i class="fa fa-cloud-download icon"/>'));
++                        }
++                    } else {
++                        $activity.one('.commands').append($backup);
++                    }
++                }
++                $backup.on('click', this.on_backup, this);
++            }
++            if (course.is_frontpage) {
++                Y.Node.all('.sitetopic li.activity').each(add_backup_command, this);
++                Y.Node.all('.block_site_main_menu .content > ul > li').each(add_backup_command, this);
++            } else {
++                Y.Node.all('.course-content li.activity').each(add_backup_command, this);
++            }
++        }
++        
++        /**
++         *  Create a command icon for moodle 3.2
++         *  
++         *  @param {String} name  The command name, predefined in icon
++         *  @param {String} [pix] The icon pix name to override
++         */
++        function create_special_activity_command(name, pix)
++        {
++            return Y.Node.create('<a href="javascript:void(0)"/>')
++                .addClass(icon[name].css)
++                .addClass('dropdown-item menu-action cm-edit-action')
++                .set('title', str(name))
++                .append(
++                    Y.Node.create('<img class="icon"/>')
++                        .set('alt', str(name))
++                        .set('src', M.util.image_url(pix || icon[name].pix))
++                    );
++        }
++    }
++
++    /**
++     *  Yes/No/Cancel confirmation dialogue
++     *  
++     *  @see /enrol/yui/notification/notification.js
++     */
++    var YESNOCANCEL = function (config)
++    {
++        YESNOCANCEL.superclass.constructor.apply(this, [config]);
++    }
++    Y.extend(YESNOCANCEL, M.core.confirm, {
++        initializer: function (config)
++        {
++            var C = Y.Node.create;
++            this.publish('complete');
++            this.publish('complete-yes');
++            this.publish('complete-no');
++            this.publish('complete-cancel');
++            var $yes    = C('<input type="button"/>').set('value', this.get('yesLabel'));
++            var $no     = C('<input type="button"/>').set('value', this.get('noLabel'));
++            var $cancel = C('<input type="button"/>').set('value', this.get('cancelLabel'));
++            var $content = C('<div class="confirmation-dialogue"/>')
++                .append(C('<div class="confirmation-message">' + this.get('question') + '</div>'))
++                .append(C('<div class="confirmation-buttons"/>').append($yes).append($no).append($cancel));
++            this.get('notificationBase').addClass('moodle-dialogue-confirm');
++            this.setStdModContent(Y.WidgetStdMod.BODY, $content, Y.WidgetStdMod.REPLACE);
++            this.setStdModContent(Y.WidgetStdMod.HEADER, this.get('title'), Y.WidgetStdMod.REPLACE);
++            this.after('destroyedChange', function() { this.get('notificationBase').remove(); }, this);
++            this._enterKeypress = Y.on('key', this.submit, window, 'down:13', this, true);
++            this._escKeypress = Y.on('key', this.submit, window, 'down:27', this, false);
++            $yes.on('click', this.submit, this, 'yes');
++            $no.on('click', this.submit, this, 'no');
++            $cancel.on('click', this.submit, this, 'cancel');
++        },
++        submit: function(e, outcome)
++        {
++            if (typeof outcome == "boolean") {
++                // default is "no"
++                outcome = outcome ? "no" : "cancel";
++            }
++            this._enterKeypress.detach();
++            this._escKeypress.detach();
++            this.fire('complete', outcome);
++            this.fire('complete-' + outcome);
++            this.hide();
++            this.destroy();
++        }
++    }, {
++        NAME: "Moodle yes-no-cancel dialogue",
++        CSS_PREFIX: 'moodle-dialogue',
++        ATTRS: {
++            title      : { validator: Y.Lang.isString, value: "Confirm" },
++            question   : { validator: Y.Lang.isString, value: "Are you sure?" },
++            yesLabel   : { validator: Y.Lang.isString, value: "Yes" },
++            noLabel    : { validator: Y.Lang.isString, value: "No" },
++            cancelLabel: { validator: Y.Lang.isString, value: "Cancel" }
++        }
++    });
++    Y.augment(YESNOCANCEL, Y.EventTarget);
++
++    M.block_sharing_cart.yesnocancel = YESNOCANCEL;
++},
++'2.6, release 1 patch 7',
++{
++    requires: [ 'base', 'node', 'io', 'dom', 'cookie', 'dd', 'moodle-course-dragdrop' ]
++});
+diff --git a/blocks/sharing_cart/pix/bulkdelete.gif b/blocks/sharing_cart/pix/bulkdelete.gif
+new file mode 100644
+index 0000000000000000000000000000000000000000..f9801adf1dd9becc84a3de960d07d15e1d8a5f51
+GIT binary patch
+literal 204
+zcmZ?wbhEHb6krfwIKsei{`~nlbLPyRJ$u@;X=P<)85tQ#NlD@1;UOU*9v&VJ4h}Xp
+zHoCgH+S=NRii)zbvNAF<l9H0Vyu7Tetjx^JjEsy73=IGO{|Ay-f#OdVpbBvY9gr-@
+zP6k%b2daH3no${CBJGuoDhz^p4@8udWjA;SbRAPH$h;~gcIRa2Mh2<9;+KP*LRV^X
+iuTQcq^<DYw`qZUH?hiMc+iu;oKCN($iC8-WgEauD&^Jl|
+
+literal 0
+HcmV?d00001
+
+diff --git a/blocks/sharing_cart/pix/bulkdelete.png b/blocks/sharing_cart/pix/bulkdelete.png
+new file mode 100644
+index 0000000000000000000000000000000000000000..d24fe8cb4606bb7f449cb97eb78f36fb84996b48
+GIT binary patch
+literal 275
+zcmV+u0qp*XP)<h;3K|Lk000e1NJLTq000aC000aK1^@s6R&`wG0000PbVXQnQ*UN;
+zcVTj606}DLVr3vnZDD6+Qe|Oed2z{QJOBUywMj%lRCwByk<ksqAPhte$^eYe5t<RQ
+zK}Kl47$fQ!e8C9Wpd&ORWCTX&xjHI~k5sW_5nbMy1Dvo@N;fPkdPWDz6}_RKF~&m$
+zNBEBAWx&4FIKi|#PJW-j)--y?_`;Z=J1z!Vs0o?XGjlt~13;lk;i8%uFb`dn3_xfS
+z!rA-}UM|+a!vvH07lYqocB!8CECy&XvN=<$?fSLy1t$vf=iv^|D7(7Rr88D)BN_P!
+ZFaWl!O$;WpaY6t9002ovPDHLkV1h|uYDWM7
+
+literal 0
+HcmV?d00001
+
+diff --git a/blocks/sharing_cart/pix/bulkdelete.svg b/blocks/sharing_cart/pix/bulkdelete.svg
+new file mode 100644
+index 0000000..ac43fa0
+--- /dev/null
++++ b/blocks/sharing_cart/pix/bulkdelete.svg
+@@ -0,0 +1,10 @@
++<?xml version="1.0" encoding="utf-8"?>
++<!-- Generator: Adobe Illustrator 14.0.0, SVG Export Plug-In . SVG Version: 6.00 Build 43363)  -->
++<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
++<svg version="1.1" id="Ebene_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
++	 width="12px" height="12px" viewBox="0 0 12 12" style="enable-background:new 0 0 12 12;" xml:space="preserve">
++<path style="fill:#999999;" d="M6,0C2.7,0,0,2.7,0,6c0,3.3,2.7,6,6,6c3.3,0,6-2.7,6-6C12,2.7,9.3,0,6,0z M9.2,7.9
++	c0.2,0.2,0.2,0.6,0,0.8L8.8,9.2C8.6,9.4,8.2,9.4,8,9.2L6,7.3L4,9.2c-0.2,0.2-0.6,0.2-0.8,0L2.8,8.8c-0.2-0.2-0.2-0.6,0-0.8l1.9-2
++	L2.8,4c-0.2-0.2-0.2-0.6,0-0.8l0.4-0.4c0.2-0.2,0.6-0.2,0.8,0L6,4.7l2-1.9c0.2-0.2,0.6-0.2,0.8,0l0.4,0.4c0.2,0.2,0.2,0.6,0,0.8
++	L7.3,6L9.2,7.9z"/>
++</svg>
+diff --git a/blocks/sharing_cart/pix/dropzone_arrow.svg b/blocks/sharing_cart/pix/dropzone_arrow.svg
+new file mode 100644
+index 0000000..f515b9e
+--- /dev/null
++++ b/blocks/sharing_cart/pix/dropzone_arrow.svg
+@@ -0,0 +1,18 @@
++<?xml version="1.0" encoding="utf-8"?>
++<!-- Generator: Adobe Illustrator 15.0.0, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
++<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
++<svg version="1.1" id="Ebene_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
++	 width="1200px" height="61px" viewBox="0 0 1200 61" enable-background="new 0 0 1200 61" xml:space="preserve">
++<g>
++	<path fill="#999999" d="M616.302,17.451c-2.232-3.83-5.268-6.862-9.098-9.098C603.373,6.117,599.191,5,594.655,5
++		s-8.722,1.117-12.55,3.353c-3.829,2.235-6.862,5.268-9.101,9.098c-2.233,3.831-3.353,8.014-3.353,12.549s1.115,8.719,3.353,12.549
++		s5.271,6.863,9.101,9.1c3.828,2.234,8.014,3.354,12.549,3.354s8.719-1.117,12.549-3.354c3.831-2.233,6.863-5.27,9.098-9.1
++		c2.235-3.83,3.354-8.014,3.354-12.549C619.654,25.464,618.536,21.281,616.302,17.451z M610.865,31.497l-11.784,11.784l-2.962,2.963
++		c-0.391,0.39-0.878,0.585-1.465,0.585c-0.585,0-1.074-0.195-1.465-0.585l-2.965-2.963l-11.782-11.784
++		c-0.393-0.392-0.585-0.878-0.585-1.465c0-0.586,0.192-1.074,0.585-1.467l2.962-2.961c0.413-0.412,0.897-0.619,1.465-0.619
++		c0.562,0,1.053,0.207,1.465,0.619l6.152,6.151v-16.34c0-0.563,0.206-1.053,0.619-1.465c0.409-0.413,0.897-0.619,1.465-0.619h4.167
++		c0.562,0,1.052,0.206,1.464,0.619c0.412,0.412,0.619,0.899,0.619,1.465v16.341l6.149-6.152c0.394-0.391,0.878-0.586,1.464-0.586
++		c0.588,0,1.074,0.195,1.468,0.586l2.962,2.963c0.391,0.392,0.586,0.879,0.586,1.466C611.451,30.619,611.256,31.107,610.865,31.497z
++		"/>
++</g>
++</svg>
+diff --git a/blocks/sharing_cart/rest.php b/blocks/sharing_cart/rest.php
+new file mode 100644
+index 0000000..fc56043
+--- /dev/null
++++ b/blocks/sharing_cart/rest.php
+@@ -0,0 +1,60 @@
++<?php
++/**
++ *  Sharing Cart - REST API
++ *  
++ *  @author  VERSION2, Inc.
++ *  @version $Id: rest.php 859 2012-10-12 06:31:50Z malu $
++ */
++
++require_once '../../config.php';
++
++require_once __DIR__.'/classes/controller.php';
++
++try {
++	$controller = new sharing_cart\controller();
++	
++	switch (required_param('action', PARAM_TEXT)) {
++	case 'render_tree':
++		$PAGE->set_context(\context_user::instance($USER->id)); // pix_url() needs this
++		echo $controller->render_tree($USER->id);
++		exit;
++	case 'is_userdata_copyable':
++		$cmid = required_param('cmid', PARAM_INT);
++		echo $controller->is_userdata_copyable($cmid);
++		exit;
++	case 'backup':
++		$cmid     = required_param('cmid', PARAM_INT);
++		$userdata = required_param('userdata', PARAM_BOOL);
++		$controller->backup($cmid, $userdata);
++		exit;
++	case 'movedir':
++		$id = required_param('id', PARAM_INT);
++		$to = required_param('to', PARAM_TEXT);
++		$controller->movedir($id, $to);
++		exit;
++	case 'move':
++		$id = required_param('id', PARAM_INT);
++		$to = required_param('to', PARAM_INT);
++		$controller->move($id, $to);
++		exit;
++	case 'delete':
++		$id = required_param('id', PARAM_INT);
++		$controller->delete($id);
++		exit;
++	}
++	throw new sharing_cart\exception('invalidoperation');
++	
++} catch (Exception $ex) {
++	header('HTTP/1.1 400 Bad Request');
++	$json = array(
++		'message' => $ex->getMessage(),
++		);
++	if (!empty($CFG->debug) and $CFG->debug >= DEBUG_DEVELOPER) {
++		$json += array(
++			'file'  => substr($ex->getFile(), strlen($CFG->dirroot)),
++			'line'  => $ex->getLine(),
++			'trace' => format_backtrace($ex->getTrace(), true),
++			);
++	}
++	echo json_encode($json);
++}
+diff --git a/blocks/sharing_cart/restore.php b/blocks/sharing_cart/restore.php
+new file mode 100644
+index 0000000..942c889
+--- /dev/null
++++ b/blocks/sharing_cart/restore.php
+@@ -0,0 +1,37 @@
++<?php
++/**
++ *  Sharing Cart - Restore Operation
++ *  
++ *  @author  VERSION2, Inc.
++ *  @version $Id: restore.php 783 2012-09-11 06:48:57Z malu $
++ */
++
++require_once '../../config.php';
++
++require_once __DIR__.'/classes/controller.php';
++
++$id            = required_param('id', PARAM_INT);
++$courseid      = required_param('course', PARAM_INT);
++$sectionnumber = required_param('section', PARAM_INT);
++
++if ($courseid == SITEID) {
++    $returnurl = new moodle_url('/');
++} else {
++    $returnurl = new moodle_url('/course/view.php', array('id' => $courseid));
++}
++
++try {
++	$controller = new sharing_cart\controller();
++	$controller->restore($id, $courseid, $sectionnumber);
++	
++	redirect($returnurl);
++	
++} catch (sharing_cart\exception $ex) {
++	print_error($ex->errorcode, $ex->module, $returnurl, $ex->a);
++} catch (Exception $ex) {
++	if (!empty($CFG->debug) and $CFG->debug >= DEBUG_DEVELOPER) {
++		print_error('notlocalisederrormessage', 'error', '', $ex->__toString());
++	} else {
++		print_error('unexpectederror', 'block_sharing_cart', $returnurl);
++	}
++}
+diff --git a/blocks/sharing_cart/settings.php b/blocks/sharing_cart/settings.php
+new file mode 100644
+index 0000000..33c9eef
+--- /dev/null
++++ b/blocks/sharing_cart/settings.php
+@@ -0,0 +1,24 @@
++<?php // $Id: settings.php 934 2013-03-26 00:50:29Z malu $
++
++defined('MOODLE_INTERNAL') || die;
++
++require_once __DIR__.'/lib/settingslib.php';
++
++if ($ADMIN->fulltree) {
++    $settings->add(
++        new admin_setting_configmulticheckboxmodtypes(
++            'block_sharing_cart/userdata_copyable_modtypes',
++            get_string('settings:userdata_copyable_modtypes', 'block_sharing_cart'),
++            get_string('settings:userdata_copyable_modtypes_desc', 'block_sharing_cart'),
++            array('data' => 1, 'forum' => 1, 'glossary' => 1, 'wiki' => 1)
++        )
++    );
++    $settings->add(
++        new admin_setting_configmulticheckboxqtypes(
++            'block_sharing_cart/workaround_qtypes',
++            get_string('settings:workaround_qtypes', 'block_sharing_cart'),
++            get_string('settings:workaround_qtypes_desc', 'block_sharing_cart'),
++            array()
++        )
++    );
++}
+diff --git a/blocks/sharing_cart/styles.css b/blocks/sharing_cart/styles.css
+new file mode 100644
+index 0000000..562bb9a
+--- /dev/null
++++ b/blocks/sharing_cart/styles.css
+@@ -0,0 +1,23 @@
++.block_sharing_cart .sc-indent-0 { margin-left:0em; }
++.block_sharing_cart .sc-indent-1 { margin-left:1em; }
++.block_sharing_cart .sc-indent-2 { margin-left:2em; }
++.block_sharing_cart .sc-indent-3 { margin-left:3em; }
++.block_sharing_cart .sc-indent-4 { margin-left:4em; }
++.block_sharing_cart .sc-indent-5 { margin-left:5em; }
++.block_sharing_cart .sc-indent-6 { margin-left:6em; }
++.block_sharing_cart .sc-indent-7 { margin-left:7em; }
++.block_sharing_cart .sc-indent-8 { margin-left:8em; }
++.block_sharing_cart .sc-indent-9 { margin-left:9em; }
++.block_sharing_cart .sc-indent-10 { margin-left:10em; }
++.block_sharing_cart .sc-indent-11 { margin-left:11em; }
++.block_sharing_cart .sc-indent-12 { margin-left:12em; }
++.block_sharing_cart .sc-indent-13 { margin-left:13em; }
++.block_sharing_cart .sc-indent-14 { margin-left:14em; }
++.block_sharing_cart .sc-indent-15 { margin-left:15em; }
++.block_sharing_cart .sc-space-1 { margin-left: 1px; }
++.block_sharing_cart .sc-space-2 { margin-left: 2px; }
++.block_sharing_cart .sc-space-3 { margin-left: 3px; }
++.block_sharing_cart .sc-space-4 { margin-left: 4px; }
++.block_sharing_cart .sc-space-5 { margin-left: 5px; }
++.course-content .move_target { content: url("pix/dropzone_arrow.svg"); max-width: 100%; border: 2px dashed #999; margin-top: 15px; margin-bottom: 15px; padding: 5px; }
++.course-content .clipboard {max-width: 100%; border: 2px dashed #999; margin-bottom: 15px; padding: 10px; font-weight: bold; }
+\ No newline at end of file
+diff --git a/blocks/sharing_cart/version.php b/blocks/sharing_cart/version.php
+new file mode 100644
+index 0000000..0770f6c
+--- /dev/null
++++ b/blocks/sharing_cart/version.php
+@@ -0,0 +1,9 @@
++<?php
++
++defined('MOODLE_INTERNAL') || die;
++
++$plugin->version   = 2016032900;
++$plugin->requires  = 2012062501.00; // Moodle 2.3.1
++$plugin->component = 'block_sharing_cart';
++$plugin->release   = '3.2, release 1';
++$plugin->maturity  = MATURITY_STABLE;
+-- 
+1.8.3.1
+

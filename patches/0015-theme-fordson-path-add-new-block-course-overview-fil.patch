@@ -1,0 +1,58 @@
+From 4c64afd54d8d4ab8575f7fa2a1e69966b53ffa3b Mon Sep 17 00:00:00 2001
+From: Nadav Kavalerchik <nadavkav@gmail.com>
+Date: Wed, 11 Oct 2017 16:43:08 +0300
+Subject: [PATCH 15/95] theme/fordson (path) add new block course overview
+ filter lang strings
+
+---
+ theme/fordson/lang/en/theme_fordson.php | 35 ++++++++++++++++++++++++++++++++-
+ 1 file changed, 34 insertions(+), 1 deletion(-)
+
+diff --git a/theme/fordson/lang/en/theme_fordson.php b/theme/fordson/lang/en/theme_fordson.php
+index 296e21d..7c50420 100755
+--- a/theme/fordson/lang/en/theme_fordson.php
++++ b/theme/fordson/lang/en/theme_fordson.php
+@@ -430,4 +430,37 @@ $string['modchoosercommonlyusedtitle'] = '{$a}';
+ $string['modchoosercustomlabel'] = 'Custom Chooser Label';
+ $string['modchoosercustomlabel_desc'] = 'Add your own custom label for this new menu in the Chooser Module panel.';
+ $string['showalltomanager'] = 'Show All Activities and Resources to Managers';
+-$string['showalltomanager_desc'] = 'This setting will allow users who have the role of Manager see and access ALL activities and resources even if it is set to only show the custom menu.  Generally, a manager role is given to a user at the site or category level.  Teachers will still only see the custom menu.  This feature is determined by the user permission: View the Site Administration Tree - moodle/site:configview . Site Administrators will always see all activities and resources.';
+\ No newline at end of file
++$string['showalltomanager_desc'] = 'This setting will allow users who have the role of Manager see and access ALL activities and resources even if it is set to only show the custom menu.  Generally, a manager role is given to a user at the site or category level.  Teachers will still only see the custom menu.  This feature is determined by the user permission: View the Site Administration Tree - moodle/site:configview . Site Administrators will always see all activities and resources.';
++
++/// Renderer - course filter
++$string['showallcourses'] = 'Show all courses';
++$string['anyrole'] = 'Any role';
++$string['filterby'] = 'Filter by: ';
++$string['filterbycategory'] = 'Category';
++$string['filterbyrole'] = 'Role';
++$string['defaultcoursecategroy'] = 'Default Course Category';
++$string['defaultcoursecategroydescription'] = 'Default Course Category for the My Courses Course Filter chooser';
++$string['showonlytopcategories'] = 'Show only top Categories';
++$string['showonlytopcategoriesdescription'] = 'Show only top Categories, on the Category filter chooser';
++$string['navshowallcourses'] = 'Show all courses';
++$string['confignavshowallcourses'] = 'This setting determines whether users who are enrolled in courses can see Courses (listing all courses) in the navigation, in addition to My Courses (listing courses in which they are enrolled).';
++$string['sortcoursesbylastaccess'] = 'Sort courses';
++$string['sortcoursesbylastaccessdescription'] = "Sort courses by user's lastaccess time";
++$string['filterbysemester'] = 'Semester';
++$string['semesterlist'] = 'סמסטר א,סמסטר ב,סמסטר קיץ,שנתי';
++$string['semesterlistkeys'] = 'א,ב,ק,ש';
++$string['my'] = 'My';
++$string['filtercourses'] = 'Filter courses';
++$string['filtercourses_desc'] = 'Filter courses on user\'s Dashboard page';
++$string['sortbylastaccess'] = 'Sort by lastaccess';
++$string['sortbyabc'] = 'Sort by ABC';
++$string['timetabletitle'] = 'Time table';
++$string['syllabus'] = 'Syllabus';
++$string['moreinfo'] = 'More info';
++$string['mytimetable'] = 'Time table';
++$string['chooseyear'] = 'Choose year';
++$string['nosyllabus'] = 'No syllabus for this course (Please ask the teacher to add it)';
++$string['syllabus'] = 'Syllabus';
++$string['mytimetable'] = 'My Timetable';
++$string['noclasses'] = 'No information available, please ask your teachers for updates.';
++$string['teachers'] = 'Teachers';
+\ No newline at end of file
+-- 
+1.8.3.1
+

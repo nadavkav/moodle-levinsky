@@ -1,0 +1,43 @@
+From 7d336860e15fdc0e013fef736a4760cfb1105675 Mon Sep 17 00:00:00 2001
+From: Nadav Kavalerchik <nadavkav@gmail.com>
+Date: Wed, 11 Oct 2017 16:44:50 +0300
+Subject: [PATCH 17/95] theme/fordson (patch) add support for levinsky.scss
+ custom styles
+
+---
+ theme/fordson/scss/moodle.scss | 5 ++++-
+ theme/fordson/scss/styles.scss | 4 ++++
+ 2 files changed, 8 insertions(+), 1 deletion(-)
+
+diff --git a/theme/fordson/scss/moodle.scss b/theme/fordson/scss/moodle.scss
+index 11d6c7f..0f6a74e 100755
+--- a/theme/fordson/scss/moodle.scss
++++ b/theme/fordson/scss/moodle.scss
+@@ -2,4 +2,7 @@
+ @import "../../boost/scss/moodle";
+ 
+ // Fordson styles
+-@import "styles";
+\ No newline at end of file
++@import "styles";
++
++// Custom Levinsky styles
++@import "levinsky";
+\ No newline at end of file
+diff --git a/theme/fordson/scss/styles.scss b/theme/fordson/scss/styles.scss
+index c30e0e5..22f5c46 100755
+--- a/theme/fordson/scss/styles.scss
++++ b/theme/fordson/scss/styles.scss
+@@ -779,4 +779,8 @@ body.format-topcoll h3.sectionname:before {
+         display: block !important;
+     }
+ 
++    .path-mod-assign [data-region="user-info"] .nowrap {
++    padding: 3rem;
++    }
++
+ }
+\ No newline at end of file
+-- 
+1.8.3.1
+

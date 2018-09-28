@@ -1,0 +1,3476 @@
+From 140d89dab7067723c00f69d7ff58a17abdbacc9e Mon Sep 17 00:00:00 2001
+From: Nadav Kavalerchik <nadavkav@gmail.com>
+Date: Wed, 11 Oct 2017 21:33:00 +0300
+Subject: [PATCH 52/95] question/type/oumultiresponse (new)
+
+---
+ question/type/oumultiresponse/README.txt           |  45 ++
+ .../backup_qtype_oumultiresponse_plugin.class.php  |  83 ++++
+ .../restore_qtype_oumultiresponse_plugin.class.php | 116 +++++
+ .../type/oumultiresponse/combinable/combinable.php | 143 ++++++
+ .../type/oumultiresponse/combinable/renderer.php   | 107 +++++
+ question/type/oumultiresponse/db/install.xml       |  27 ++
+ .../oumultiresponse/edit_oumultiresponse_form.php  | 164 +++++++
+ .../type/oumultiresponse/internaldoc/testcase.txt  |  28 ++
+ .../lang/en/qtype_oumultiresponse.php              |  39 ++
+ question/type/oumultiresponse/lib.php              |  35 ++
+ question/type/oumultiresponse/pix/icon.png         | Bin 0 -> 1144 bytes
+ question/type/oumultiresponse/question.php         | 174 +++++++
+ question/type/oumultiresponse/questiontype.php     | 396 +++++++++++++++
+ question/type/oumultiresponse/styles.css           |  68 +++
+ .../type/oumultiresponse/tests/behat/add.feature   |  39 ++
+ .../tests/behat/backup_and_restore.feature         |  50 ++
+ .../type/oumultiresponse/tests/behat/edit.feature  |  33 ++
+ .../oumultiresponse/tests/behat/export.feature     |  36 ++
+ .../oumultiresponse/tests/behat/import.feature     |  30 ++
+ .../oumultiresponse/tests/behat/preview.feature    |  57 +++
+ .../tests/fixtures/testquestion.moodle.xml         |  75 +++
+ question/type/oumultiresponse/tests/helper.php     | 247 ++++++++++
+ .../type/oumultiresponse/tests/question_test.php   | 242 ++++++++++
+ .../oumultiresponse/tests/questiontype_test.php    | 434 +++++++++++++++++
+ .../oumultiresponse/tests/walkthrough_test.php     | 529 +++++++++++++++++++++
+ question/type/oumultiresponse/version.php          |  39 ++
+ 26 files changed, 3236 insertions(+)
+ create mode 100755 question/type/oumultiresponse/README.txt
+ create mode 100755 question/type/oumultiresponse/backup/moodle2/backup_qtype_oumultiresponse_plugin.class.php
+ create mode 100755 question/type/oumultiresponse/backup/moodle2/restore_qtype_oumultiresponse_plugin.class.php
+ create mode 100755 question/type/oumultiresponse/combinable/combinable.php
+ create mode 100755 question/type/oumultiresponse/combinable/renderer.php
+ create mode 100755 question/type/oumultiresponse/db/install.xml
+ create mode 100755 question/type/oumultiresponse/edit_oumultiresponse_form.php
+ create mode 100755 question/type/oumultiresponse/internaldoc/testcase.txt
+ create mode 100755 question/type/oumultiresponse/lang/en/qtype_oumultiresponse.php
+ create mode 100755 question/type/oumultiresponse/lib.php
+ create mode 100755 question/type/oumultiresponse/pix/icon.png
+ create mode 100755 question/type/oumultiresponse/question.php
+ create mode 100755 question/type/oumultiresponse/questiontype.php
+ create mode 100755 question/type/oumultiresponse/styles.css
+ create mode 100755 question/type/oumultiresponse/tests/behat/add.feature
+ create mode 100755 question/type/oumultiresponse/tests/behat/backup_and_restore.feature
+ create mode 100755 question/type/oumultiresponse/tests/behat/edit.feature
+ create mode 100755 question/type/oumultiresponse/tests/behat/export.feature
+ create mode 100755 question/type/oumultiresponse/tests/behat/import.feature
+ create mode 100755 question/type/oumultiresponse/tests/behat/preview.feature
+ create mode 100755 question/type/oumultiresponse/tests/fixtures/testquestion.moodle.xml
+ create mode 100755 question/type/oumultiresponse/tests/helper.php
+ create mode 100755 question/type/oumultiresponse/tests/question_test.php
+ create mode 100755 question/type/oumultiresponse/tests/questiontype_test.php
+ create mode 100755 question/type/oumultiresponse/tests/walkthrough_test.php
+ create mode 100755 question/type/oumultiresponse/version.php
+
+diff --git a/question/type/oumultiresponse/README.txt b/question/type/oumultiresponse/README.txt
+new file mode 100755
+index 0000000..60922a5
+--- /dev/null
++++ b/question/type/oumultiresponse/README.txt
+@@ -0,0 +1,45 @@
++The OU Multi-response question type
++
++This is a multiple-choice, multiple-response question type that was created by
++Mahmound Kassaei and Tim Hunt at the Open University (http://www.open.ac.uk/).
++
++This version of this question type is compatible with Moodle 2.5+. There are
++other versions available for Moodle 2.1+.
++
++To install using git, type these commands in the root of your Moodle install
++For Moodle 2.5 or later
++    git clone git://github.com/moodleou/moodle-qtype_oumultiresponse.git question/type/oumultiresponse
++    echo '/question/type/oumultiresponse/' >> .git/info/exclude
++
++
++Alternatively, download the zip from
++    https://github.com/moodleou/moodle-qtype_oumultiresponse/zipball/master (Moodle 2.5 or later)
++unzip it into the question/type folder, and then rename the new folder to
++oumultiresponse.
++
++
++The main difference from the standard Moodle multiple choice question type is
++in the way that grading works. When creating the question, the teacher just
++indicates which choices are correct. If there are n correct choices, then the
++student scores 1/n for each correct choice, and loses 1/n for each incorrect
++choice. So for example, suppose the question is:
++
++    Which of these animals are mammals?
++
++    A. Dog
++    B. Frog
++    C. Toad
++    D. Cat
++    E. Cow
++    F. Newt
++    G. Lion
++
++Then
++    ADEG (4 right out of 4) scores 100%.
++    D (1 right) scores 25%.
++    ADEGF (4 right, 1 wrong) scores 75%.
++    ADEBC (3 right, 2 wrong) scores 25%.
++
++In interactive mode, the student is given more credit for choices that are
++selected correctly on the first try, even if it takes more tries to get
++some of the other choices correct.
+diff --git a/question/type/oumultiresponse/backup/moodle2/backup_qtype_oumultiresponse_plugin.class.php b/question/type/oumultiresponse/backup/moodle2/backup_qtype_oumultiresponse_plugin.class.php
+new file mode 100755
+index 0000000..beb2be7
+--- /dev/null
++++ b/question/type/oumultiresponse/backup/moodle2/backup_qtype_oumultiresponse_plugin.class.php
+@@ -0,0 +1,83 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++/**
++ * @package    qtype_oumultiresponse
++ * @copyright  2010 onwards Eloy Lafuente (stronk7) {@link http://stronk7.com}
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++
++defined('MOODLE_INTERNAL') || die();
++
++
++/**
++ * Provides the information to backup oumultiresponse questions.
++ *
++ * @copyright  2010 onwards Eloy Lafuente (stronk7) {@link http://stronk7.com}
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++class backup_qtype_oumultiresponse_plugin extends backup_qtype_plugin {
++
++    /**
++     * Returns the qtype information to attach to question element.
++     */
++    protected function define_question_plugin_structure() {
++
++        // Define the virtual plugin element with the condition to fulfill.
++        $plugin = $this->get_plugin_element(null, '../../qtype', 'oumultiresponse');
++
++        // Create one standard named plugin element (the visible container).
++        $pluginwrapper = new backup_nested_element($this->get_recommended_name());
++
++        // Connect the visible container ASAP.
++        $plugin->add_child($pluginwrapper);
++
++        // This qtype uses standard question_answers, add them here
++        // to the tree before any other information that will use them.
++        $this->add_question_question_answers($pluginwrapper);
++
++        // Now create the qtype own structures.
++        $oumultiresponse = new backup_nested_element('oumultiresponse', array('id'), array(
++            'shuffleanswers', 'correctfeedback', 'correctfeedbackformat',
++            'partiallycorrectfeedback', 'partiallycorrectfeedbackformat',
++            'incorrectfeedback', 'incorrectfeedbackformat', 'answernumbering', 'shownumcorrect'));
++
++        // Now the own qtype tree.
++        $pluginwrapper->add_child($oumultiresponse);
++
++        // Set source to populate the data.
++        $oumultiresponse->set_source_table('question_oumultiresponse',
++                array('questionid' => backup::VAR_PARENTID));
++
++        // Don't need to annotate ids nor files.
++
++        return $plugin;
++    }
++
++    /**
++     * Returns one array with filearea => mappingname elements for the qtype.
++     *
++     * Used by {@link get_components_and_fileareas} to know about all the qtype
++     * files to be processed both in backup and restore.
++     */
++    public static function get_qtype_fileareas() {
++        return array(
++            'correctfeedback' => 'question_created',
++            'partiallycorrectfeedback' => 'question_created',
++            'incorrectfeedback' => 'question_created');
++    }
++}
+diff --git a/question/type/oumultiresponse/backup/moodle2/restore_qtype_oumultiresponse_plugin.class.php b/question/type/oumultiresponse/backup/moodle2/restore_qtype_oumultiresponse_plugin.class.php
+new file mode 100755
+index 0000000..336a0cb
+--- /dev/null
++++ b/question/type/oumultiresponse/backup/moodle2/restore_qtype_oumultiresponse_plugin.class.php
+@@ -0,0 +1,116 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++/**
++ * @package    qtype_oumultiresponse
++ * @copyright  2010 onwards Eloy Lafuente (stronk7) {@link http://stronk7.com}
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++
++defined('MOODLE_INTERNAL') || die();
++
++
++/**
++ * restore plugin class that provides the necessary information
++ * needed to restore one oumultiresponse qtype plugin.
++ *
++ * @copyright  2010 onwards Eloy Lafuente (stronk7) {@link http://stronk7.com}
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++class restore_qtype_oumultiresponse_plugin extends restore_qtype_plugin {
++
++    /**
++     * Returns the paths to be handled by the plugin at question level.
++     */
++    protected function define_question_plugin_structure() {
++
++        $paths = array();
++
++        // This qtype uses question_answers, add them.
++        $this->add_question_question_answers($paths);
++
++        // Add own qtype stuff.
++        $elename = 'oumultiresponse';
++        // We used get_recommended_name() so this works.
++        $elepath = $this->get_pathfor('/oumultiresponse');
++        $paths[] = new restore_path_element($elename, $elepath);
++
++        return $paths; // And we return the interesting paths.
++    }
++
++    /**
++     * Process the qtype/oumultiresponse element.
++     */
++    public function process_oumultiresponse($data) {
++        global $DB;
++
++        $data = (object)$data;
++        $oldid = $data->id;
++
++        // Detect if the question is created or mapped.
++        $oldquestionid   = $this->get_old_parentid('question');
++        $newquestionid   = $this->get_new_parentid('question');
++        $questioncreated = (bool) $this->get_mappingid('question_created', $oldquestionid);
++
++        // If the question has been created by restore, we need to create its
++        // question_oumultiresponse too.
++        if ($questioncreated) {
++            // Adjust some columns.
++            $data->questionid = $newquestionid;
++            // Insert record.
++            $newitemid = $DB->insert_record('question_oumultiresponse', $data);
++            // Create mapping (needed for decoding links).
++            $this->set_mapping('question_oumultiresponse', $oldid, $newitemid);
++        }
++    }
++
++    public function recode_response($questionid, $sequencenumber, array $response) {
++        if (array_key_exists('_order', $response)) {
++            $response['_order'] = $this->recode_choice_order($response['_order']);
++        }
++        return $response;
++    }
++
++    /**
++     * Recode the choice order as stored in the response.
++     * @param string $order the original order.
++     * @return string the recoded order.
++     */
++    protected function recode_choice_order($order) {
++        $neworder = array();
++        foreach (explode(',', $order) as $id) {
++            if ($newid = $this->get_mappingid('question_answer', $id)) {
++                $neworder[] = $newid;
++            }
++        }
++        return implode(',', $neworder);
++    }
++
++    /**
++     * Return the contents of this qtype to be processed by the links decoder.
++     */
++    public static function define_decode_contents() {
++
++        $contents = array();
++
++        $fields = array('correctfeedback', 'partiallycorrectfeedback', 'incorrectfeedback');
++        $contents[] = new restore_decode_content('question_oumultiresponse',
++                $fields, 'question_oumultiresponse');
++
++        return $contents;
++    }
++}
+diff --git a/question/type/oumultiresponse/combinable/combinable.php b/question/type/oumultiresponse/combinable/combinable.php
+new file mode 100755
+index 0000000..cc6bb40
+--- /dev/null
++++ b/question/type/oumultiresponse/combinable/combinable.php
+@@ -0,0 +1,143 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++/**
++ * Defines the hooks necessary to make the oumultiresponse question type combinable
++ *
++ * @package   qtype_oumultiresponse
++ * @copyright  2013 The Open University
++ * @author     Jamie Pratt <me@jamiep.org>
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++defined('MOODLE_INTERNAL') || die();
++
++class qtype_combined_combinable_type_oumultiresponse extends qtype_combined_combinable_type_base {
++
++    protected $identifier = 'multiresponse';
++
++    protected function extra_question_properties() {
++        return array('answernumbering' => 'abc') + $this->combined_feedback_properties();
++    }
++
++    protected function extra_answer_properties() {
++        return array('feedback' => array('text' => '', 'format' => FORMAT_PLAIN));
++    }
++
++    public function subq_form_fragment_question_option_fields() {
++        return array('shuffleanswers' => false);
++    }
++
++    protected function transform_subq_form_data_to_full($subqdata) {
++        $data = parent::transform_subq_form_data_to_full($subqdata);
++        foreach ($data->answer as $anskey => $answer) {
++            $data->answer[$anskey] = array('text' => $answer, 'format' => FORMAT_PLAIN);
++        }
++        return $this->add_per_answer_properties($data);
++    }
++
++    protected function third_param_for_default_question_text() {
++        return 'v';
++    }
++}
++
++class qtype_combined_combinable_oumultiresponse extends qtype_combined_combinable_accepts_vertical_or_horizontal_layout_param {
++
++    /**
++     * @param moodleform      $combinedform
++     * @param MoodleQuickForm $mform
++     * @param                 $repeatenabled
++     */
++    public function add_form_fragment(moodleform $combinedform, MoodleQuickForm $mform, $repeatenabled) {
++        $mform->addElement('advcheckbox', $this->form_field_name('shuffleanswers'), get_string('shuffle', 'qtype_gapselect'));
++
++        $answerels = array();
++        $answerels[] = $mform->createElement('text', $this->form_field_name('answer'),
++                                             get_string('choiceno', 'qtype_multichoice', '{no}'), array('size'=>55));
++        $mform->setType($this->form_field_name('answer'), PARAM_TEXT);
++        $answerels[] = $mform->createElement('advcheckbox',
++                                             $this->form_field_name('correctanswer'),
++                                             get_string('correct', 'question'),
++                                             get_string('correct', 'question'));
++
++        $answergroupel = $mform->createElement('group',
++                                               $this->form_field_name('answergroup'),
++                                               get_string('choiceno', 'qtype_multichoice', '{no}'),
++                                               $answerels,
++                                               null,
++                                               false);
++        if ($this->questionrec !== null) {
++            $countanswers = count($this->questionrec->options->answers);
++        } else {
++            $countanswers = 0;
++        }
++
++        if ($repeatenabled) {
++            $defaultstartnumbers = QUESTION_NUMANS_START * 2;
++            $repeatsatstart = max($defaultstartnumbers, $countanswers + QUESTION_NUMANS_ADD);
++        } else {
++            $repeatsatstart = $countanswers;
++        }
++
++        $combinedform->repeat_elements(array($answergroupel),
++            $repeatsatstart,
++            array(),
++            $this->form_field_name('noofchoices'),
++            $this->form_field_name('morechoices'),
++            QUESTION_NUMANS_ADD,
++            get_string('addmorechoiceblanks', 'qtype_gapselect'),
++            true);
++
++    }
++
++    public function data_to_form($context, $fileoptions) {
++        $mroptions = array('answer' => array(), 'correctanswer' => array());
++        if ($this->questionrec !== null) {
++            foreach ($this->questionrec->options->answers as $questionrecanswer) {
++                $mroptions['answer'][]= $questionrecanswer->answer;
++                $mroptions['correctanswer'][] = $questionrecanswer->fraction > 0;
++            }
++        }
++        return parent::data_to_form($context, $fileoptions) + $mroptions;
++    }
++
++    public function validate() {
++        $errors = array();
++        $nonemptyanswerblanks = array();
++        foreach ($this->formdata->answer as $anskey => $answer) {
++            if ('' !== trim($answer)) {
++                $nonemptyanswerblanks[] = $anskey;
++            } else if ($this->formdata->correctanswer[$anskey]) {
++                $errors[$this->form_field_name("answergroup[{$anskey}]")] = get_string('err_correctanswerblank',
++                                                                                       'qtype_oumultiresponse');
++            }
++        }
++        if (count($nonemptyanswerblanks) < 2) {
++            $errors[$this->form_field_name("answergroup[0]")] = get_string('err_youneedmorechoices', 'qtype_oumultiresponse');
++        }
++        if (count(array_filter($this->formdata->correctanswer)) === 0) {
++            $errors[$this->form_field_name("answergroup[0]")] = get_string('err_nonecorrect', 'qtype_oumultiresponse');
++        }
++        return $errors;
++    }
++
++    public function has_submitted_data() {
++        return $this->submitted_data_array_not_empty('correctanswer') ||
++                $this->submitted_data_array_not_empty('answer') ||
++                parent::has_submitted_data();
++    }
++
++}
+diff --git a/question/type/oumultiresponse/combinable/renderer.php b/question/type/oumultiresponse/combinable/renderer.php
+new file mode 100755
+index 0000000..e3a882c
+--- /dev/null
++++ b/question/type/oumultiresponse/combinable/renderer.php
+@@ -0,0 +1,107 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++/**
++ * Combined question embedded sub question renderer class.
++ *
++ * @package   qtype_oumultiresponse
++ * @copyright  2013 The Open University
++ * @author     Jamie Pratt <me@jamiep.org>
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++
++defined('MOODLE_INTERNAL') || die();
++
++
++class qtype_oumultiresponse_embedded_renderer extends qtype_renderer
++    implements qtype_combined_subquestion_renderer_interface {
++
++    public function subquestion(question_attempt $qa,
++                                question_display_options $options,
++                                qtype_combined_combinable_base $subq,
++                                $placeno) {
++        $question = $subq->question;
++        $fullresponse = new qtype_combined_response_array_param($qa->get_last_qt_data());
++        $response = $fullresponse->for_subq($subq);
++
++        $commonattributes = array(
++            'type' => 'checkbox'
++        );
++
++        if ($options->readonly) {
++            $commonattributes['disabled'] = 'disabled';
++        }
++
++        $checkboxes = array();
++        $feedbackimg = array();
++        $classes = array();
++        foreach ($question->get_order($qa) as $value => $ansid) {
++            $inputname = $qa->get_qt_field_name($subq->step_data_name('choice'.$value));
++            $ans = $question->answers[$ansid];
++            $inputattributes = array();
++            $inputattributes['name'] = $inputname;
++            $inputattributes['value'] = 1;
++            $inputattributes['id'] = $inputname;
++            $isselected = $question->is_choice_selected($response, $value);
++            if ($isselected) {
++                $inputattributes['checked'] = 'checked';
++            }
++            $hidden = '';
++            if (!$options->readonly) {
++                $hidden = html_writer::empty_tag('input', array(
++                    'type' => 'hidden',
++                    'name' => $inputattributes['name'],
++                    'value' => 0,
++                ));
++            }
++            $cblabel = $question->make_html_inline($question->format_text(
++                                                       $ans->answer, $ans->answerformat,
++                                                       $qa, 'question', 'answer', $ansid));
++
++            $cblabeltag = html_writer::tag('label', $cblabel, array('for' => $inputattributes['id']));
++
++            $checkboxes[] = $hidden . html_writer::empty_tag('input', $inputattributes + $commonattributes) . $cblabeltag;
++
++            $class = 'r' . ($value % 2);
++            if ($options->correctness && $isselected) {
++                $iscbcorrect = ($ans->fraction > 0) ? 1 : 0;
++                $feedbackimg[] = $this->feedback_image($iscbcorrect);
++                $class .= ' ' . $this->feedback_class($iscbcorrect);
++            } else {
++                $feedbackimg[] = '';
++            }
++            $classes[] = $class;
++        }
++
++        $cbhtml = '';
++
++        if ('h' === $subq->get_layout()) {
++            $inputwraptag = 'span';
++        } else {
++            $inputwraptag = 'div';
++        }
++
++        foreach ($checkboxes as $key => $checkbox) {
++            $cbhtml .= html_writer::tag($inputwraptag, $checkbox . ' ' . $feedbackimg[$key],
++                                        array('class' => $classes[$key])) . "\n";
++        }
++
++        $result = html_writer::tag($inputwraptag, $cbhtml, array('class' => 'answer'));
++
++        return $result;
++    }
++}
+diff --git a/question/type/oumultiresponse/db/install.xml b/question/type/oumultiresponse/db/install.xml
+new file mode 100755
+index 0000000..ceaf431
+--- /dev/null
++++ b/question/type/oumultiresponse/db/install.xml
+@@ -0,0 +1,27 @@
++<?xml version="1.0" encoding="UTF-8" ?>
++<XMLDB PATH="question/type/oumultiresponse/db" VERSION="20080121" COMMENT="XMLDB file for Moodle question/type/oumultiresponse"
++    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
++    xsi:noNamespaceSchemaLocation="../../../../lib/xmldb/xmldb.xsd"
++>
++  <TABLES>
++    <TABLE NAME="question_oumultiresponse" COMMENT="Options for ou multiple response questions">
++      <FIELDS>
++        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="true" SEQUENCE="true" NEXT="questionid"/>
++        <FIELD NAME="questionid" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="true" DEFAULT="0" SEQUENCE="false" PREVIOUS="id" NEXT="answernumbering"/>
++        <FIELD NAME="answernumbering" TYPE="char" LENGTH="10" NOTNULL="true" DEFAULT="abc" SEQUENCE="false" COMMENT="Indicates how and whether the choices should be numbered." PREVIOUS="questionid" NEXT="shuffleanswers"/>
++        <FIELD NAME="shuffleanswers" TYPE="int" LENGTH="4" NOTNULL="true" UNSIGNED="true" DEFAULT="1" SEQUENCE="false" PREVIOUS="answernumbering" NEXT="correctfeedback"/>
++        <FIELD NAME="correctfeedback" TYPE="text" LENGTH="small" NOTNULL="true" SEQUENCE="false" COMMENT="Feedback shown for any correct response." PREVIOUS="shuffleanswers" NEXT="correctfeedbackformat"/>
++        <FIELD NAME="correctfeedbackformat" TYPE="int" LENGTH="2" NOTNULL="true" UNSIGNED="false" DEFAULT="0" SEQUENCE="false" PREVIOUS="correctfeedback" NEXT="partiallycorrectfeedback"/>
++        <FIELD NAME="partiallycorrectfeedback" TYPE="text" LENGTH="small" NOTNULL="true" SEQUENCE="false" COMMENT="Feedback shown for any partially correct response." PREVIOUS="correctfeedbackformat" NEXT="partiallycorrectfeedbackformat"/>
++        <FIELD NAME="partiallycorrectfeedbackformat" TYPE="int" LENGTH="2" NOTNULL="true" UNSIGNED="false" DEFAULT="0" SEQUENCE="false" PREVIOUS="partiallycorrectfeedback" NEXT="incorrectfeedback"/>
++        <FIELD NAME="incorrectfeedback" TYPE="text" LENGTH="small" NOTNULL="true" SEQUENCE="false" COMMENT="Feedback shown for any incorrect response." PREVIOUS="partiallycorrectfeedbackformat" NEXT="incorrectfeedbackformat"/>
++        <FIELD NAME="incorrectfeedbackformat" TYPE="int" LENGTH="2" NOTNULL="true" UNSIGNED="false" DEFAULT="0" SEQUENCE="false" PREVIOUS="incorrectfeedback" NEXT="shownumcorrect"/>
++        <FIELD NAME="shownumcorrect" TYPE="int" LENGTH="2" NOTNULL="true" UNSIGNED="true" DEFAULT="0" SEQUENCE="false" PREVIOUS="incorrectfeedbackformat"/>
++      </FIELDS>
++      <KEYS>
++        <KEY NAME="primary" TYPE="primary" FIELDS="id" NEXT="questionid"/>
++        <KEY NAME="questionid" TYPE="foreign" FIELDS="questionid" REFTABLE="question" REFFIELDS="id" PREVIOUS="primary"/>
++      </KEYS>
++    </TABLE>
++  </TABLES>
++</XMLDB>
+diff --git a/question/type/oumultiresponse/edit_oumultiresponse_form.php b/question/type/oumultiresponse/edit_oumultiresponse_form.php
+new file mode 100755
+index 0000000..ef8000e
+--- /dev/null
++++ b/question/type/oumultiresponse/edit_oumultiresponse_form.php
+@@ -0,0 +1,164 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++/**
++ * Editing form for the OU multiple response question type class.
++ *
++ * @package    qtype_oumultiresponse
++ * @copyright  2008 The Open University
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++
++defined('MOODLE_INTERNAL') || die();
++
++
++/**
++ * Editing form for the oumultiresponse question type.
++ *
++ * @copyright  2008 The Open University
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++class qtype_oumultiresponse_edit_form extends question_edit_form {
++
++    protected function definition_inner($mform) {
++        $mform->addElement('advcheckbox', 'shuffleanswers',
++                get_string('shuffleanswers', 'qtype_multichoice'), null, null, array(0, 1));
++        $mform->addHelpButton('shuffleanswers', 'shuffleanswers', 'qtype_multichoice');
++        $mform->setDefault('shuffleanswers', 1);
++
++        $mform->addElement('select', 'answernumbering',
++                get_string('answernumbering', 'qtype_multichoice'),
++                qtype_multichoice::get_numbering_styles());
++        $mform->setDefault('answernumbering', 'abc');
++
++        $this->add_per_answer_fields($mform, get_string('choiceno', 'qtype_multichoice', '{no}'),
++                null, max(5, QUESTION_NUMANS_START));
++
++        $this->add_combined_feedback_fields(true);
++
++        $this->add_interactive_settings(true, true);
++    }
++
++    protected function get_per_answer_fields($mform, $label, $gradeoptions,
++            &$repeatedoptions, &$answersoption) {
++        $repeated = array();
++        $repeated[] = $mform->createElement('editor', 'answer',
++                $label, array('rows' => 1), $this->editoroptions);
++        $repeated[] = $mform->createElement('checkbox', 'correctanswer',
++                get_string('correctanswer', 'qtype_oumultiresponse'));
++        $repeated[] = $mform->createElement('editor', 'feedback',
++                get_string('feedback', 'question'), array('rows' => 1), $this->editoroptions);
++
++        // These are returned by arguments passed by reference.
++        $repeatedoptions['answer']['type'] = PARAM_RAW;
++        $answersoption = 'answers';
++
++        return $repeated;
++    }
++
++    protected function get_hint_fields($withclearwrong = false, $withshownumpartscorrect = false) {
++        list($repeated, $repeatedoptions) =
++                parent::get_hint_fields($withclearwrong, $withshownumpartscorrect);
++
++        // Add the new option the the last group in repeat if there is one, otherwise
++        // as a new element.
++        $lastgroup = null;
++        foreach ($repeated as $element) {
++            if ($element->getType() == 'group') {
++                $lastgroup = $element;
++            }
++        }
++
++        $showchoicefeedback = $this->_form->createElement('advcheckbox', 'hintshowchoicefeedback', '',
++                get_string('showeachanswerfeedback', 'qtype_oumultiresponse'));
++        if ($lastgroup) {
++            $lastgroup->_elements[] = $showchoicefeedback;
++        } else {
++            $repeated[] = $showchoicefeedback;
++        }
++
++        return array($repeated, $repeatedoptions);
++    }
++
++    protected function data_preprocessing($question) {
++        $question = parent::data_preprocessing($question);
++        $question = $this->data_preprocessing_answers($question, true);
++        $question = $this->data_preprocessing_combined_feedback($question, true);
++        $question = $this->data_preprocessing_hints($question, true, true);
++
++        if (!empty($question->options->answers)) {
++            $key = 0;
++            foreach ($question->options->answers as $answer) {
++                $question->correctanswer[$key] = $answer->fraction > 0;
++                $key++;
++            }
++        }
++
++        if (!empty($question->hints)) {
++            $key = 0;
++            foreach ($question->hints as $hint) {
++                $question->hintshowchoicefeedback[$key] = !empty($hint->options);
++                $key += 1;
++            }
++        }
++
++        if (!empty($question->options)) {
++            $question->shuffleanswers =  $question->options->shuffleanswers;
++            $question->answernumbering =  $question->options->answernumbering;
++        }
++
++        return $question;
++    }
++
++    public function validation($data, $files) {
++        $errors = parent::validation($data, $files);
++
++        $answers = $data['answer'];
++        $answercount = 0;
++        $numberofcorrectanswers = 0;
++        foreach ($answers as $key => $answer) {
++            $trimmedanswer = trim($answer['text']);
++            if (empty($trimmedanswer)) {
++                continue;
++            }
++
++            $answercount++;
++            if (!empty($data['correctanswer'][$key])) {
++                $numberofcorrectanswers++;
++            }
++        }
++
++        // Perform sanity checks on number of correct answers.
++        if ($numberofcorrectanswers == 0) {
++            $errors['answer[0]'] = get_string('notenoughcorrectanswers', 'qtype_oumultiresponse');
++        }
++
++        // Perform sanity checks on number of answers.
++        if ($answercount == 0) {
++            $errors['answer[0]'] = get_string('notenoughanswers', 'qtype_multichoice', 2);
++            $errors['answer[1]'] = get_string('notenoughanswers', 'qtype_multichoice', 2);
++        } else if ($answercount == 1) {
++            $errors['answer[1]'] = get_string('notenoughanswers', 'qtype_multichoice', 2);
++        }
++
++        return $errors;
++    }
++
++    public function qtype() {
++        return 'oumultiresponse';
++    }
++}
+diff --git a/question/type/oumultiresponse/internaldoc/testcase.txt b/question/type/oumultiresponse/internaldoc/testcase.txt
+new file mode 100755
+index 0000000..c0edb82
+--- /dev/null
++++ b/question/type/oumultiresponse/internaldoc/testcase.txt
+@@ -0,0 +1,28 @@
++1. Go to the question bank in any course, and create a new OU multiresponse question.
++
++2. Question text: "Which of the following are vowels?";
++   No nubmering;
++   Choices a, b, c, d, e and add some feedback to each;
++   Penalty 25%;
++   3 hints, the first with Show num correct, second with show correct and clear wrong;
++       third with all three options on.
++
++3. Save changes.
++
++4. Preview the question in deferred feedback mode. Try a range of responses including
++   Correct, partially correct and wrong.
++
++5. Preview in Interactive mode, marked out of 8. Answer:
++   a, b, c, d, e - should say you have selected too many options.
++   a, b - "you have selected one" and will clear b on Try agian.
++   a, d - "you have selected one" and per-choice feedback shown. Will clear d on Try agian.
++   a, e - correct. Feedback shown. 4 marks.
++
++6. Edit the question. Make some changes. Save. Re-edit and verify that your changes stuck.
++
++7. Export as Moodle XML. Import the file into a new course. verify all settings
++   are transferred accurately.
++
++8. Backup the course. Restore to a new course. Verify all data is copied accurately.
++
++9. Test some aspects of the editing form validation. (E.g. no correct choices.)
+diff --git a/question/type/oumultiresponse/lang/en/qtype_oumultiresponse.php b/question/type/oumultiresponse/lang/en/qtype_oumultiresponse.php
+new file mode 100755
+index 0000000..9e4e7e6
+--- /dev/null
++++ b/question/type/oumultiresponse/lang/en/qtype_oumultiresponse.php
+@@ -0,0 +1,39 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++/**
++ * OU multiple response question type language strings.
++ *
++ * @package    qtype_oumultiresponse
++ * @copyright  2008 The Open University
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++$string['choices'] = 'Available choices';
++$string['combinedcontrolnameoumultiresponse'] = 'check box group';
++$string['correctanswer'] = 'Correct';
++$string['err_correctanswerblank'] = 'You have marked this choice as correct but it is blank!';
++$string['err_nonecorrect'] = 'You have not marked any choices as correct.';
++$string['err_youneedmorechoices'] = 'You need to enter two or more choices.';
++$string['notenoughcorrectanswers'] = 'You must select at least one correct choice';
++$string['pluginname'] = 'OU multiple response';
++$string['pluginname_help'] = 'A multiple-choice, multiple-response question type with particular scoring rules.';
++$string['pluginname_link'] = 'question/type/oumultiresponse';
++$string['pluginnameadding'] = 'Adding an OU multiple response question';
++$string['pluginnameediting'] = 'Editing an OU multiple response question';
++$string['pluginnamesummary'] = 'A multiple-choice, multiple-response question type with particular scoring rules.';
++$string['toomanyoptions'] ='You have selected too many options.';
++$string['showeachanswerfeedback'] = 'Show the feedback for the selected responses.';
+diff --git a/question/type/oumultiresponse/lib.php b/question/type/oumultiresponse/lib.php
+new file mode 100755
+index 0000000..4a41d46
+--- /dev/null
++++ b/question/type/oumultiresponse/lib.php
+@@ -0,0 +1,35 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++/**
++ * Serve question type files.
++ *
++ * @package   qtype_oumultiresponse
++ * @copyright 2012 The Open University
++ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++
++defined('MOODLE_INTERNAL') || die();
++
++/**
++ * Checks file access for oumultiresponse questions.
++ */
++function qtype_oumultiresponse_pluginfile($course, $cm, $context, $filearea, $args, $forcedownload, array $options = array()) {
++    global $CFG;
++    require_once($CFG->libdir . '/questionlib.php');
++    question_pluginfile($course, $context, 'qtype_oumultiresponse', $filearea, $args, $forcedownload, $options);
++}
+diff --git a/question/type/oumultiresponse/pix/icon.png b/question/type/oumultiresponse/pix/icon.png
+new file mode 100755
+index 0000000000000000000000000000000000000000..9d2de25317fbbf51018d7ab6374231f1a3513c2d
+GIT binary patch
+literal 1144
+zcmaJ>TWHi+7*1QzS{)o%(6-`kh=K?^xy(#wOtzzBCh2y-Dc$K*N5M;)oOVJ@PBuB?
+zq(yXfYsEzu*Im|qP_|y6`rrjbMQzm=TT}$8P;uQsL_rt!hC+SlL-(Z4R3Ew~B<Gx;
+z@B9Dnza;xxTfX$w)YlLM;Y&74X}tQqr@9iq5B-pf;H3`9S=0tQQ9-c*A!@J#kV!-7
+z0%@RVJzw7ejRa9e>X|Icrq&87G-$=c(5_)&HbFG5aV<sd28iqcUAh^g{<(gWB6TfB
+zt#3%NDJubTdULN0+Im|uYHzp7Yt)+6WTPu!2L?b2=^EQiM{r}*v|j=5Ju^d*(-71h
+zquz<irdr7av;o;bvjLTjuw;azxllM7jebrBS&n7cAj1U%TvP}J1(qdC7lotQTBnef
+zno6<oDMsZGvIK@H6bf`9L_@oa;dq|+d<265j0iYACQ{sh=`1UIkbtAwx`lLTlAcGU
+z1LjeT!b;zzU|6ZtjAPR&6$+P(aTSZ<XqGVyFRy8|gVNx=j9Jl6rpE$I8aOa-tGFMX
+z%gSV2yN?I*fLM(nK{amx6D6e>g)OwEYXT?95-WwnvKWtWoXoAlHy?^ip-3nik$Abx
+zO_~l;Ocj*5`g?BZqg)|j0|h}l1L3xE_gZrhK_>?-GSSvRuGdWs796jzC7r<5w*#%o
+zh6XuZ89|>VI?u04G|7Bi7Dd@p9#6<YndjtqQ&bGbBVnq<)n>`M#7+D!m%(BfudN@n
+zxopC-<85b#79VED9+-I6Z9LTCC3PeIApTBDV#fWgFI}vYSpU$edB^8&{I{j5<~W}p
+zs8|>l&D!zJ^wZ+%Kd)Sz`tji7x5e7$!~1p?E322f)n_M8{L;_M>B$?+z1J)EqD?Q4
+zemn8&SlD+|{%Y;RzU`yhoUw3z(Er`Bmpz*vy=e?huFO4IRQKS?<>Y}8c0qmp>-o)d
+zPn=wroilXu@rCo1Y?Uw9ZL|)o_zaGIp=}r`{tR|koL(_7e{4KI%zkrdV(JAIxPEu!
+z)t-@x9nHIT`TPGku%-Ug)x*E<KGOfmkxxgtA#`~8fXFbuC1={(W%~ZjzRqj0!Dowa
+fC#U@P{|ek9B0p^%pL`>I@BIssa*K2>zID%k5A24+
+
+literal 0
+HcmV?d00001
+
+diff --git a/question/type/oumultiresponse/question.php b/question/type/oumultiresponse/question.php
+new file mode 100755
+index 0000000..167d174
+--- /dev/null
++++ b/question/type/oumultiresponse/question.php
+@@ -0,0 +1,174 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++/**
++ * OU multiple response question definition class.
++ *
++ * @package    qtype_oumultiresponse
++ * @copyright  2010 The Open University
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++
++defined('MOODLE_INTERNAL') || die();
++
++require_once($CFG->dirroot . '/question/type/multichoice/question.php');
++
++
++/**
++ * Represents an OU multiple response question.
++ *
++ * @copyright  2010 The Open University
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++class qtype_oumultiresponse_question extends qtype_multichoice_multi_question
++        implements question_automatically_gradable_with_countback {
++
++    public function make_behaviour(question_attempt $qa, $preferredbehaviour) {
++        if ($preferredbehaviour == 'interactive') {
++            return question_engine::make_behaviour(
++                    'interactivecountback', $qa, $preferredbehaviour);
++        }
++        return question_engine::make_archetypal_behaviour($preferredbehaviour, $qa);
++    }
++
++    public function classify_response(array $response) {
++        $choices = parent::classify_response($response);
++        $numright = $this->get_num_correct_choices();
++        foreach ($choices as $choice) {
++            $choice->fraction /= $numright;
++        }
++        return $choices;
++    }
++
++    public function grade_response(array $response) {
++        list($numright, $total) = $this->get_num_parts_right($response);
++        $numwrong = $this->get_num_selected_choices($response) - $numright;
++        $numcorrect = $this->get_num_correct_choices();
++
++        $fraction = max(min($numright, $numcorrect - $numwrong), 0) / $numcorrect;
++
++        $state = question_state::graded_state_for_fraction($fraction);
++        if ($state == question_state::$gradedwrong && $numright > 0) {
++            $state = question_state::$gradedpartial;
++        }
++
++        return array($fraction, $state);
++    }
++
++    protected function disable_hint_settings_when_too_many_selected(
++            question_hint_with_parts $hint) {
++        parent::disable_hint_settings_when_too_many_selected($hint);
++        $hint->showchoicefeedback = false;
++    }
++
++    public function compute_final_grade($responses, $totaltries) {
++        $responsehistories = array();
++        foreach ($this->order as $key => $ansid) {
++            $fieldname = $this->field($key);
++            $responsehistories[$ansid] = '';
++            foreach ($responses as $response) {
++                if (!array_key_exists($fieldname, $response) || !$response[$fieldname]) {
++                    $responsehistories[$ansid] .= '0';
++                } else {
++                    $responsehistories[$ansid] .= '1';
++                }
++            }
++        }
++
++        return self::grade_computation($responsehistories, $this->answers,
++                $this->penalty, $totaltries);
++    }
++
++    /**
++     * Implement the scoring rules.
++     *
++     * @param array $responsehistory an array $answerid -> string of 1s and 0s.
++     *      The 1s and 0s are the history of which tries this answer was selected
++     *      on, so 011 means not selected on the first try, then selected on the
++     *      second and third tries. All the strings must be the same length.
++     * @param array $answers $question->options->answers, that is an array
++     *      $answerid => $answer, where $answer->fraction is 0 or 1. The key fields are
++     * @return float the score.
++     */
++    public static function grade_computation($responsehistory, $answers,
++            $penalty, $questionnumtries) {
++        // First we reverse the strings to get the most recent responses to the start, then
++        // distinguish right and wrong by replacing 1 with 2 for right answers.
++        $workspace = array();
++        $numright = 0;
++        foreach ($responsehistory as $id => $string) {
++            $workspace[$id] = strrev($string);
++            if (!question_state::graded_state_for_fraction(
++                    $answers[$id]->fraction)->is_incorrect()) {
++                $workspace[$id] = str_replace('1', '2', $workspace[$id]);
++                $numright++;
++            }
++        }
++
++        // Now we sort which should put answers more likely to help the candidate near the bottom of
++        // workspace.
++        sort($workspace);
++
++        // Now, for each try we check to see if too many options were selected. If so, we
++        // unselect correct answers in that, starting from the top of workspace - the ones that are
++        // likely to turn out least favourable in the end.
++        $actualnumtries = strlen(reset($workspace));
++        for ($try = 0; $try < $actualnumtries; $try++) {
++            $numselected = 0;
++            foreach ($workspace as $string) {
++                if (substr($string, $try, 1) != '0') {
++                    $numselected++;
++                }
++            }
++            if ($numselected > $numright) {
++                $numtoclear = $numselected - $numright;
++                $newworkspace = array();
++                foreach ($workspace as $string) {
++                    if (substr($string, $try, 1) == '2' && $numtoclear > 0) {
++                        $string = self::replace_char_at($string, $try, '0');
++                        $numtoclear--;
++                    }
++                    $newworkspace[] = $string;
++                }
++                $workspace = $newworkspace;
++            }
++        }
++
++        // Now convert each string into a score. The score depends on the number of 2s at the start
++        // of the string. Add extra 2s if the student got it right in fewer than the maximum
++        // permitted number of tries.
++        $triesnotused = $questionnumtries - $actualnumtries;
++        foreach ($workspace as $string) {
++            // Turn any remaining 1s to 0s for convinience.
++            $string = str_replace('1', '0', $string);
++            $num2s = strpos($string . '0', '0');
++            if ($num2s > 0) {
++                $num2s += $triesnotused;
++                $scores[] = max(0, 1 / $numright * (1 - $penalty * ($questionnumtries - $num2s)));
++            } else {
++                $scores[] = 0;
++            }
++        }
++
++        // Finally, sum the scores.
++        return array_sum($scores);
++    }
++
++    public static function replace_char_at($string, $pos, $newchar) {
++        return substr($string, 0, $pos) . $newchar . substr($string, $pos + 1);
++    }
++}
+diff --git a/question/type/oumultiresponse/questiontype.php b/question/type/oumultiresponse/questiontype.php
+new file mode 100755
+index 0000000..7d31ce5
+--- /dev/null
++++ b/question/type/oumultiresponse/questiontype.php
+@@ -0,0 +1,396 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++/**
++ * OU multiple response question type class.
++ *
++ * @package    qtype_oumultiresponse
++ * @copyright  2008 The Open University
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++
++defined('MOODLE_INTERNAL') || die();
++
++require_once($CFG->dirroot . '/question/engine/lib.php');
++require_once($CFG->dirroot . '/question/type/multichoice/questiontype.php');
++require_once($CFG->dirroot . '/question/format/xml/format.php');
++
++
++/**
++ * This questions type is like the standard multiplechoice question type, but
++ * with these differences:
++ *
++ * 1. The focus is just on the multiple response case.
++ *
++ * 2. The correct answer is just indicated on the editing form by a indicating
++ * which choices are correct. There is no complex but flexible scoring system.
++ *
++ * @copyright  2008 The Open University
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++class qtype_oumultiresponse extends question_type {
++    public function has_html_answers() {
++        return true;
++    }
++
++    public function requires_qtypes() {
++        return array('multichoice');
++    }
++
++    public function get_question_options($question) {
++        global $DB;
++        $question->options = $DB->get_record('question_oumultiresponse',
++                array('questionid' => $question->id), '*', MUST_EXIST);
++        parent::get_question_options($question);
++    }
++
++    public function save_question_options($question) {
++        global $DB;
++        $context = $question->context;
++        $result = new stdClass();
++
++        $oldanswers = $DB->get_records('question_answers',
++                array('question' => $question->id), 'id ASC');
++
++        // The following hack to checks that at least two answers exist.
++        $answercount = 0;
++        foreach ($question->answer as $key => $answer) {
++            if ($answer != '') {
++                $answercount++;
++            }
++        }
++        if ($answercount < 2) { // Check there are at lest 2 answers for multiple choice.
++            $result->notice = get_string('notenoughanswers', 'qtype_multichoice', '2');
++            return $result;
++        }
++
++        // Insert all the new answers.
++        $answers = array();
++        foreach ($question->answer as $key => $answerdata) {
++            if (trim($answerdata['text']) == '') {
++                continue;
++            }
++
++            // Update an existing answer if possible.
++            $answer = array_shift($oldanswers);
++            if (!$answer) {
++                $answer = new stdClass();
++                $answer->question = $question->id;
++                $answer->answer = '';
++                $answer->feedback = '';
++                $answer->id = $DB->insert_record('question_answers', $answer);
++            }
++
++            $answer->answer = $this->import_or_save_files($answerdata,
++                    $context, 'question', 'answer', $answer->id);
++            $answer->answerformat = $answerdata['format'];
++            $answer->fraction = !empty($question->correctanswer[$key]);
++            $answer->feedback = $this->import_or_save_files($question->feedback[$key],
++                    $context, 'question', 'answerfeedback', $answer->id);
++            $answer->feedbackformat = $question->feedback[$key]['format'];
++
++            $DB->update_record('question_answers', $answer);
++            $answers[] = $answer->id;
++        }
++
++        // Delete any left over old answer records.
++        $fs = get_file_storage();
++        foreach ($oldanswers as $oldanswer) {
++            $fs->delete_area_files($context->id, 'question', 'answerfeedback', $oldanswer->id);
++            $DB->delete_records('question_answers', array('id' => $oldanswer->id));
++        }
++
++        $options = $DB->get_record('question_oumultiresponse',
++                array('questionid' => $question->id));
++        if (!$options) {
++            $options = new stdClass();
++            $options->questionid = $question->id;
++            $options->correctfeedback = '';
++            $options->partiallycorrectfeedback = '';
++            $options->incorrectfeedback = '';
++            $options->id = $DB->insert_record('question_oumultiresponse', $options);
++        }
++
++        $options->answernumbering = $question->answernumbering;
++        $options->shuffleanswers = $question->shuffleanswers;
++        $options = $this->save_combined_feedback_helper($options, $question, $context, true);
++        $DB->update_record('question_oumultiresponse', $options);
++
++        $this->save_hints($question, true);
++    }
++
++    public function save_hints($formdata, $withparts = false) {
++        global $DB;
++        $context = $formdata->context;
++
++        $oldhints = $DB->get_records('question_hints',
++                array('questionid' => $formdata->id), 'id ASC');
++
++        if (!empty($formdata->hint)) {
++            $numhints = max(array_keys($formdata->hint)) + 1;
++        } else {
++            $numhints = 0;
++        }
++
++        if ($withparts) {
++            if (!empty($formdata->hintclearwrong)) {
++                $numclears = max(array_keys($formdata->hintclearwrong)) + 1;
++            } else {
++                $numclears = 0;
++            }
++            if (!empty($formdata->hintshownumcorrect)) {
++                $numshows = max(array_keys($formdata->hintshownumcorrect)) + 1;
++            } else {
++                $numshows = 0;
++            }
++            $numhints = max($numhints, $numclears, $numshows);
++        }
++
++        if (!empty($formdata->hintshowchoicefeedback)) {
++            $numshowfeedbacks = max(array_keys($formdata->hintshowchoicefeedback)) + 1;
++        } else {
++            $numshowfeedbacks = 0;
++        }
++        $numhints = max($numhints, $numshowfeedbacks);
++
++        for ($i = 0; $i < $numhints; $i += 1) {
++            if (html_is_blank($formdata->hint[$i]['text'])) {
++                $formdata->hint[$i]['text'] = '';
++            }
++
++            if ($withparts) {
++                $clearwrong = !empty($formdata->hintclearwrong[$i]);
++                $shownumcorrect = !empty($formdata->hintshownumcorrect[$i]);
++            }
++
++            $showchoicefeedback = !empty($formdata->hintshowchoicefeedback[$i]);
++
++            if (empty($formdata->hint[$i]['text']) && empty($clearwrong) &&
++                    empty($shownumcorrect) && empty($showchoicefeedback)) {
++                continue;
++            }
++
++            // Update an existing hint if possible.
++            $hint = array_shift($oldhints);
++            if (!$hint) {
++                $hint = new stdClass();
++                $hint->questionid = $formdata->id;
++                $hint->hint = '';
++                $hint->id = $DB->insert_record('question_hints', $hint);
++            }
++
++            $hint->hint = $this->import_or_save_files($formdata->hint[$i],
++                    $context, 'question', 'hint', $hint->id);
++            $hint->hintformat = $formdata->hint[$i]['format'];
++            if ($withparts) {
++                $hint->clearwrong = $clearwrong;
++                $hint->shownumcorrect = $shownumcorrect;
++            }
++            $hint->options = $showchoicefeedback;
++            $DB->update_record('question_hints', $hint);
++        }
++
++        // Delete any remaining old hints.
++        $fs = get_file_storage();
++        foreach ($oldhints as $oldhint) {
++            $fs->delete_area_files($context->id, 'question', 'hint', $oldhint->id);
++            $DB->delete_records('question_hints', array('id' => $oldhint->id));
++        }
++    }
++
++    protected function make_hint($hint) {
++        return qtype_oumultiresponse_hint::load_from_record($hint);
++    }
++
++    public function make_answer($answer) {
++        // Overridden just so we can make it public for use by question.php.
++        return parent::make_answer($answer);
++    }
++
++    protected function initialise_question_instance(question_definition $question, $questiondata) {
++        parent::initialise_question_instance($question, $questiondata);
++        $question->shuffleanswers = $questiondata->options->shuffleanswers;
++        $question->answernumbering = $questiondata->options->answernumbering;
++        $this->initialise_combined_feedback($question, $questiondata, true);
++        $this->initialise_question_answers($question, $questiondata, false);
++    }
++
++    public function delete_question($questionid, $contextid) {
++        global $DB;
++        $DB->delete_records('question_oumultiresponse', array('questionid' => $questionid));
++        return parent::delete_question($questionid, $contextid);
++    }
++
++    protected function get_num_correct_choices($questiondata) {
++        $numright = 0;
++        foreach ($questiondata->options->answers as $answer) {
++            if (!question_state::graded_state_for_fraction($answer->fraction)->is_incorrect()) {
++                $numright += 1;
++            }
++        }
++        return $numright;
++    }
++
++    public function get_random_guess_score($questiondata) {
++        // We compute the randome guess score here on the assumption we are using
++        // the deferred feedback behaviour, and the question text tells the
++        // student how many of the responses are correct.
++        // Amazingly, the forumla for this works out to be
++        // # correct choices / total # choices in all cases.
++        return $this->get_num_correct_choices($questiondata) /
++                count($questiondata->options->answers);
++    }
++
++    public function get_possible_responses($questiondata) {
++        $numright = $this->get_num_correct_choices($questiondata);
++        $parts = array();
++
++        foreach ($questiondata->options->answers as $aid => $answer) {
++            $parts[$aid] = array($aid =>
++                    new question_possible_response($answer->answer, $answer->fraction / $numright));
++        }
++
++        return $parts;
++    }
++
++    public function import_from_xml($data, $question, qformat_xml $format, $extra=null) {
++        if (!isset($data['@']['type']) || $data['@']['type'] != 'oumultiresponse') {
++            return false;
++        }
++
++        $question = $format->import_headers($data);
++        $question->qtype = 'oumultiresponse';
++
++        $question->shuffleanswers = $format->trans_single(
++                $format->getpath($data, array('#', 'shuffleanswers', 0, '#'), 1));
++        $question->answernumbering = $format->getpath($data,
++                array('#', 'answernumbering', 0, '#'), 'abc');
++
++        $format->import_combined_feedback($question, $data, true);
++
++        // Run through the answers.
++        $answers = $data['#']['answer'];
++        foreach ($answers as $answer) {
++            $ans = $format->import_answer($answer, true,
++                    $format->get_format($question->questiontextformat));
++            $question->answer[] = $ans->answer;
++            $question->correctanswer[] = !empty($ans->fraction);
++            $question->feedback[] = $ans->feedback;
++
++            // Backwards compatibility.
++            if (array_key_exists('correctanswer', $answer['#'])) {
++                $keys = array_keys($question->correctanswer);
++                $question->correctanswer[end($keys)] = $format->getpath($answer,
++                        array('#', 'correctanswer', 0, '#'), 0);
++            }
++        }
++
++        $format->import_hints($question, $data, true, true,
++                $format->get_format($question->questiontextformat));
++
++        // Get extra choicefeedback setting from each hint.
++        if (!empty($question->hintoptions)) {
++            foreach ($question->hintoptions as $key => $options) {
++                $question->hintshowchoicefeedback[$key] = !empty($options);
++            }
++        }
++
++        return $question;
++    }
++
++    public function export_to_xml($question, qformat_xml $format, $extra = null) {
++        $output = '';
++
++        $output .= "    <shuffleanswers>" . $format->get_single(
++                $question->options->shuffleanswers) . "</shuffleanswers>\n";
++        $output .= "    <answernumbering>{$question->options->answernumbering}</answernumbering>\n";
++
++        $output .= $format->write_combined_feedback($question->options,
++                                                    $question->id,
++                                                    $question->contextid);
++        $output .= $format->write_answers($question->options->answers);
++
++        return $output;
++    }
++
++    public function move_files($questionid, $oldcontextid, $newcontextid) {
++        $fs = get_file_storage();
++
++        parent::move_files($questionid, $oldcontextid, $newcontextid);
++        $this->move_files_in_answers($questionid, $oldcontextid, $newcontextid, true);
++        $this->move_files_in_hints($questionid, $oldcontextid, $newcontextid);
++
++        $fs->move_area_files_to_new_context($oldcontextid,
++                $newcontextid, 'question', 'correctfeedback', $questionid);
++        $fs->move_area_files_to_new_context($oldcontextid,
++                $newcontextid, 'question', 'partiallycorrectfeedback', $questionid);
++        $fs->move_area_files_to_new_context($oldcontextid,
++                $newcontextid, 'question', 'incorrectfeedback', $questionid);
++    }
++
++    protected function delete_files($questionid, $contextid) {
++        $fs = get_file_storage();
++
++        parent::delete_files($questionid, $contextid);
++        $this->delete_files_in_answers($questionid, $contextid, true);
++        $this->delete_files_in_hints($questionid, $contextid);
++        $fs->delete_area_files($contextid, 'question', 'correctfeedback', $questionid);
++        $fs->delete_area_files($contextid, 'question', 'partiallycorrectfeedback', $questionid);
++        $fs->delete_area_files($contextid, 'question', 'incorrectfeedback', $questionid);
++    }
++}
++
++
++/**
++ * An extension of {@link question_hint_with_parts} for oumultirespone questions
++ * with an extra option for whether to show the feedback for each choice.
++ *
++ * @copyright  2010 The Open University
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++class qtype_oumultiresponse_hint extends question_hint_with_parts {
++    /** @var boolean whether to show the feedback for each choice. */
++    public $showchoicefeedback;
++
++    /**
++     * Constructor.
++     * @param string $hint The hint text
++     * @param bool $shownumcorrect whether the number of right parts should be shown
++     * @param bool $clearwrong whether the wrong parts should be reset.
++     * @param bool $showchoicefeedback whether to show the feedback for each choice.
++     */
++    public function __construct($id, $hint, $hintformat, $shownumcorrect,
++            $clearwrong, $showchoicefeedback) {
++        parent::__construct($id, $hint, $hintformat, $shownumcorrect, $clearwrong);
++        $this->showchoicefeedback = $showchoicefeedback;
++    }
++
++    /**
++     * Create a basic hint from a row loaded from the question_hints table in the database.
++     * @param object $row with $row->hint, ->shownumcorrect and ->clearwrong set.
++     * @return question_hint_with_parts
++     */
++    public static function load_from_record($row) {
++        return new qtype_oumultiresponse_hint($row->id, $row->hint, $row->hintformat,
++                $row->shownumcorrect, $row->clearwrong, !empty($row->options));
++    }
++
++    public function adjust_display_options(question_display_options $options) {
++        parent::adjust_display_options($options);
++        $options->suppresschoicefeedback = !$this->showchoicefeedback;
++    }
++}
+diff --git a/question/type/oumultiresponse/styles.css b/question/type/oumultiresponse/styles.css
+new file mode 100755
+index 0000000..b4c69f2
+--- /dev/null
++++ b/question/type/oumultiresponse/styles.css
+@@ -0,0 +1,68 @@
++.que.oumultiresponse .answer .specificfeedback {
++    display: inline;
++    padding: 0 0.7em;
++    background: #FFF3BF;
++}
++.que.oumultiresponse .answer div.r0,
++.que.oumultiresponse .answer div.r1 {
++    padding: 0.3em 0 0.3em 25px;
++    text-indent: -25px;
++}
++.que.oumultiresponse .answer div.r0 label,
++.que.oumultiresponse .answer div.r1 label,
++.que.oumultiresponse .answer div.r0 div.specificfeedback,
++.que.oumultiresponse .answer div.r1 div.specificfeedback {
++    /* In Chrome and IE, the text-indent above is applied to any embedded table
++       cells or <li>s, which screws up the intended layout. This fixes it again. */
++    text-indent: 0;
++}
++.que.oumultiresponse .answer div.r0 input,
++.que.oumultiresponse .answer div.r1 input {
++    margin: 0 5px;
++    padding: 0;
++    width: 15px;
++}
++
++/* Editing form. */
++/* Top */
++body#page-question-type-oumultiresponse div[id^=fitem_id_][id*=answer_],
++body#page-question-type-oumultiresponse div[id^=fitem_id_][id*=hint_] {
++    background: #EEE;
++    margin-top: 0;
++    margin-bottom: 0;
++    padding-bottom: 5px;
++    padding-top: 5px;
++    border: 1px solid #BBB;
++    border-bottom: 0;
++}
++
++body#page-question-type-oumultiresponse div[id^=fitem_id_][id*=_answer_] .fitemtitle,
++body#page-question-type-oumultiresponse div[id^=fitem_id_][id*=hint_] .fitemtitle {
++    font-weight: bold;
++}
++/* Middle */
++body#page-question-type-oumultiresponse div[id^=fitem_id_][id*=correctanswer_] {
++    background: #EEE;
++    margin-bottom: 0;
++    margin-top: 0;
++    padding-bottom: 5px;
++    padding-top: 5px;
++    border: 1px solid #BBB;
++    border-top: 0;
++    border-bottom: 0;
++}
++/* Bottom */
++body#page-question-type-oumultiresponse div[id^=fitem_id_][id*=feedback_],
++body#page-question-type-oumultiresponse div[id^=fgroup_id_][id*=hintoptions_] {
++	background: #EEE;
++    margin-bottom: 2em;
++    margin-top: 0;
++    padding-bottom: 5px;
++    padding-top: 5px;
++    border: 1px solid #BBB;
++    border-top: 0;
++}
++
++body#page-question-type-oumultiresponse div[id^=fitem_id_][id*=penalty] {
++    margin-bottom: 2em;
++}
+diff --git a/question/type/oumultiresponse/tests/behat/add.feature b/question/type/oumultiresponse/tests/behat/add.feature
+new file mode 100755
+index 0000000..5bb3adb
+--- /dev/null
++++ b/question/type/oumultiresponse/tests/behat/add.feature
+@@ -0,0 +1,39 @@
++@ou @ou_vle @qtype @qtype_oumultiresponse
++Feature: Test creating an OU multiple response question
++  As a teacher
++  In order to test my students
++  I need to be able to create an OU multiple response question
++
++  Background:
++    Given the following "users" exist:
++      | username | firstname | lastname | email               |
++      | teacher1 | T1        | Teacher1 | teacher1@moodle.com |
++    And the following "courses" exist:
++      | fullname | shortname | category |
++      | Course 1 | C1        | 0        |
++    And the following "course enrolments" exist:
++      | user     | course | role           |
++      | teacher1 | C1     | editingteacher |
++    And I log in as "teacher1"
++    And I follow "Course 1"
++    And I navigate to "Question bank" node in "Course administration"
++
++  @javascript
++  Scenario: Create an OU multiple response question
++    When I add a "OU multiple response" question filling the form with:
++      | Question name      | OU multiple response 001           |
++      | Question text      | Find the capital cities in Europe. |
++      | General feedback   | Berlin, Paris and London           |
++      | Choice 1           | Tokyo                              |
++      | Choice 2           | Spain                              |
++      | Choice 3           | London                             |
++      | Choice 4           | Barcelona                          |
++      | Choice 5           | Paris                              |
++      | id_correctanswer_0 | 0                                  |
++      | id_correctanswer_1 | 0                                  |
++      | id_correctanswer_2 | 1                                  |
++      | id_correctanswer_3 | 0                                  |
++      | id_correctanswer_4 | 1                                  |
++      | Hint 1             | First hint                         |
++      | Hint 2             | Second hint                        |
++    Then I should see "OU multiple response 001"
+diff --git a/question/type/oumultiresponse/tests/behat/backup_and_restore.feature b/question/type/oumultiresponse/tests/behat/backup_and_restore.feature
+new file mode 100755
+index 0000000..ddfe6b0
+--- /dev/null
++++ b/question/type/oumultiresponse/tests/behat/backup_and_restore.feature
+@@ -0,0 +1,50 @@
++@ou @ou_vle @qtype @qtype_oumultiresponse
++Feature: Test duplicating a quiz containing an OU multiple response question
++  As a teacher
++  In order re-use my courses containing OU multiple response questions
++  I need to be able to backup and restore them
++
++  Background:
++    And the following "courses" exist:
++      | fullname | shortname | category |
++      | Course 1 | C1        | 0        |
++    And the following "question categories" exist:
++      | contextlevel | reference | name           |
++      | Course       | C1        | Test questions |
++    And the following "questions" exist:
++      | questioncategory | qtype           | name                | template    |
++      | Test questions   | oumultiresponse | oumultiresponse 001 | two_of_four |
++    And the following "activities" exist:
++      | activity   | name      | course | idnumber |
++      | quiz       | Test quiz | C1     | quiz1    |
++    And quiz "Test quiz" contains the following questions:
++      | oumultiresponse 001 | 1 |
++    And I log in as "admin"
++    And I am on site homepage
++    And I follow "Course 1"
++
++  @javascript
++  Scenario: Backup and restore a course containing an OU multiple response question
++    When I backup "Course 1" course using this options:
++      | Confirmation | Filename | test_backup.mbz |
++    And I restore "test_backup.mbz" backup into a new course using this options:
++      | Schema | Course name | Course 2 |
++    And I navigate to "Question bank" node in "Course administration"
++    And I click on "Edit" "link" in the "oumultiresponse 001" "table_row"
++    Then the following fields match these values:
++      | Question name                      | oumultiresponse 001                |
++      | Question text                      | Which are the odd numbers?         |
++      | General feedback                   | The odd numbers are One and Three. |
++      | Default mark                       | 1                                  |
++      | Shuffle                            | 0                                  |
++      | Choice 1                           | One                                |
++      | Choice 2                           | Two                                |
++      | Choice 3                           | Three                              |
++      | Choice 4                           | Four                               |
++      | id_correctanswer_0                 | 1                                  |
++      | id_correctanswer_1                 | 0                                  |
++      | id_correctanswer_2                 | 1                                  |
++      | id_correctanswer_3                 | 0                                  |
++      | For any correct response           | Well done!                         |
++      | For any partially correct response | Parts, but only parts, of your response are correct. |
++      | For any incorrect response         | That is not right at all.          |
+diff --git a/question/type/oumultiresponse/tests/behat/edit.feature b/question/type/oumultiresponse/tests/behat/edit.feature
+new file mode 100755
+index 0000000..1862583
+--- /dev/null
++++ b/question/type/oumultiresponse/tests/behat/edit.feature
+@@ -0,0 +1,33 @@
++@ou @ou_vle @qtype @qtype_oumultiresponse
++Feature: Test editing  an OU multiple response question
++  As a teacher
++  In order to be able to update my OU multiple response question
++  I need to edit them
++
++  Background:
++    Given the following "users" exist:
++      | username | firstname | lastname | email                |
++      | teacher1 | T1        | Teacher1 | teacher1@example.com |
++    And the following "courses" exist:
++      | fullname | shortname | category |
++      | Course 1 | C1        | 0        |
++    And the following "course enrolments" exist:
++      | user     | course | role           |
++      | teacher1 | C1     | editingteacher |
++    And the following "question categories" exist:
++      | contextlevel | reference | name           |
++      | Course       | C1        | Test questions |
++    And the following "questions" exist:
++      | questioncategory | qtype           | name                             | template    |
++      | Test questions   | oumultiresponse | OU multiple response for editing | two_of_four |
++    And I log in as "teacher1"
++    And I follow "Course 1"
++    And I navigate to "Question bank" node in "Course administration"
++
++  @javascript
++  Scenario: Edit an OU multiple response question
++    When I click on "Edit" "link" in the "OU multiple response for editing" "table_row"
++    And I set the following fields to these values:
++      | Question name | Edited question name |
++    And I press "id_submitbutton"
++    Then I should see "Edited question name"
+diff --git a/question/type/oumultiresponse/tests/behat/export.feature b/question/type/oumultiresponse/tests/behat/export.feature
+new file mode 100755
+index 0000000..da45dc5
+--- /dev/null
++++ b/question/type/oumultiresponse/tests/behat/export.feature
+@@ -0,0 +1,36 @@
++@ou @ou_vle @qtype @qtype_oumultiresponse
++Feature: Test exporting OU multiple response questions
++  As a teacher
++  In order to be able to reuse my OU multiple response questions
++  I need to export them
++
++  Background:
++    Given the following "users" exist:
++      | username | firstname | lastname | email                |
++      | teacher1 | T1        | Teacher1 | teacher1@example.com |
++    And the following "courses" exist:
++      | fullname | shortname | category |
++      | Course 1 | C1        | 0        |
++    And the following "course enrolments" exist:
++      | user     | course | role           |
++      | teacher1 | C1     | editingteacher |
++    And the following "question categories" exist:
++      | contextlevel | reference | name           |
++      | Course       | C1        | Test questions |
++    And the following "questions" exist:
++      | questioncategory | qtype           | name         | template    |
++      | Test questions   | oumultiresponse | OUM response | two_of_four |
++    And I log in as "teacher1"
++    And I follow "Course 1"
++
++  @javascript
++  Scenario: Export an OU multiple response question
++    When I navigate to "Export" node in "Course administration > Question bank"
++    And I set the field "id_format_xml" to "1"
++    And I press "Export questions to file"
++    Then following "click here" should download between "1700" and "1800" bytes
++    # If the download step is the last in the scenario then we can sometimes run
++    # into the situation where the download page causes a http redirect but behat
++    # has already conducted its reset (generating an error). By putting a logout
++    # step we avoid behat doing the reset until we are off that page.
++    And I log out
+diff --git a/question/type/oumultiresponse/tests/behat/import.feature b/question/type/oumultiresponse/tests/behat/import.feature
+new file mode 100755
+index 0000000..5820bc2
+--- /dev/null
++++ b/question/type/oumultiresponse/tests/behat/import.feature
+@@ -0,0 +1,30 @@
++@ou @ou_vle @qtype @qtype_oumultiresponse
++Feature: Test importing OU multiple response questions
++  As a teacher
++  In order to reuse OU multiple response questions
++  I need to import them
++
++  Background:
++    Given the following "users" exist:
++      | username | firstname | lastname | email                |
++      | teacher1 | T1        | Teacher1 | teacher1@example.com |
++    And the following "courses" exist:
++      | fullname | shortname | category |
++      | Course 1 | C1        | 0        |
++    And the following "course enrolments" exist:
++      | user     | course | role           |
++      | teacher1 | C1     | editingteacher |
++    And I log in as "teacher1"
++    And I follow "Course 1"
++
++  @javascript @_file_upload
++  Scenario: import OU multiple response question.
++    When I navigate to "Import" node in "Course administration > Question bank"
++    And I set the field "id_format_xml" to "1"
++    And I upload "question/type/oumultiresponse/tests/fixtures/testquestion.moodle.xml" file to "Import" filemanager
++    And I press "id_submitbutton"
++    Then I should see "Parsing questions from import file."
++    And I should see "Importing 1 questions from file"
++    And I should see "1. Find the capital cities in Europe."
++    And I press "Continue"
++    And I should see "OU multiple response 001"
+diff --git a/question/type/oumultiresponse/tests/behat/preview.feature b/question/type/oumultiresponse/tests/behat/preview.feature
+new file mode 100755
+index 0000000..af91b7b
+--- /dev/null
++++ b/question/type/oumultiresponse/tests/behat/preview.feature
+@@ -0,0 +1,57 @@
++@ou @ou_vle @qtype @qtype_oumultiresponse
++Feature: Preview an OU multiple response question
++  As a teacher
++  In order to check my OU multiple response questions will work for students
++  I need to preview them
++
++  Background:
++    Given the following "users" exist:
++      | username | firstname | lastname | email               |
++      | teacher1 | T1        | Teacher1 | teacher1@moodle.com |
++    And the following "courses" exist:
++      | fullname | shortname | category |
++      | Course 1 | C1        | 0        |
++    And the following "course enrolments" exist:
++      | user     | course | role           |
++      | teacher1 | C1     | editingteacher |
++    And the following "question categories" exist:
++      | contextlevel | reference | name           |
++      | Course       | C1        | Test questions |
++    And the following "questions" exist:
++      | questioncategory | qtype           | name                | template    |
++      | Test questions   | oumultiresponse | oumultiresponse 001 | two_of_four |
++    Given I log in as "teacher1"
++    And I follow "Course 1"
++    And I navigate to "Question bank" node in "Course administration"
++
++  @javascript
++  Scenario: Preview a question and submit a partially correct response.
++    When I click on "Preview" "link" in the "oumultiresponse 001" "table_row"
++    And I switch to "questionpreview" window
++    And I set the field "How questions behave" to "Immediate feedback"
++    And I press "Start again with these options"
++    And I click on "One" "checkbox"
++    And I click on "Two" "checkbox"
++    And I press "Check"
++    Then I should see "One is odd"
++    And I should see "Two is even"
++    And I should see "Mark 0.50 out of 1.00"
++    And I should see "Parts, but only parts, of your response are correct."
++    And I switch to the main window
++
++  @javascript
++  Scenario: Preview a question and submit a correct response.
++    When I click on "Preview" "link" in the "oumultiresponse 001" "table_row"
++    And I switch to "questionpreview" window
++    And I set the field "How questions behave" to "Immediate feedback"
++    And I press "Start again with these options"
++    And I click on "One" "checkbox"
++    And I click on "Three" "checkbox"
++    And I press "Check"
++    Then I should see "One is odd"
++    And I should see "Three is odd"
++    And I should see "Mark 1.00 out of 1.00"
++    And I should see "Well done!"
++    And I should see "The odd numbers are One and Three."
++    And I should see "The correct answer is: One, Three"
++    And I switch to the main window
+diff --git a/question/type/oumultiresponse/tests/fixtures/testquestion.moodle.xml b/question/type/oumultiresponse/tests/fixtures/testquestion.moodle.xml
+new file mode 100755
+index 0000000..7c21837
+--- /dev/null
++++ b/question/type/oumultiresponse/tests/fixtures/testquestion.moodle.xml
+@@ -0,0 +1,75 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<quiz>
++<!-- question: 0  -->
++  <question type="category">
++    <category>
++        <text>$course$/Default for C1</text>
++
++    </category>
++  </question>
++
++<!-- question: 234000  -->
++  <question type="oumultiresponse">
++    <name>
++      <text>OU multiple response 001</text>
++    </name>
++    <questiontext format="html">
++      <text>Find the capital cities in Europe.</text>
++    </questiontext>
++    <generalfeedback format="html">
++      <text>Berlin, Paris and London</text>
++    </generalfeedback>
++    <defaultgrade>1.0000000</defaultgrade>
++    <penalty>0.3333333</penalty>
++    <hidden>0</hidden>
++    <shuffleanswers>true</shuffleanswers>
++    <answernumbering>abc</answernumbering>
++    <correctfeedback format="html">
++      <text>Your answer is correct.</text>
++    </correctfeedback>
++    <partiallycorrectfeedback format="html">
++      <text>Your answer is partially correct.</text>
++    </partiallycorrectfeedback>
++    <incorrectfeedback format="html">
++      <text>Your answer is incorrect.</text>
++    </incorrectfeedback>
++    <shownumcorrect/>
++    <answer fraction="0" format="html">
++      <text>Tokyo</text>
++      <feedback format="html">
++        <text></text>
++      </feedback>
++    </answer>
++    <answer fraction="0" format="html">
++      <text>Spain</text>
++      <feedback format="html">
++        <text></text>
++      </feedback>
++    </answer>
++    <answer fraction="100" format="html">
++      <text>London</text>
++      <feedback format="html">
++        <text></text>
++      </feedback>
++    </answer>
++    <answer fraction="0" format="html">
++      <text>Barcelona</text>
++      <feedback format="html">
++        <text></text>
++      </feedback>
++    </answer>
++    <answer fraction="100" format="html">
++      <text>Paris</text>
++      <feedback format="html">
++        <text></text>
++      </feedback>
++    </answer>
++    <hint format="html">
++      <text>First hint</text>
++    </hint>
++    <hint format="html">
++      <text>Second hint</text>
++    </hint>
++  </question>
++
++</quiz>
+\ No newline at end of file
+diff --git a/question/type/oumultiresponse/tests/helper.php b/question/type/oumultiresponse/tests/helper.php
+new file mode 100755
+index 0000000..8ee0e2a
+--- /dev/null
++++ b/question/type/oumultiresponse/tests/helper.php
+@@ -0,0 +1,247 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++/**
++ * Test helper code for the OU multiple response question type.
++ *
++ * @package    qtype_oumultiresponse
++ * @copyright  2010 The Open University
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++
++defined('MOODLE_INTERNAL') || die();
++
++
++/**
++ * Test helper class for the OU multiple response question type.
++ *
++ * @copyright  2010 The Open University
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++class qtype_oumultiresponse_test_helper {
++    public function get_test_questions() {
++        return array('two_of_four', 'two_of_five');
++    }
++
++    /**
++     * @return qtype_oumultiresponse_question
++     */
++    public static function make_oumultiresponse_question_two_of_four() {
++
++        question_bank::load_question_definition_classes('oumultiresponse');
++        $mc = new qtype_oumultiresponse_question();
++
++        test_question_maker::initialise_a_question($mc);
++
++        $mc->name = 'OU multiple response question';
++        $mc->questiontext = 'Which are the odd numbers?';
++        $mc->generalfeedback = 'The odd numbers are One and Three.';
++        $mc->qtype = question_bank::get_qtype('oumultiresponse');
++
++        $mc->shuffleanswers = true;
++        $mc->answernumbering = '123';
++
++        test_question_maker::set_standard_combined_feedback_fields($mc);
++
++        $mc->answers = array(
++            13 => new question_answer(13, 'One', 1, 'One is odd.', FORMAT_HTML),
++            14 => new question_answer(14, 'Two', 0, 'Two is even.', FORMAT_HTML),
++            15 => new question_answer(15, 'Three', 1, 'Three is odd.', FORMAT_HTML),
++            16 => new question_answer(16, 'Four', 0, 'Four is even.', FORMAT_HTML),
++        );
++
++        $mc->hints = array(
++            new qtype_oumultiresponse_hint(1, 'Hint 1.', FORMAT_HTML, true, false, false),
++            new qtype_oumultiresponse_hint(2, 'Hint 2.', FORMAT_HTML, true, true, true),
++        );
++
++        return $mc;
++    }
++
++    /**
++     * Get the question data, as it would be loaded by get_question_options, for
++     * the question returned by {@link make_an_oumultiresponse_two_of_four()}.
++     * @return object
++     */
++    public static function get_oumultiresponse_question_data_two_of_four() {
++        global $USER;
++
++        $qdata = new stdClass();
++        $qdata->id = 0;
++        $qdata->contextid = 0;
++        $qdata->category = 0;
++        $qdata->parent = 0;
++        $qdata->stamp = make_unique_id_code();
++        $qdata->version = make_unique_id_code();
++        $qdata->timecreated = time();
++        $qdata->timemodified = time();
++        $qdata->createdby = $USER->id;
++        $qdata->modifiedby = $USER->id;
++        $qdata->qtype = 'oumultiresponse';
++        $qdata->name = 'OU multiple response question';
++        $qdata->questiontext = 'Which are the odd numbers?';
++        $qdata->questiontextformat = FORMAT_HTML;
++        $qdata->generalfeedback = 'The odd numbers are One and Three.';
++        $qdata->generalfeedbackformat = FORMAT_HTML;
++        $qdata->defaultmark = 1;
++        $qdata->length = 1;
++        $qdata->penalty = 0.3333333;
++        $qdata->hidden = 0;
++
++        $qdata->options = new stdClass();
++        $qdata->options->shuffleanswers = 1;
++        $qdata->options->answernumbering = '123';
++        $qdata->options->correctfeedback =
++                test_question_maker::STANDARD_OVERALL_CORRECT_FEEDBACK;
++        $qdata->options->correctfeedbackformat = FORMAT_HTML;
++        $qdata->options->partiallycorrectfeedback =
++                test_question_maker::STANDARD_OVERALL_PARTIALLYCORRECT_FEEDBACK;
++        $qdata->options->partiallycorrectfeedbackformat = FORMAT_HTML;
++        $qdata->options->shownumcorrect = 1;
++        $qdata->options->incorrectfeedback =
++                test_question_maker::STANDARD_OVERALL_INCORRECT_FEEDBACK;
++        $qdata->options->incorrectfeedbackformat = FORMAT_HTML;
++
++        $qdata->options->answers = array(
++            13 => (object) array(
++                'id' => 13,
++                'answer' => 'One',
++                'answerformat' => FORMAT_PLAIN,
++                'fraction' => 1,
++                'feedback' => 'One is odd.',
++                'feedbackformat' => FORMAT_HTML,
++            ),
++            14 => (object) array(
++                'id' => 14,
++                'answer' => 'Two',
++                'answerformat' => FORMAT_PLAIN,
++                'fraction' => 0,
++                'feedback' => 'Two is even.',
++                'feedbackformat' => FORMAT_HTML,
++            ),
++            15 => (object) array(
++                'id' => 15,
++                'answer' => 'Three',
++                'answerformat' => FORMAT_PLAIN,
++                'fraction' => 1,
++                'feedback' => 'Three is odd.',
++                'feedbackformat' => FORMAT_HTML,
++            ),
++            16 => (object) array(
++                'id' => 16,
++                'answer' => 'Four',
++                'answerformat' => FORMAT_PLAIN,
++                'fraction' => 0,
++                'feedback' => 'Four is even.',
++                'feedbackformat' => FORMAT_HTML,
++            ),
++        );
++
++        $qdata->hints = array(
++            1 => (object) array(
++                'id' => 1,
++                'hint' => 'Hint 1.',
++                'hintformat' => FORMAT_HTML,
++                'shownumcorrect' => 1,
++                'clearwrong' => 0,
++                'options' => 0,
++            ),
++            2 => (object) array(
++                'id' => 2,
++                'hint' => 'Hint 2.',
++                'hintformat' => FORMAT_HTML,
++                'shownumcorrect' => 1,
++                'clearwrong' => 1,
++                'options' => 1,
++            ),
++        );
++
++        return $qdata;
++    }
++
++    /**
++     * @return qtype_oumultiresponse_question
++     */
++    public static function make_oumultiresponse_question_two_of_five() {
++        question_bank::load_question_definition_classes('oumultiresponse');
++        $mc = new qtype_oumultiresponse_question();
++
++        test_question_maker::initialise_a_question($mc);
++
++        $mc->name = 'OU multiple response three of five';
++        $mc->questiontext = 'The answer is A, B and C';
++        $mc->generalfeedback = '';
++        $mc->qtype = question_bank::get_qtype('oumultiresponse');
++
++        $mc->shuffleanswers = false;
++        $mc->answernumbering = 'none';
++
++        test_question_maker::set_standard_combined_feedback_fields($mc);
++
++        $mc->answers = array(
++            13 => new question_answer(13, 'A', 1, '', FORMAT_HTML),
++            14 => new question_answer(14, 'B', 1, '', FORMAT_HTML),
++            15 => new question_answer(15, 'C', 0, '', FORMAT_HTML),
++            16 => new question_answer(16, 'D', 0, '', FORMAT_HTML),
++            17 => new question_answer(17, 'E', 0, '', FORMAT_HTML),
++        );
++
++        $mc->hints = array(
++            1 => new qtype_oumultiresponse_hint(1, 'Hint 1.', FORMAT_HTML, true, false, false),
++            2 => new qtype_oumultiresponse_hint(2, 'Hint 2.', FORMAT_HTML, true, true, true),
++        );
++
++        return $mc;
++    }
++
++    /**
++     * @return stdClass date to create an oumultiresponse question.
++     */
++    public function get_oumultiresponse_question_form_data_two_of_four() {
++        $fromform = new stdClass();
++
++        $fromform->name = 'OU multiple response question';
++        $fromform->questiontext = array('text' => 'Which are the odd numbers?', 'format' => FORMAT_HTML);
++        $fromform->defaultmark = 1.0;
++        $fromform->generalfeedback = array('text' => 'The odd numbers are One and Three.', 'format' => FORMAT_HTML);
++        $fromform->shuffleanswers = 0;
++        $fromform->answernumbering = 'abc';
++        $fromform->answer = array(
++                0 => array('text' => 'One', 'format' => FORMAT_PLAIN),
++                1 => array('text' => 'Two', 'format' => FORMAT_PLAIN),
++                2 => array('text' => 'Three', 'format' => FORMAT_PLAIN),
++                3 => array('text' => 'Four', 'format' => FORMAT_PLAIN)
++        );
++        $fromform->correctanswer = array(
++                0 => 1,
++                1 => 0,
++                2 => 1,
++                3 => 0
++        );
++        $fromform->feedback = array(
++                0 => array('text' => 'One is odd.', 'format' => FORMAT_HTML),
++                1 => array('text' => 'Two is even.', 'format' => FORMAT_HTML),
++                2 => array('text' => 'Three is odd.', 'format' => FORMAT_HTML),
++                3 => array('text' => 'Four is odd.', 'format' => FORMAT_HTML)
++        );
++        test_question_maker::set_standard_combined_feedback_form_data($fromform);
++        $fromform->shownumcorrect = 0;
++        $fromform->penalty = 0.3333333;
++
++        return $fromform;
++    }
++}
+diff --git a/question/type/oumultiresponse/tests/question_test.php b/question/type/oumultiresponse/tests/question_test.php
+new file mode 100755
+index 0000000..4855ceb
+--- /dev/null
++++ b/question/type/oumultiresponse/tests/question_test.php
+@@ -0,0 +1,242 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++/**
++ * Unit tests for the OU multiple response question class.
++ *
++ * @package   qtype_oumultiresponse
++ * @copyright 2008 The Open University
++ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++
++defined('MOODLE_INTERNAL') || die();
++
++global $CFG;
++require_once($CFG->dirroot . '/question/engine/tests/helpers.php');
++require_once($CFG->dirroot . '/question/type/oumultiresponse/question.php');
++
++
++/**
++ * Unit tests for (some of) question/type/oumultiresponse/questiontype.php.
++ *
++ * @copyright  2008 The Open University
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++class qtype_oumultiresponse_question_test extends basic_testcase {
++    private $tolerance = 0.000001;
++
++    public function test_replace_char_at() {
++        $this->assertEquals(qtype_oumultiresponse_question::replace_char_at('220', 0, '0'), '020');
++    }
++
++    public function test_grade_responses_right_right() {
++        $mc = test_question_maker::make_question('oumultiresponse', 'two_of_four');
++        $mc->shuffleanswers = false;
++        $mc->start_attempt(new question_attempt_step(), 1);
++
++        list($fraction, $state) = $mc->grade_response(array('choice0' => '1', 'choice2' => '1'));
++        $this->assertEquals(1, $fraction, '', $this->tolerance);
++        $this->assertEquals($state, question_state::$gradedright);
++    }
++
++    public function test_grade_responses_right() {
++        $mc = test_question_maker::make_question('oumultiresponse', 'two_of_four');
++        $mc->shuffleanswers = false;
++        $mc->start_attempt(new question_attempt_step(), 1);
++
++        list($fraction, $state) = $mc->grade_response(array('choice0' => '1'));
++        $this->assertEquals(0.5, $fraction, '', $this->tolerance);
++        $this->assertEquals($state, question_state::$gradedpartial);
++    }
++
++    public function test_grade_responses_wrong_wrong() {
++        $mc = test_question_maker::make_question('oumultiresponse', 'two_of_four');
++        $mc->shuffleanswers = false;
++        $mc->start_attempt(new question_attempt_step(), 1);
++
++        list($fraction, $state) = $mc->grade_response(array('choice1' => '1', 'choice3' => '1'));
++        $this->assertEquals(0, $fraction, '', $this->tolerance);
++        $this->assertEquals($state, question_state::$gradedwrong);
++    }
++
++    public function test_grade_responses_right_wrong_wrong() {
++        $mc = test_question_maker::make_question('oumultiresponse', 'two_of_four');
++        $mc->shuffleanswers = false;
++        $mc->start_attempt(new question_attempt_step(), 1);
++
++        list($fraction, $state) = $mc->grade_response(
++                array('choice0' => '1', 'choice1' => '1', 'choice3' => '1'));
++        $this->assertEquals(0, $fraction, '', $this->tolerance);
++        $this->assertEquals($state, question_state::$gradedpartial);
++    }
++
++    public function test_grade_responses_right_wrong() {
++        $mc = test_question_maker::make_question('oumultiresponse', 'two_of_four');
++        $mc->shuffleanswers = false;
++        $mc->start_attempt(new question_attempt_step(), 1);
++
++        list($fraction, $state) = $mc->grade_response(array('choice0' => '1', 'choice1' => '1'));
++        $this->assertEquals(0.5, $fraction, '', $this->tolerance);
++        $this->assertEquals($state, question_state::$gradedpartial);
++    }
++
++    public function test_grade_responses_right_right_wrong() {
++        $mc = test_question_maker::make_question('oumultiresponse', 'two_of_four');
++        $mc->shuffleanswers = false;
++        $mc->start_attempt(new question_attempt_step(), 1);
++
++        list($fraction, $state) = $mc->grade_response(array(
++                'choice0' => '1', 'choice2' => '1', 'choice3' => '1'));
++        $this->assertEquals(0.5, $fraction, '', $this->tolerance);
++        $this->assertEquals($state, question_state::$gradedpartial);
++    }
++
++    public function test_grade_responses_right_right_wrong_wrong() {
++        $mc = test_question_maker::make_question('oumultiresponse', 'two_of_four');
++        $mc->shuffleanswers = false;
++        $mc->start_attempt(new question_attempt_step(), 1);
++
++        list($fraction, $state) = $mc->grade_response(array(
++                'choice0' => '1', 'choice1' => '1', 'choice2' => '1', 'choice3' => '1'));
++        $this->assertEquals(0, $fraction, '', $this->tolerance);
++        $this->assertEquals($state, question_state::$gradedpartial);
++    }
++
++    public function test_grade_computation() {
++        $right = new stdClass();
++        $right->fraction = 1.0;
++        $wrong = new stdClass();
++        $wrong->fraction = 0.0;
++
++        $penalty = 0.3333333;
++        $answers = array($right, $right, $right, $wrong, $wrong, $wrong);
++
++        $response_history = array('111', '000', '000', '000', '000', '000');
++        $this->assertEquals(qtype_oumultiresponse_question::grade_computation(
++                $response_history, $answers, $penalty, 3), 0.3333333, '', $this->tolerance);
++
++        $response_history = array('111', '111', '000', '000', '000', '000');
++        $this->assertEquals(qtype_oumultiresponse_question::grade_computation(
++                $response_history, $answers, $penalty, 3), 0.6666667, '', $this->tolerance);
++
++        $response_history = array('1', '1', '1', '0', '0', '0');
++        $this->assertEquals(qtype_oumultiresponse_question::grade_computation(
++                $response_history, $answers, $penalty, 3), 1.0, '', $this->tolerance);
++
++        $response_history = array('111', '111', '111', '111', '000', '000');
++        $this->assertEquals(qtype_oumultiresponse_question::grade_computation(
++                $response_history, $answers, $penalty, 3), 0.6666667, '', $this->tolerance);
++
++        $response_history = array('111', '111', '111', '111', '111', '000');
++        $this->assertEquals(qtype_oumultiresponse_question::grade_computation(
++                $response_history, $answers, $penalty, 3), 0.3333333, '', $this->tolerance);
++
++        $response_history = array('111', '111', '111', '111', '111', '111');
++        $this->assertEquals(qtype_oumultiresponse_question::grade_computation(
++                $response_history, $answers, $penalty, 3), 0.0, '', $this->tolerance);
++
++        $response_history = array('011', '000', '000', '100', '111', '111');
++        $this->assertEquals(qtype_oumultiresponse_question::grade_computation(
++                $response_history, $answers, $penalty, 3), 0.2222222, '', $this->tolerance);
++
++        $response_history = array('001', '000', '000', '110', '111', '111');
++        $this->assertEquals(qtype_oumultiresponse_question::grade_computation(
++                $response_history, $answers, $penalty, 3), 0.1111111, '', $this->tolerance);
++
++        $response_history = array('111', '111', '001', '100', '010', '000');
++        $this->assertEquals(qtype_oumultiresponse_question::grade_computation(
++                $response_history, $answers, $penalty, 3), 0.7777778, '', $this->tolerance);
++
++        $response_history = array('100', '100', '001', '100', '011', '001');
++        $this->assertEquals(qtype_oumultiresponse_question::grade_computation(
++                $response_history, $answers, $penalty, 3), 0.1111111, '', $this->tolerance);
++
++        $response_history = array('101', '101', '001', '110', '011', '111');
++        $this->assertEquals(qtype_oumultiresponse_question::grade_computation(
++                $response_history, $answers, $penalty, 3), 0.1111111, '', $this->tolerance);
++
++        $response_history = array('011', '001', '001', '100', '110', '111');
++        $this->assertEquals(qtype_oumultiresponse_question::grade_computation(
++                $response_history, $answers, $penalty, 3), 0.3333333, '', $this->tolerance);
++
++        $response_history = array('111', '111', '111', '110', '110', '100');
++        $this->assertEquals(qtype_oumultiresponse_question::grade_computation(
++                $response_history, $answers, $penalty, 3), 0.4444444, '', $this->tolerance);
++
++        $response_history = array('111', '111', '111', '110', '100', '100');
++        $this->assertEquals(qtype_oumultiresponse_question::grade_computation(
++                $response_history, $answers, $penalty, 3), 0.5555556, '', $this->tolerance);
++
++        $response_history = array('110', '101', '101', '111', '110', '100');
++        $this->assertEquals(qtype_oumultiresponse_question::grade_computation(
++                $response_history, $answers, $penalty, 3), 0.2222222, '', $this->tolerance);
++
++        $response_history = array('111', '110', '110', '111', '111', '100');
++        $this->assertEquals(qtype_oumultiresponse_question::grade_computation(
++                $response_history, $answers, $penalty, 3), 0.2222222, '', $this->tolerance);
++
++        $response_history = array('011', '111', '110', '111', '111', '100');
++        $this->assertEquals(qtype_oumultiresponse_question::grade_computation(
++                $response_history, $answers, $penalty, 3), 0.2222222, '', $this->tolerance);
++
++        $response_history = array('110', '111', '110', '111', '111', '100');
++        $this->assertEquals(qtype_oumultiresponse_question::grade_computation(
++                $response_history, $answers, $penalty, 3), 0.2222222, '', $this->tolerance);
++
++        $response_history = array('111', '111', '111', '110', '110', '100');
++        $this->assertEquals(qtype_oumultiresponse_question::grade_computation(
++                $response_history, $answers, $penalty, 3), 0.4444444, '', $this->tolerance);
++
++        $response_history = array('110', '111', '110', '111', '111', '100');
++        $this->assertEquals(qtype_oumultiresponse_question::grade_computation(
++                $response_history, $answers, $penalty, 3), 0.2222222, '', $this->tolerance);
++
++        $response_history = array('011', '111', '110', '111', '111', '100');
++        $this->assertEquals(qtype_oumultiresponse_question::grade_computation(
++                $response_history, $answers, $penalty, 3), 0.2222222, '', $this->tolerance);
++
++        $response_history = array('011', '111', '110', '110', '111', '001');
++        $this->assertEquals(qtype_oumultiresponse_question::grade_computation(
++                $response_history, $answers, $penalty, 3), 0.3333333, '', $this->tolerance);
++
++        $response_history = array('11', '01', '01', '10', '10', '00');
++        $this->assertEquals(qtype_oumultiresponse_question::grade_computation(
++                $response_history, $answers, $penalty, 3), 0.7777778, '', $this->tolerance);
++
++        $penalty = 0.2;
++        $answers = array($right, $right, $right, $right, $wrong, $wrong, $wrong, $wrong);
++        $response_history = array(
++                '11111', '10111', '11100', '11011', '10011', '01010', '01000', '00100');
++        $this->assertEquals(qtype_oumultiresponse_question::grade_computation(
++                $response_history, $answers, $penalty, 5), 0.45, '', $this->tolerance);
++
++        $penalty = 0.33334;
++        $answers = array($right, $right, $wrong, $wrong, $wrong);
++        $response_history = array('0', '0', '1', '1', '0');
++        $this->assertEquals(qtype_oumultiresponse_question::grade_computation(
++                $response_history, $answers, $penalty, 1), 0.0, '', $this->tolerance);
++
++        $response_history = array('0', '1', '1', '0', '0');
++        $this->assertEquals(qtype_oumultiresponse_question::grade_computation(
++                $response_history, $answers, $penalty, 1), 0.5, '', $this->tolerance);
++
++        $response_history = array('1', '1', '0', '0', '0');
++        $this->assertEquals(qtype_oumultiresponse_question::grade_computation(
++                $response_history, $answers, $penalty, 1), 1.0, '', $this->tolerance);
++    }
++}
+diff --git a/question/type/oumultiresponse/tests/questiontype_test.php b/question/type/oumultiresponse/tests/questiontype_test.php
+new file mode 100755
+index 0000000..9a54ff3
+--- /dev/null
++++ b/question/type/oumultiresponse/tests/questiontype_test.php
+@@ -0,0 +1,434 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++/**
++ * Unit tests for the OU multiple response question type class.
++ *
++ * @package    qtype_oumultiresponse
++ * @copyright  2008 The Open University
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++
++defined('MOODLE_INTERNAL') || die();
++
++global $CFG;
++require_once($CFG->dirroot . '/question/engine/tests/helpers.php');
++require_once($CFG->dirroot . '/question/type/oumultiresponse/questiontype.php');
++
++
++/**
++ * Unit tests for (some of) question/type/oumultiresponse/questiontype.php.
++ *
++ * @copyright  2008 The Open University
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++class qtype_oumultiresponse_test extends question_testcase {
++    /**
++     * @var qtype_oumultiresponse
++     */
++    private $qtype;
++
++    public function setUp() {
++        $this->qtype = new qtype_oumultiresponse();
++    }
++
++    public function tearDown() {
++        $this->qtype = null;
++    }
++
++    public function assert_same_xml($expectedxml, $xml) {
++        $this->assertEquals(str_replace("\r\n", "\n", $expectedxml),
++                str_replace("\r\n", "\n", $xml));
++    }
++
++    public function test_name() {
++        $this->assertEquals($this->qtype->name(), 'oumultiresponse');
++    }
++
++    public function test_initialise_question_instance() {
++        $qdata = test_question_maker::get_question_data('oumultiresponse', 'two_of_four');
++        $expectedq = test_question_maker::make_question('oumultiresponse', 'two_of_four');
++        $qdata->stamp = $expectedq->stamp;
++        $qdata->version = $expectedq->version;
++        $qdata->timecreated = $expectedq->timecreated;
++        $qdata->timemodified = $expectedq->timemodified;
++
++        $question = $this->qtype->make_question($qdata);
++
++        $this->assertEquals($expectedq, $question);
++    }
++
++    public function test_can_analyse_responses() {
++        $this->assertTrue($this->qtype->can_analyse_responses());
++    }
++
++    public function test_get_possible_responses() {
++        $q = new stdClass();
++        $q->id = 1;
++        $q->options->answers[1] = (object) array('answer' => 'frog', 'fraction' => 1);
++        $q->options->answers[2] = (object) array('answer' => 'toad', 'fraction' => 1);
++        $q->options->answers[3] = (object) array('answer' => 'newt', 'fraction' => 0);
++        $responses = $this->qtype->get_possible_responses($q);
++
++        $this->assertEquals(array(
++            1 => array(1 => new question_possible_response('frog', 0.5)),
++            2 => array(2 => new question_possible_response('toad', 0.5)),
++            3 => array(3 => new question_possible_response('newt', 0)),
++        ), $this->qtype->get_possible_responses($q));
++    }
++
++    public function test_get_random_guess_score() {
++        $questiondata = new stdClass();
++        $questiondata->options = new stdClass();
++        $questiondata->options->answers = array(
++            1 => new question_answer(1, 'A', 1, '', FORMAT_HTML),
++            2 => new question_answer(2, 'B', 0, '', FORMAT_HTML),
++            3 => new question_answer(3, 'C', 0, '', FORMAT_HTML),
++        );
++        $this->assertEquals(1/3,
++                $this->qtype->get_random_guess_score($questiondata), '', 0.000001);
++
++        $questiondata->options->answers[2]->fraction = 1;
++        $this->assertEquals(2/3,
++                $this->qtype->get_random_guess_score($questiondata), '', 0.000001);
++
++        $questiondata->options->answers[4] = new question_answer(4, 'D', 0, '', FORMAT_HTML);
++        $this->assertEquals(1/2,
++                $this->qtype->get_random_guess_score($questiondata), '', 0.000001);
++    }
++
++    public function test_xml_import() {
++        $xml = '  <question type="oumultiresponse">
++    <name>
++      <text>OU multiple response question</text>
++    </name>
++    <questiontext format="html">
++      <text>Which are the odd numbers?</text>
++    </questiontext>
++    <generalfeedback>
++      <text>General feedback.</text>
++    </generalfeedback>
++    <defaultgrade>6</defaultgrade>
++    <penalty>0.3333333</penalty>
++    <hidden>0</hidden>
++    <answernumbering>abc</answernumbering>
++    <shuffleanswers>true</shuffleanswers>
++    <correctfeedback>
++      <text>Well done.</text>
++    </correctfeedback>
++    <partiallycorrectfeedback>
++      <text>Not entirely.</text>
++    </partiallycorrectfeedback>
++    <incorrectfeedback>
++      <text>Completely wrong!</text>
++    </incorrectfeedback>
++    <answer fraction="100">
++      <text>One</text>
++      <feedback>
++        <text>Specific feedback to correct answer.</text>
++      </feedback>
++    </answer>
++    <answer fraction="0">
++      <text>Two</text>
++      <feedback>
++        <text>Specific feedback to wrong answer.</text>
++      </feedback>
++    </answer>
++    <answer fraction="100">
++      <text>Three</text>
++      <feedback>
++        <text>Specific feedback to correct answer.</text>
++      </feedback>
++    </answer>
++    <answer fraction="0">
++      <text>Four</text>
++      <feedback>
++        <text>Specific feedback to wrong answer.</text>
++      </feedback>
++    </answer>
++    <hint>
++      <text>Try again.</text>
++      <shownumcorrect />
++    </hint>
++    <hint>
++      <text>Hint 2.</text>
++      <shownumcorrect />
++      <clearwrong />
++      <options>1</options>
++    </hint>
++  </question>';
++        $xmldata = xmlize($xml);
++
++        $importer = new qformat_xml();
++        $q = $importer->try_importing_using_qtypes(
++                $xmldata['question'], null, null, 'oumultiresponse');
++
++        $expectedq = new stdClass();
++        $expectedq->qtype = 'oumultiresponse';
++        $expectedq->name = 'OU multiple response question';
++        $expectedq->questiontext = 'Which are the odd numbers?';
++        $expectedq->questiontextformat = FORMAT_HTML;
++        $expectedq->generalfeedback = 'General feedback.';
++        $expectedq->generalfeedbackformat = FORMAT_HTML;
++        $expectedq->defaultmark = 6;
++        $expectedq->length = 1;
++        $expectedq->penalty = 0.3333333;
++
++        $expectedq->shuffleanswers = 1;
++        $expectedq->correctfeedback = array('text' => 'Well done.',
++                'format' => FORMAT_HTML);
++        $expectedq->partiallycorrectfeedback = array('text' => 'Not entirely.',
++                'format' => FORMAT_HTML);
++        $expectedq->shownumcorrect = false;
++        $expectedq->incorrectfeedback = array('text' => 'Completely wrong!',
++                'format' => FORMAT_HTML);
++
++        $expectedq->answer = array(
++            array('text' => 'One', 'format' => FORMAT_HTML),
++            array('text' => 'Two', 'format' => FORMAT_HTML),
++            array('text' => 'Three', 'format' => FORMAT_HTML),
++            array('text' => 'Four', 'format' => FORMAT_HTML),
++        );
++        $expectedq->correctanswer = array(1, 0, 1, 0);
++        $expectedq->feedback = array(
++            array('text' => 'Specific feedback to correct answer.',
++                    'format' => FORMAT_HTML),
++            array('text' => 'Specific feedback to wrong answer.',
++                    'format' => FORMAT_HTML),
++            array('text' => 'Specific feedback to correct answer.',
++                    'format' => FORMAT_HTML),
++            array('text' => 'Specific feedback to wrong answer.',
++                    'format' => FORMAT_HTML),
++        );
++
++        $expectedq->hint = array(
++                array('text' => 'Try again.', 'format' => FORMAT_HTML),
++                array('text' => 'Hint 2.', 'format' => FORMAT_HTML));
++        $expectedq->hintshownumcorrect = array(true, true);
++        $expectedq->hintclearwrong = array(false, true);
++        $expectedq->hintshowchoicefeedback = array(false, true);
++
++        $this->assert(new question_check_specified_fields_expectation($expectedq), $q);
++        $this->assertEquals($expectedq->answer, $q->answer);
++    }
++
++    public function test_xml_import_legacy() {
++        $xml = '  <question type="oumultiresponse">
++    <name>
++      <text>008 OUMR feedback test</text>
++    </name>
++    <questiontext format="html">
++      <text>&lt;p&gt;OUMR question.&lt;/p&gt; &lt;p&gt;Right answers are eighta ' .
++                'and eightb.&lt;/p&gt;</text>
++    </questiontext>
++    <image></image>
++    <generalfeedback>
++      <text>General feedback.</text>
++    </generalfeedback>
++    <defaultgrade>1</defaultgrade>
++    <penalty>0.33</penalty>
++    <hidden>0</hidden>
++    <shuffleanswers>1</shuffleanswers>
++    <answernumbering>abc</answernumbering>
++    <shuffleanswers>true</shuffleanswers>
++    <answer>
++      <correctanswer>1</correctanswer>
++      <text>eighta</text>
++      <feedback>
++        <text>&lt;p&gt;Specific feedback to correct answer.&lt;/p&gt;</text>
++      </feedback>
++    </answer>
++    <answer>
++      <correctanswer>1</correctanswer>
++      <text>eightb</text>
++      <feedback>
++        <text>&lt;p&gt;Specific feedback to correct answer.&lt;/p&gt;</text>
++      </feedback>
++    </answer>
++    <answer>
++      <correctanswer>0</correctanswer>
++      <text>one</text>
++      <feedback>
++        <text>&lt;p&gt;Specific feedback to wrong answer.&lt;/p&gt;</text>
++      </feedback>
++    </answer>
++    <answer>
++      <correctanswer>0</correctanswer>
++      <text>two</text>
++      <feedback>
++        <text>&lt;p&gt;Specific feedback to wrong answer.&lt;/p&gt;</text>
++      </feedback>
++    </answer>
++    <correctfeedback>
++      <text>Correct overall feedback</text>
++    </correctfeedback>
++    <correctresponsesfeedback>0</correctresponsesfeedback>
++    <partiallycorrectfeedback>
++      <text>Partially correct overall feedback.</text>
++    </partiallycorrectfeedback>
++    <incorrectfeedback>
++      <text>Incorrect overall feedback.</text>
++    </incorrectfeedback>
++    <unlimited>0</unlimited>
++    <penalty>0.33</penalty>
++    <hint>
++      <statenumberofcorrectresponses>0</statenumberofcorrectresponses>
++      <showfeedbacktoresponses>1</showfeedbacktoresponses>
++      <clearincorrectresponses>0</clearincorrectresponses>
++      <hintcontent>
++        <text>Hint 1.</text>
++      </hintcontent>
++    </hint>
++    <hint>
++      <statenumberofcorrectresponses>0</statenumberofcorrectresponses>
++      <showfeedbacktoresponses>1</showfeedbacktoresponses>
++      <clearincorrectresponses>0</clearincorrectresponses>
++      <hintcontent>
++        <text>Hint 2.</text>
++      </hintcontent>
++    </hint>
++  </question>';
++        $xmldata = xmlize($xml);
++
++        $importer = new qformat_xml();
++        $q = $importer->try_importing_using_qtypes(
++                $xmldata['question'], null, null, 'oumultiresponse');
++
++        $expectedq = new stdClass();
++        $expectedq->qtype = 'oumultiresponse';
++        $expectedq->name = '008 OUMR feedback test';
++        $expectedq->questiontext = '<p>OUMR question.</p><p>Right answers are ' .
++                'eighta and eightb.</p>';
++        $expectedq->questiontextformat = FORMAT_HTML;
++        $expectedq->generalfeedback = 'General feedback.';
++        $expectedq->generalfeedbackformat = FORMAT_HTML;
++        $expectedq->defaultmark = 1;
++        $expectedq->length = 1;
++        $expectedq->penalty = 0.3333333;
++
++        $expectedq->shuffleanswers = 1;
++        $expectedq->answernumbering = 'abc';
++        $expectedq->correctfeedback = array('text' => 'Correct overall feedback',
++                'format' => FORMAT_HTML);
++        $expectedq->partiallycorrectfeedback = array(
++                'text' => 'Partially correct overall feedback.',
++                'format' => FORMAT_HTML);
++        $expectedq->shownumcorrect = false;
++        $expectedq->incorrectfeedback = array('text' => 'Incorrect overall feedback.',
++                'format' => FORMAT_HTML);
++
++        $expectedq->answer = array(
++            array('text' => 'eighta', 'format' => FORMAT_HTML),
++            array('text' => 'eightb', 'format' => FORMAT_HTML),
++            array('text' => 'one', 'format' => FORMAT_HTML),
++            array('text' => 'two', 'format' => FORMAT_HTML));
++        $expectedq->correctanswer = array(1, 1, 0, 0);
++        $expectedq->feedback = array(
++            array('text' => '<p>Specific feedback to correct answer.</p>',
++                    'format' => FORMAT_HTML),
++            array('text' => '<p>Specific feedback to correct answer.</p>',
++                    'format' => FORMAT_HTML),
++            array('text' => '<p>Specific feedback to wrong answer.</p>',
++                    'format' => FORMAT_HTML),
++            array('text' => '<p>Specific feedback to wrong answer.</p>',
++                    'format' => FORMAT_HTML),
++        );
++
++        $expectedq->hint = array(
++                array('text' => 'Hint 1.', 'format' => FORMAT_HTML),
++                array('text' => 'Hint 2.', 'format' => FORMAT_HTML));
++        $expectedq->hintshownumcorrect = array(false, false);
++        $expectedq->hintclearwrong = array(false, false);
++        $expectedq->hintshowchoicefeedback = array(true, true);
++
++        $this->assertEquals($expectedq->answer, $q->answer);
++        $this->assert(new question_check_specified_fields_expectation($expectedq), $q);
++    }
++
++    public function test_xml_export() {
++        $qdata = test_question_maker::get_question_data('oumultiresponse', 'two_of_four');
++        $qdata->defaultmark = 6;
++
++        $exporter = new qformat_xml();
++        $xml = $exporter->writequestion($qdata);
++
++        $expectedxml = '<!-- question: 0  -->
++  <question type="oumultiresponse">
++    <name>
++      <text>OU multiple response question</text>
++    </name>
++    <questiontext format="html">
++      <text>Which are the odd numbers?</text>
++    </questiontext>
++    <generalfeedback format="html">
++      <text>The odd numbers are One and Three.</text>
++    </generalfeedback>
++    <defaultgrade>6</defaultgrade>
++    <penalty>0.3333333</penalty>
++    <hidden>0</hidden>
++    <shuffleanswers>true</shuffleanswers>
++    <answernumbering>123</answernumbering>
++    <correctfeedback format="html">
++      <text>Well done!</text>
++    </correctfeedback>
++    <partiallycorrectfeedback format="html">
++      <text>Parts, but only parts, of your response are correct.</text>
++    </partiallycorrectfeedback>
++    <incorrectfeedback format="html">
++      <text>That is not right at all.</text>
++    </incorrectfeedback>
++    <shownumcorrect/>
++    <answer fraction="100" format="plain_text">
++      <text>One</text>
++      <feedback format="html">
++        <text>One is odd.</text>
++      </feedback>
++    </answer>
++    <answer fraction="0" format="plain_text">
++      <text>Two</text>
++      <feedback format="html">
++        <text>Two is even.</text>
++      </feedback>
++    </answer>
++    <answer fraction="100" format="plain_text">
++      <text>Three</text>
++      <feedback format="html">
++        <text>Three is odd.</text>
++      </feedback>
++    </answer>
++    <answer fraction="0" format="plain_text">
++      <text>Four</text>
++      <feedback format="html">
++        <text>Four is even.</text>
++      </feedback>
++    </answer>
++    <hint format="html">
++      <text>Hint 1.</text>
++      <shownumcorrect/>
++    </hint>
++    <hint format="html">
++      <text>Hint 2.</text>
++      <shownumcorrect/>
++      <clearwrong/>
++      <options>1</options>
++    </hint>
++  </question>
++';
++
++        $this->assert_same_xml($expectedxml, $xml);
++    }
++}
+diff --git a/question/type/oumultiresponse/tests/walkthrough_test.php b/question/type/oumultiresponse/tests/walkthrough_test.php
+new file mode 100755
+index 0000000..fc81e83
+--- /dev/null
++++ b/question/type/oumultiresponse/tests/walkthrough_test.php
+@@ -0,0 +1,529 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++/**
++ * This file contains tests that walks a OU multiple response question through
++ * various interaction models.
++ *
++ * @package    qtype_oumultiresponse
++ * @copyright  2010 The Open University
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++
++defined('MOODLE_INTERNAL') || die();
++
++global $CFG;
++require_once($CFG->libdir . '/questionlib.php');
++require_once($CFG->dirroot . '/question/engine/tests/helpers.php');
++require_once($CFG->dirroot . '/question/type/oumultiresponse/questiontype.php');
++
++
++/**
++ * Unit tests ofr the OU multiple response question type.
++ *
++ * @copyright  2010 The Open University
++ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++class qtype_oumultiresponse_walkthrough_test extends qbehaviour_walkthrough_test_base {
++
++    public function test_interactive_behaviour() {
++
++        // Create a multichoice single question.
++        $mc = test_question_maker::make_question('oumultiresponse', 'two_of_four');
++        $mc->shuffleanswers = false;
++        $this->start_attempt_at_question($mc, 'interactive', 3);
++
++        // Check the initial state.
++        $this->check_current_state(question_state::$todo);
++        $this->check_current_mark(null);
++        $this->check_current_output(
++                $this->get_contains_question_text_expectation($mc),
++                $this->get_contains_mc_checkbox_expectation('choice0', true, false),
++                $this->get_contains_mc_checkbox_expectation('choice1', true, false),
++                $this->get_contains_mc_checkbox_expectation('choice2', true, false),
++                $this->get_contains_mc_checkbox_expectation('choice3', true, false),
++                $this->get_contains_submit_button_expectation(true),
++                $this->get_does_not_contain_feedback_expectation(),
++                $this->get_does_not_contain_num_parts_correct(),
++                $this->get_tries_remaining_expectation(3),
++                $this->get_no_hint_visible_expectation(),
++                new question_pattern_expectation('/' .
++                        preg_quote(get_string('selectmulti', 'qtype_multichoice'), '/') . '/'));
++
++        // Save the wrong answer.
++        $this->process_submission(array('choice1' => '1', 'choice3' => '1'));
++
++        // Verify.
++        $this->check_current_state(question_state::$todo);
++        $this->check_current_mark(null);
++        $this->check_current_output(
++                $this->get_contains_question_text_expectation($mc),
++                $this->get_contains_mc_checkbox_expectation('choice0', true, false),
++                $this->get_contains_mc_checkbox_expectation('choice1', true, true),
++                $this->get_contains_mc_checkbox_expectation('choice2', true, false),
++                $this->get_contains_mc_checkbox_expectation('choice3', true, true),
++                $this->get_contains_submit_button_expectation(true),
++                $this->get_does_not_contain_feedback_expectation(),
++                $this->get_does_not_contain_num_parts_correct(),
++                $this->get_tries_remaining_expectation(3),
++                $this->get_no_hint_visible_expectation(),
++                new question_pattern_expectation('/' .
++                        preg_quote(get_string('selectmulti', 'qtype_multichoice'), '/') . '/'));
++
++        // Submit the wrong answer.
++        $this->process_submission(array('choice1' => '1', 'choice3' => '1', '-submit' => '1'));
++
++        // Verify.
++        $this->check_current_state(question_state::$todo);
++        $this->check_current_mark(null);
++        $this->check_current_output(
++                $this->get_contains_mc_checkbox_expectation('choice0', false, false),
++                $this->get_contains_mc_checkbox_expectation('choice1', false, true),
++                $this->get_contains_mc_checkbox_expectation('choice2', false, false),
++                $this->get_contains_mc_checkbox_expectation('choice3', false, true),
++                $this->get_contains_submit_button_expectation(false),
++                $this->get_contains_try_again_button_expectation(true),
++                $this->get_does_not_contain_correctness_expectation(),
++                $this->get_contains_hint_expectation('Hint 1'),
++                $this->get_contains_num_parts_correct(0),
++                $this->get_contains_standard_incorrect_combined_feedback_expectation(),
++                $this->get_does_not_contain_hidden_expectation(
++                        $this->quba->get_field_prefix($this->slot) . 'choice0'),
++                $this->get_does_not_contain_hidden_expectation(
++                        $this->quba->get_field_prefix($this->slot) . 'choice1'),
++                $this->get_does_not_contain_hidden_expectation(
++                        $this->quba->get_field_prefix($this->slot) . 'choice2'),
++                $this->get_does_not_contain_hidden_expectation(
++                        $this->quba->get_field_prefix($this->slot) . 'choice3'));
++
++        // Do try again.
++        $this->process_submission(array('-tryagain' => 1));
++
++        // Verify.
++        $this->check_current_state(question_state::$todo);
++        $this->check_current_mark(null);
++        $this->check_current_output(
++                $this->get_contains_question_text_expectation($mc),
++                $this->get_contains_mc_checkbox_expectation('choice0', true, false),
++                $this->get_contains_mc_checkbox_expectation('choice1', true, true),
++                $this->get_contains_mc_checkbox_expectation('choice2', true, false),
++                $this->get_contains_mc_checkbox_expectation('choice3', true, true),
++                $this->get_contains_submit_button_expectation(true),
++                $this->get_does_not_contain_feedback_expectation(),
++                $this->get_does_not_contain_num_parts_correct(),
++                $this->get_tries_remaining_expectation(2),
++                $this->get_no_hint_visible_expectation(),
++                new question_pattern_expectation('/' .
++                        preg_quote(get_string('selectmulti', 'qtype_multichoice'), '/') . '/'));
++
++        // Submit a partially right answer.
++        $this->process_submission(array('choice0' => '1', 'choice3' => '1', '-submit' => '1'));
++
++        // Verify.
++        $this->check_current_state(question_state::$todo);
++        $this->check_current_mark(null);
++        $this->check_current_output(
++                $this->get_contains_mc_checkbox_expectation('choice0', false, true),
++                $this->get_contains_mc_checkbox_expectation('choice1', false, false),
++                $this->get_contains_mc_checkbox_expectation('choice2', false, false),
++                $this->get_contains_mc_checkbox_expectation('choice3', false, true),
++                $this->get_contains_submit_button_expectation(false),
++                $this->get_contains_try_again_button_expectation(true),
++                $this->get_does_not_contain_correctness_expectation(),
++                $this->get_contains_hint_expectation('Hint 2'),
++                $this->get_contains_num_parts_correct(1),
++                $this->get_contains_standard_partiallycorrect_combined_feedback_expectation(),
++                $this->get_contains_hidden_expectation(
++                        $this->quba->get_field_prefix($this->slot) . 'choice0', '1'),
++                $this->get_does_not_contain_hidden_expectation(
++                        $this->quba->get_field_prefix($this->slot) . 'choice1'),
++                $this->get_does_not_contain_hidden_expectation(
++                        $this->quba->get_field_prefix($this->slot) . 'choice2'),
++                $this->get_contains_hidden_expectation(
++                        $this->quba->get_field_prefix($this->slot) . 'choice3', '0'));
++
++        // Do try again.
++        $this->process_submission(array('choice0' => '1', '-tryagain' => 1));
++
++        // Verify.
++        $this->check_current_state(question_state::$todo);
++        $this->check_current_mark(null);
++        $this->check_current_output(
++                $this->get_contains_question_text_expectation($mc),
++                $this->get_contains_mc_checkbox_expectation('choice0', true, true),
++                $this->get_contains_mc_checkbox_expectation('choice1', true, false),
++                $this->get_contains_mc_checkbox_expectation('choice2', true, false),
++                $this->get_contains_mc_checkbox_expectation('choice3', true, false),
++                $this->get_contains_submit_button_expectation(true),
++                $this->get_does_not_contain_feedback_expectation(),
++                $this->get_does_not_contain_num_parts_correct(),
++                $this->get_tries_remaining_expectation(1),
++                $this->get_no_hint_visible_expectation(),
++                new question_pattern_expectation('/' .
++                        preg_quote(get_string('selectmulti', 'qtype_multichoice'), '/') . '/'));
++
++        // Submit the right answer.
++        $this->process_submission(array('choice0' => '1', 'choice2' => '1', '-submit' => '1'));
++
++        // Verify.
++        $this->check_current_state(question_state::$gradedright);
++        $this->check_current_mark(1.5);
++        $this->check_current_output(
++                $this->get_contains_mc_checkbox_expectation('choice0', false, true),
++                $this->get_contains_mc_checkbox_expectation('choice1', false, false),
++                $this->get_contains_mc_checkbox_expectation('choice2', false, true),
++                $this->get_contains_mc_checkbox_expectation('choice3', false, false),
++                $this->get_contains_submit_button_expectation(false),
++                $this->get_does_not_contain_try_again_button_expectation(),
++                $this->get_contains_correct_expectation(),
++                $this->get_contains_standard_correct_combined_feedback_expectation());
++    }
++
++    public function test_interactive_behaviour2() {
++
++        // Create a multichoice single question.
++        $mc = test_question_maker::make_question('oumultiresponse', 'two_of_four');
++        $mc->hints = array(
++            new qtype_oumultiresponse_hint(1, 'Hint 1', FORMAT_HTML, true, true, true),
++            new qtype_oumultiresponse_hint(2, 'Hint 2', FORMAT_HTML, true, true, true),
++        );
++        $mc->shuffleanswers = false;
++        $this->start_attempt_at_question($mc, 'interactive', 3);
++
++        // Check the initial state.
++        $this->check_current_state(question_state::$todo);
++        $this->check_current_mark(null);
++        $this->check_current_output(
++                $this->get_contains_question_text_expectation($mc),
++                $this->get_contains_mc_checkbox_expectation('choice0', true, false),
++                $this->get_contains_mc_checkbox_expectation('choice1', true, false),
++                $this->get_contains_mc_checkbox_expectation('choice2', true, false),
++                $this->get_contains_mc_checkbox_expectation('choice3', true, false),
++                $this->get_contains_submit_button_expectation(true),
++                $this->get_does_not_contain_feedback_expectation(),
++                $this->get_does_not_contain_num_parts_correct(),
++                $this->get_tries_remaining_expectation(3),
++                $this->get_no_hint_visible_expectation(),
++                new question_pattern_expectation('/' .
++                        preg_quote(get_string('selectmulti', 'qtype_multichoice'), '/') . '/'));
++
++        // Submit the wrong answer with too manu options selected.
++        $this->process_submission(array(
++                'choice1' => '1', 'choice2' => '1', 'choice3' => '1', '-submit' => '1'));
++
++        // Verify.
++        $this->check_current_state(question_state::$todo);
++        $this->check_current_mark(null);
++        $this->check_current_output(
++                $this->get_contains_mc_checkbox_expectation('choice0', false, false),
++                $this->get_contains_mc_checkbox_expectation('choice1', false, true),
++                $this->get_contains_mc_checkbox_expectation('choice2', false, true),
++                $this->get_contains_mc_checkbox_expectation('choice3', false, true),
++                $this->get_contains_submit_button_expectation(false),
++                $this->get_contains_try_again_button_expectation(true),
++                $this->get_does_not_contain_correctness_expectation(),
++                $this->get_contains_hint_expectation('Hint 1'),
++                new question_pattern_expectation('/' .
++                        preg_quote(get_string('toomanyselected', 'qtype_multichoice'), '/') . '/'),
++                new question_no_pattern_expectation('/Three is odd/'),
++                $this->get_contains_standard_partiallycorrect_combined_feedback_expectation(),
++                $this->get_does_not_contain_hidden_expectation(
++                        $this->quba->get_field_prefix($this->slot) . 'choice0'),
++                $this->get_does_not_contain_hidden_expectation(
++                        $this->quba->get_field_prefix($this->slot) . 'choice1'),
++                $this->get_does_not_contain_hidden_expectation(
++                        $this->quba->get_field_prefix($this->slot) . 'choice2'),
++                $this->get_does_not_contain_hidden_expectation(
++                        $this->quba->get_field_prefix($this->slot) . 'choice3'));
++    }
++
++    public function test_interactive_clear_wrong() {
++
++        // Create a multichoice single question.
++        $mc = test_question_maker::make_question('oumultiresponse', 'two_of_four');
++        $mc->hints = array(
++            new qtype_oumultiresponse_hint(1, 'Hint 1', FORMAT_HTML, true, true, true),
++            new qtype_oumultiresponse_hint(2, 'Hint 2', FORMAT_HTML, true, true, true),
++        );
++        $mc->shuffleanswers = false;
++        $this->start_attempt_at_question($mc, 'interactive', 3);
++
++        // Check the initial state.
++        $this->check_current_state(question_state::$todo);
++        $this->check_current_mark(null);
++        $this->check_current_output(
++                $this->get_contains_marked_out_of_summary(),
++                $this->get_contains_question_text_expectation($mc),
++                $this->get_contains_mc_checkbox_expectation('choice0', true, false),
++                $this->get_contains_mc_checkbox_expectation('choice1', true, false),
++                $this->get_contains_mc_checkbox_expectation('choice2', true, false),
++                $this->get_contains_mc_checkbox_expectation('choice3', true, false),
++                $this->get_contains_submit_button_expectation(true),
++                $this->get_does_not_contain_feedback_expectation(),
++                $this->get_does_not_contain_num_parts_correct(),
++                $this->get_tries_remaining_expectation(3),
++                $this->get_no_hint_visible_expectation(),
++                new question_pattern_expectation('/' .
++                        preg_quote(get_string('selectmulti', 'qtype_multichoice'), '/') . '/'));
++
++        // Submit a wrong answer.
++        $this->process_submission(array('choice1' => '1', 'choice3' => '1', '-submit' => '1'));
++
++        // Verify.
++        $this->check_current_state(question_state::$todo);
++        $this->check_current_mark(null);
++        $this->check_current_output(
++                $this->get_contains_marked_out_of_summary(),
++                $this->get_contains_mc_checkbox_expectation('choice0', false, false),
++                $this->get_contains_mc_checkbox_expectation('choice1', false, true),
++                $this->get_contains_mc_checkbox_expectation('choice2', false, false),
++                $this->get_contains_mc_checkbox_expectation('choice3', false, true),
++                $this->get_contains_submit_button_expectation(false),
++                $this->get_contains_try_again_button_expectation(true),
++                $this->get_does_not_contain_correctness_expectation(),
++                $this->get_contains_num_parts_correct(0),
++                $this->get_contains_hint_expectation('Hint 1'),
++                $this->get_contains_standard_incorrect_combined_feedback_expectation(),
++                $this->get_contains_hidden_expectation(
++                        $this->quba->get_field_prefix($this->slot) . 'choice1', '0'),
++                $this->get_contains_hidden_expectation(
++                        $this->quba->get_field_prefix($this->slot) . 'choice3', '0'));
++
++        // Try again.
++        $this->process_submission(array('choice1' => '0', 'choice3' => '0', '-tryagain' => '1'));
++
++        // Vreify.
++        $this->check_current_state(question_state::$todo);
++        $this->check_current_mark(null);
++        $this->check_current_output(
++                $this->get_contains_marked_out_of_summary(),
++                $this->get_contains_question_text_expectation($mc),
++                $this->get_contains_mc_checkbox_expectation('choice0', true, false),
++                $this->get_contains_mc_checkbox_expectation('choice1', true, false),
++                $this->get_contains_mc_checkbox_expectation('choice2', true, false),
++                $this->get_contains_mc_checkbox_expectation('choice3', true, false),
++                $this->get_contains_submit_button_expectation(true),
++                $this->get_does_not_contain_feedback_expectation(),
++                $this->get_does_not_contain_num_parts_correct(),
++                $this->get_tries_remaining_expectation(2),
++                $this->get_no_hint_visible_expectation(),
++                new question_pattern_expectation('/' .
++                        preg_quote(get_string('selectmulti', 'qtype_multichoice'), '/') . '/'));
++
++        // Submit a partially right answer.
++        $this->process_submission(array('choice0' => '1', 'choice3' => '1', '-submit' => '1'));
++
++        // Verify.
++        $this->check_current_state(question_state::$todo);
++        $this->check_current_mark(null);
++        $this->check_current_output(
++                $this->get_contains_marked_out_of_summary(),
++                $this->get_contains_mc_checkbox_expectation('choice0', false, true),
++                $this->get_contains_mc_checkbox_expectation('choice1', false, false),
++                $this->get_contains_mc_checkbox_expectation('choice2', false, false),
++                $this->get_contains_mc_checkbox_expectation('choice3', false, true),
++                $this->get_contains_submit_button_expectation(false),
++                $this->get_contains_try_again_button_expectation(true),
++                $this->get_does_not_contain_correctness_expectation(),
++                $this->get_contains_num_parts_correct(1),
++                $this->get_contains_hint_expectation('Hint 2'),
++                $this->get_contains_standard_partiallycorrect_combined_feedback_expectation(),
++                $this->get_contains_hidden_expectation(
++                        $this->quba->get_field_prefix($this->slot) . 'choice0', '1'),
++                $this->get_contains_hidden_expectation(
++                        $this->quba->get_field_prefix($this->slot) . 'choice3', '0'));
++
++        // Try again.
++        $this->process_submission(array('choice0' => '1', 'choice3' => '0', '-tryagain' => '1'));
++
++        // Check the initial state.
++        $this->check_current_state(question_state::$todo);
++        $this->check_current_mark(null);
++        $this->check_current_output(
++                $this->get_contains_marked_out_of_summary(),
++                $this->get_contains_question_text_expectation($mc),
++                $this->get_contains_mc_checkbox_expectation('choice0', true, true),
++                $this->get_contains_mc_checkbox_expectation('choice1', true, false),
++                $this->get_contains_mc_checkbox_expectation('choice2', true, false),
++                $this->get_contains_mc_checkbox_expectation('choice3', true, false),
++                $this->get_contains_submit_button_expectation(true),
++                $this->get_does_not_contain_feedback_expectation(),
++                $this->get_does_not_contain_num_parts_correct(),
++                $this->get_tries_remaining_expectation(1),
++                $this->get_no_hint_visible_expectation(),
++                new question_pattern_expectation('/' .
++                        preg_quote(get_string('selectmulti', 'qtype_multichoice'), '/') . '/'));
++    }
++
++    public function test_interactive_bug_11263() {
++
++        // Create a multichoice single question.
++        $mc = test_question_maker::make_question('oumultiresponse', 'two_of_five');
++        $mc->penalty = 1;
++        $this->start_attempt_at_question($mc, 'interactive', 3);
++
++        // Check the initial state.
++        $this->check_current_state(question_state::$todo);
++        $this->check_current_mark(null);
++        $this->check_current_output(
++                $this->get_tries_remaining_expectation(3));
++
++        // Submit a wrong answer.
++        $this->process_submission(array(
++            'choice0' => '0',
++            'choice1' => '0',
++            'choice2' => '0',
++            'choice3' => '1',
++            'choice4' => '1',
++            '-submit' => '1'
++        ));
++
++        // Verify.
++        $this->check_current_state(question_state::$todo);
++        $this->check_current_mark(null);
++
++        // Try again.
++        $this->process_submission(array(
++            'choice0' => '0',
++            'choice1' => '0',
++            'choice2' => '0',
++            'choice3' => '1',
++            'choice4' => '1',
++            '-tryagain' => '1'
++        ));
++
++        // Verify.
++        $this->check_current_state(question_state::$todo);
++        $this->check_current_mark(null);
++        $this->check_current_output(
++                $this->get_tries_remaining_expectation(2));
++
++        // Submit a wrong answer again.
++        $this->process_submission(array(
++            'choice0' => '0',
++            'choice1' => '0',
++            'choice2' => '0',
++            'choice3' => '1',
++            'choice4' => '1',
++            '-submit' => '1'
++        ));
++
++        // Verify.
++        $this->check_current_state(question_state::$todo);
++        $this->check_current_mark(null);
++
++        // Try again - clears wrong.
++        $this->process_submission(array(
++            'choice0' => '0',
++            'choice1' => '0',
++            'choice2' => '0',
++            'choice3' => '0',
++            'choice4' => '0',
++            '-tryagain' => '1'
++        ));
++
++        // Verify.
++        $this->check_current_state(question_state::$todo);
++        $this->check_current_mark(null);
++        $this->check_current_output(
++                $this->get_tries_remaining_expectation(1));
++
++        // Submit one right choice.
++        $this->process_submission(array(
++            'choice0' => '1',
++            'choice1' => '0',
++            'choice2' => '0',
++            'choice3' => '0',
++            'choice4' => '0',
++            '-submit' => '1'
++        ));
++
++        // Verify.
++        $this->check_current_state(question_state::$gradedpartial);
++        $this->check_current_mark(0);
++    }
++
++    public function test_interactive_regrade_changing_num_tries_leaving_open() {
++        // Create a multichoice multiple question.
++        $q = test_question_maker::make_question('oumultiresponse', 'two_of_five');
++        $this->start_attempt_at_question($q, 'interactive', 3);
++
++        // Check the initial state.
++        $this->check_current_state(question_state::$todo);
++        $this->check_current_mark(null);
++        $this->check_current_output(
++                $this->get_tries_remaining_expectation(3));
++
++        // Submit the right answer.
++        $this->process_submission(array(
++            'choice0' => '1',
++            'choice1' => '1',
++            'choice2' => '0',
++            'choice3' => '0',
++            'choice4' => '0',
++            '-submit' => '1'
++        ));
++
++        // Verify.
++        $this->check_current_state(question_state::$gradedright);
++        $this->check_current_mark(3);
++
++        // Now change the quiestion so that answer is only partially right, and regrade.
++        $q->answers[15]->fraction = 1;
++
++        $this->quba->regrade_all_questions(false);
++
++        // Verify.
++        $this->check_current_state(question_state::$todo);
++        $this->check_current_mark(null);
++    }
++
++    public function test_interactive_regrade_changing_num_tries_finished() {
++        // Create a multichoice multiple question.
++        $q = test_question_maker::make_question('oumultiresponse', 'two_of_five');
++        $this->start_attempt_at_question($q, 'interactive', 3);
++
++        // Check the initial state.
++        $this->check_current_state(question_state::$todo);
++        $this->check_current_mark(null);
++        $this->check_current_output(
++                $this->get_tries_remaining_expectation(3));
++
++        // Submit the right answer.
++        $this->process_submission(array(
++            'choice0' => '1',
++            'choice1' => '1',
++            'choice2' => '0',
++            'choice3' => '0',
++            'choice4' => '0',
++            '-submit' => '1'
++        ));
++
++        // Verify.
++        $this->check_current_state(question_state::$gradedright);
++        $this->check_current_mark(3);
++
++        // Now change the quiestion so that answer is only partially right, and regrade.
++        $q->answers[15]->fraction = 1;
++
++        $this->quba->regrade_all_questions(true);
++
++        // Verify.
++        $this->check_current_state(question_state::$gradedpartial);
++        $this->check_current_mark(2);
++    }
++}
+diff --git a/question/type/oumultiresponse/version.php b/question/type/oumultiresponse/version.php
+new file mode 100755
+index 0000000..ebd5dc8
+--- /dev/null
++++ b/question/type/oumultiresponse/version.php
+@@ -0,0 +1,39 @@
++<?php
++// This file is part of Moodle - http://moodle.org/
++//
++// Moodle is free software: you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation, either version 3 of the License, or
++// (at your option) any later version.
++//
++// Moodle is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
++
++/**
++ * OU multiple response question type version file.
++ *
++ * @package   qtype_oumultiresponse
++ * @copyright 2008 The Open University
++ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
++ */
++
++defined('MOODLE_INTERNAL') || die();
++
++
++$plugin->version   = 2016030800;
++$plugin->requires  = 2014041100;
++$plugin->cron      = 0;
++$plugin->component = 'qtype_oumultiresponse';
++$plugin->maturity  = MATURITY_STABLE;
++$plugin->release   = '1.8 for Moodle 2.7+';
++
++$plugin->dependencies = array(
++    'qtype_multichoice' => 2013110500,
++);
++
++$plugin->outestssufficient = true;
+-- 
+1.8.3.1
+

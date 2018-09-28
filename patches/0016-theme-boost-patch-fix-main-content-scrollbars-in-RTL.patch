@@ -1,0 +1,25 @@
+From 77cdbea75260203a160e0d4a4e56810f06c70d9d Mon Sep 17 00:00:00 2001
+From: Nadav Kavalerchik <nadavkav@gmail.com>
+Date: Wed, 11 Oct 2017 16:44:04 +0300
+Subject: [PATCH 16/95] theme/boost (patch) fix main content scrollbars in RTL
+ mode MDL-56762
+
+---
+ theme/boost/scss/moodle/sticky-footer.scss | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/theme/boost/scss/moodle/sticky-footer.scss b/theme/boost/scss/moodle/sticky-footer.scss
+index 725ffb6..1a3b641 100644
+--- a/theme/boost/scss/moodle/sticky-footer.scss
++++ b/theme/boost/scss/moodle/sticky-footer.scss
+@@ -6,6 +6,7 @@ $footer-min-height: 130px !default;
+ html,
+ body {
+     height: 100%;
++    overflow-y: auto;
+ }
+ 
+ #page-wrapper {
+-- 
+1.8.3.1
+

@@ -1,0 +1,38 @@
+From 92844ab2ca768c554fa1374345092d58206dd378 Mon Sep 17 00:00:00 2001
+From: Nadav Kavalerchik <nadavkav@gmail.com>
+Date: Sat, 14 Oct 2017 11:42:29 +0300
+Subject: [PATCH 57/95] question/type/multichoice (patch) fix Hebrew MC option
+ letters (MDL-49089)
+
+---
+ lang/en/langconfig.php                 | 1 +
+ question/type/multichoice/renderer.php | 4 +++-
+ 2 files changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/lang/en/langconfig.php b/lang/en/langconfig.php
+index 48eaf09..f2c7d88 100644
+--- a/lang/en/langconfig.php
++++ b/lang/en/langconfig.php
+@@ -53,3 +53,4 @@ $string['thisdirectionvertical'] = 'btt';
+ $string['thislanguage'] = 'English';
+ $string['thislanguageint'] = 'English';
+ $string['thousandssep'] = ',';
++$string['localisedlistlables'] = 'A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z';
+diff --git a/question/type/multichoice/renderer.php b/question/type/multichoice/renderer.php
+index f333c1d..2a75fc8 100644
+--- a/question/type/multichoice/renderer.php
++++ b/question/type/multichoice/renderer.php
+@@ -163,7 +163,9 @@ abstract class qtype_multichoice_renderer_base extends qtype_with_combined_feedb
+                 $number = chr(ord('a') + $num);
+                 break;
+             case 'ABCD':
+-                $number = chr(ord('A') + $num);
++                //$number = chr(ord('A') + $num); // MDL-49089
++                $letters = explode(',', get_string('localisedlistlables', 'langconfig'));
++                $number = $letters[$num];
+                 break;
+             case '123':
+                 $number = $num + 1;
+-- 
+1.8.3.1
+

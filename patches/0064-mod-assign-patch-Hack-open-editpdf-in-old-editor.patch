@@ -1,0 +1,48 @@
+From 24fea5036b872a4b9fd3d3b3a48975563f966c4c Mon Sep 17 00:00:00 2001
+From: Nadav Kavalerchik <nadavkav@gmail.com>
+Date: Sat, 14 Oct 2017 13:17:12 +0300
+Subject: [PATCH 64/95] mod/assign (patch) Hack open editpdf in old editor
+
+---
+ mod/assign/gradingtable.php | 4 ++--
+ mod/assign/renderer.php     | 2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/mod/assign/gradingtable.php b/mod/assign/gradingtable.php
+index 47867bc..542f573 100644
+--- a/mod/assign/gradingtable.php
++++ b/mod/assign/gradingtable.php
+@@ -938,7 +938,7 @@ class assign_grading_table extends table_sql implements renderable {
+         if (!$this->is_downloading() && $this->hasgrade) {
+             $urlparams = array('id' => $this->assignment->get_course_module()->id,
+                                'rownum' => 0,
+-                               'action' => 'grader');
++                               'action' => 'grade'); // disable "grader" link (nadavkav)
+ 
+             if ($this->assignment->is_blind_marking()) {
+                 if (empty($row->recordid)) {
+@@ -1175,7 +1175,7 @@ class assign_grading_table extends table_sql implements renderable {
+ 
+         $urlparams = array('id' => $this->assignment->get_course_module()->id,
+                                'rownum' => 0,
+-                               'action' => 'grader');
++                               'action' => 'grade'); // disable "grader" link (nadavkav)
+ 
+         if ($this->assignment->is_blind_marking()) {
+             if (empty($row->recordid)) {
+diff --git a/mod/assign/renderer.php b/mod/assign/renderer.php
+index 649e6742..3fd2ea8 100644
+--- a/mod/assign/renderer.php
++++ b/mod/assign/renderer.php
+@@ -339,7 +339,7 @@ class mod_assign_renderer extends plugin_renderer_base {
+         $urlparams = array('id' => $summary->coursemoduleid, 'action' => 'grading');
+         $url = new moodle_url('/mod/assign/view.php', $urlparams);
+         $o .= '<a href="' . $url . '" class="btn btn-secondary">' . get_string('viewgrading', 'mod_assign') . '</a> ';
+-        $urlparams = array('id' => $summary->coursemoduleid, 'action' => 'grader');
++        $urlparams = array('id' => $summary->coursemoduleid, 'action' => 'grade'); // disable "grader" link (nadavkav)
+         $url = new moodle_url('/mod/assign/view.php', $urlparams);
+         $o .= '<a href="' . $url . '" class="btn btn-primary">' . get_string('grade') . '</a>';
+         $o .= $this->output->container_end();
+-- 
+1.8.3.1
+
