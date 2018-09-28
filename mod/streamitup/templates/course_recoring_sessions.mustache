@@ -1,0 +1,77 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template mod_streamitup/streamitup
+
+    StreamitUP course lession widget display.
+
+    Context variables required for this template:
+    * username (streamitup "course" id)
+    * password
+}}
+<!--<script src="http://www.streamitupcdn.net/levinsky_db/database/cookie_fns.js"></script>-->
+<form name="gotomember" method="post" action="http://www.streamitupcdn.net/levinsky_db/database/member.php"
+      target="_self">
+    <input type="hidden" name="lesson_url" value="all_lessons">
+    <input type="hidden" name="username" value="{{{ username }}}">
+    <input type="hidden" name="studentname" value="Guest">
+    <input type="hidden" name="passwd" value="{{{ password }}}">
+    <input type="image" src="http://www.streamitupcdn.net/elearning/levinsky/images/Link.png" alt="Watch Lectures"
+           value=submit/>
+</form>
+<script type="text/javascript">
+
+    //--------------------
+    //File Version 3.1.1.1
+    //--------------------
+    // http://www.streamitupcdn.net/levinsky_db/database/cookie_fns.js
+
+    /**
+     * Removes space chars from the beginning and end of the string
+     */
+    function trim(str) {
+        return str.replace(/^\s+|\s+$/g, '');
+    }
+
+    /**
+     * Returns all cookies in the page
+     */
+    function ReadCookie() {
+
+        var allcookies = document.cookie;
+        var cookies = new Array();
+        cookiearray = allcookies.split(';');
+
+        for (var i = 0; i < cookiearray.length; i++) {
+
+            key = trim(cookiearray[i].split('=')[0]);
+            value = trim(decodeURIComponent(cookiearray[i].split('=')[1]));
+            cookies[key] = value;
+        }
+        return cookies;
+    }
+
+    //////////////////////
+
+    if (document.cookie) {
+        cookies = ReadCookie();
+        if (cookies["firstname"] && cookies["lastname"]) {
+            document.gotomember.studentname.value = cookies["firstname"] + " " + cookies["lastname"];
+        }
+    }
+
+</script>
