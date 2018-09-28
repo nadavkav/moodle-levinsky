@@ -498,6 +498,11 @@ class core_renderer extends \core_renderer {
                 ($currentnode->type == navigation_node::TYPE_COURSE || $currentnode->type == navigation_node::TYPE_SECTION)) {
             $showcoursemenu = true;
         }
+        // Render the course menu within the course context, the module context and the block context.
+        if (($context->contextlevel == CONTEXT_COURSE || $context->contextlevel == CONTEXT_MODULE
+             || $context->contextlevel == CONTEXT_BLOCK) && !empty($currentnode)) {
+            $showcoursemenu = true;
+        }
 
         $courseformat = course_get_format($this->page->course);
         // This is a single activity course format, always show the course menu on the activity main page.
