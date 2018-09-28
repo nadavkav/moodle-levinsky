@@ -5584,7 +5584,8 @@ function get_mailer($action='get') {
             // Use SMTP directly.
             $mailer->isSMTP();
             if (!empty($CFG->debugsmtp)) {
-                $mailer->SMTPDebug = true;
+                // comment out since causing user sending messages json errors (nadavkav)
+                //$mailer->SMTPDebug = true;
             }
             // Specify main and backup servers.
             $mailer->Host          = $CFG->smtphosts;
@@ -5764,7 +5765,7 @@ function email_to_user($user, $from, $subject, $messagetext, $messagehtml = '', 
     //echo strpos(';', $user->email);die;
     if (strpos($user->email, ';')>0) {
         list($user->email, $user->email2) = explode(';', $user->email);
-        echo "Split emails to: $user->email, $user->email2\n";
+        debugging("Split emails to: $user->email, $user->email2\n");
     } else {
         $user->email2 = $user->email;
     }
@@ -5842,7 +5843,7 @@ function email_to_user($user, $from, $subject, $messagetext, $messagehtml = '', 
     // Fix sender (from) email to second (private) email, if one is available from the Michlol. (nadavkav@gmail.com)
     if (strpos($from->email, ';')>0) {
         list($from->email, $from->email2) = explode(';', $from->email);
-        echo "Split 'from' emails to: $from->email, $from->email2\n";
+        debugging("Split 'from' emails to: $from->email, $from->email2\n");
     } else {
         $from->email2 = $from->email;
     }
