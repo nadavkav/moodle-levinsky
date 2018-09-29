@@ -548,3 +548,4 @@ $string['syllabus'] = 'Syllabus';
 $string['mytimetable'] = 'My Timetable';
 $string['noclasses'] = 'No information available, please ask your teachers for updates.';
 $string['teachers'] = 'Teachers';
+$string['mycoursesfilter_settings'] = 'Filter courses';

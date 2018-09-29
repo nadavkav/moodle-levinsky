@@ -13,7 +13,7 @@ if (file_exists($CFG->dirroot . "/blocks/course_overview/renderer.php") ) {
     class theme_fordson_block_course_overview_renderer extends block_course_overview_renderer {
 
         public function course_overview($courses, $overviews) {
-            global $CFG, $USER;
+            global $CFG, $USER, $PAGE;
 
             list($categories, $childrencats, $roles, $filterbycategory, $filterbyrole, $filterbysemester, $html) = filter_courses_form();
 
