@@ -61,7 +61,7 @@ class main implements renderable, templatable {
      * @return stdClass
      */
     public function export_for_template(renderer_base $output) {
-        global $USER;
+        global $USER, $DB, $CFG;
 
         $courses = enrol_get_my_courses('*');
         $coursesprogress = [];
@@ -118,6 +118,20 @@ class main implements renderable, templatable {
                 unset($courses[$key]);
             }
             */
+        }
+
+        // Sort course by user's lastaccess.
+        $filter_sort = optional_param('filter_sort', get_string('sortabc', 'theme_fordson'), PARAM_RAW);
+        //if (!empty($CFG->navsortmycoursessort) && $CFG->navsortmycoursessort === 'lastaccess') {
+        if ($filter_sort === get_string('sortlastaccess', 'theme_fordson')) {
+            $lastaccesscourses = $DB->get_records('user_lastaccess', array('userid' => $USER->id), 'timeaccess DESC');
+            foreach ($lastaccesscourses as $c) {
+                if (isset($courses[$c->courseid])) {
+                    $courses[$c->courseid]->lastaccess = $c->timeaccess;
+                }
+            }
+            // Sort by user's lastaccess to course
+            usort($courses, function($a, $b) { return $b->lastaccess - $a->lastaccess; });
         }
 
         foreach ($courses as $course) {

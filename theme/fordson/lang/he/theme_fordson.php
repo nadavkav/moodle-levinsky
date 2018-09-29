@@ -63,3 +63,5 @@ $string['mycoursesfilter_settings'] = 'מסנן הקורסים שלי';
 $string['filterbyyear'] = 'בחירת שנה';
 $string['filterbysemester'] = 'סמסטר';
 $string['filtercourses'] = 'סינון קורסים';
+$string['sortlastaccess'] = 'גישה אחרונה';
+$string['sortabc'] = 'לפי שם קורס';
