@@ -84,6 +84,27 @@ class courses_view implements renderable, templatable {
             // Convert summary to plain text.
             $exportedcourse->summary = content_to_text($exportedcourse->summary, $exportedcourse->summaryformat);
 
+            // Get course teachers (roleid = 3)
+            $courseteacherslist = get_role_users(3, $context);
+            foreach ($courseteacherslist as $teacher) {
+                $exportedcourse->courseteachers .= ', '.$teacher->firstname. ' '. $teacher->lastname;
+            }
+            $exportedcourse->courseteachers = ltrim($exportedcourse->courseteachers, ',');
+
+            // Display group(s) info. (Galit)
+            $coursegroups = groups_get_all_groups($course->id);
+            $meshotaf = '';
+            $grouplist = '';
+            if (count($coursegroups) > 1) {
+                $meshotaf = get_string('groupmeshotaf', 'block_myoverview');
+                $grouplist = get_string('grouplist', 'block_myoverview');
+                $strgroup = get_string('group', 'block_myoverview');
+                foreach ($coursegroups as $group) {
+                    $grouplist .= " - ". str_replace($strgroup,' ',$group->name);
+                }
+            }
+            $exportedcourse->coursegroups = $meshotaf.$grouplist;
+
             $course = new \course_in_list($course);
             foreach ($course->get_course_overviewfiles() as $file) {
                 $isimage = $file->is_valid_image();

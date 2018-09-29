@@ -549,3 +549,8 @@ $string['mytimetable'] = 'My Timetable';
 $string['noclasses'] = 'No information available, please ask your teachers for updates.';
 $string['teachers'] = 'Teachers';
 $string['mycoursesfilter_settings'] = 'Filter courses';
+
+// Block myoverview (overrides)
+$string['filterbyyear'] = 'Choose a year';
+$string['filterbysemester'] = 'Semester';
+$string['filtercourses'] = 'Filter';

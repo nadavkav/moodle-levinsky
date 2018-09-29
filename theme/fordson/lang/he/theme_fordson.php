@@ -58,3 +58,8 @@ $string['mytimetable'] = 'לוח מפגשים בכיתות';
 $string['noclasses'] = 'מידע אודות מיקום המפגשים בכיתות אינו זמין, יש לפנות למזכירות למידע עדכני.';
 $string['teachers'] = 'מרצים';
 $string['mycoursesfilter_settings'] = 'מסנן הקורסים שלי';
+
+// Block myoverview (overrides)
+$string['filterbyyear'] = 'בחירת שנה';
+$string['filterbysemester'] = 'סמסטר';
+$string['filtercourses'] = 'סינון קורסים';

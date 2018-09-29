@@ -45,3 +45,13 @@ $string['timeline'] = 'Timeline';
 $string['viewcourse'] = 'View course';
 $string['viewcoursename'] = 'View course {$a}';
 $string['privacy:metadata:overviewlasttab'] = 'This stores the last tab selected by the user on the overview block.';
+
+$string['filter_years'] = 'Years list';
+$string['filter_yearshelp'] = 'Year list, each year on a separate row and years code = year name';
+$string['filter_semesters'] = 'Semester list';
+$string['filter_semestershelp'] = 'Semester list, each semester on a separate row and semester code = semester name';
+$string['filter_coursefield'] = 'Course field';
+$string['filter_coursefieldhelp'] = 'Course field that will be used to filter year and semester (idnumber, fullname, shortname)';
+$string['groupmeshotaf'] = ' shared for all groups / ';
+$string['grouplist'] = ' groups: ';
+$string['group'] = 'group';

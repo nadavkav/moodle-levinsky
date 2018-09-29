@@ -66,6 +66,59 @@ class main implements renderable, templatable {
         $courses = enrol_get_my_courses('*');
         $coursesprogress = [];
 
+        // Filter courses by Year and Semester.
+        $fcb_year = optional_param('fcb_year', null, PARAM_RAW);
+        $fcb_semester = optional_param('fcb_semester', null, PARAM_RAW);
+
+        $filter_years = get_config('block_myoverview', 'filter_years');
+        //$yearoptions[] = array('yearcode' => '', 'yearname' => get_string('choose'));
+        foreach (explode("\r\n", $filter_years) as $yearrow) {
+            list($yearcode ,$yearname) = explode('=', $yearrow);
+            if ($fcb_year == $yearcode) {
+                $yearoptions[] = array('yearcode' => $yearcode, 'yearname' => $yearname, 'selected' => 'selected');
+            } else {
+                $yearoptions[] = array('yearcode' => $yearcode, 'yearname' => $yearname);
+            }
+        }
+
+        $filter_semesters = get_config('block_myoverview', 'filter_semesters');
+        //$semesteroptions[] = array('semestercode' => '', 'semestername' => get_string('choose'));
+        foreach (explode("\r\n", $filter_semesters) as $semesterrow) {
+            list($semestercode ,$semestername) = explode('=', $semesterrow);
+            if ($fcb_semester == $semestercode) {
+                $semesteroptions[] = array('semestercode' => $semestercode, 'semestername' => $semestername, 'selected' => 'selected');
+            } else {
+                $semesteroptions[] = array('semestercode' => $semestercode, 'semestername' => $semestername);
+            }
+        }
+
+        $filter_full = $fcb_year;
+        if ($fcb_semester !== 'all' && $fcb_semester !== null) {
+            $filter_full = $fcb_year.'_'.$fcb_semester;
+        }
+        if ($fcb_semester === 'all' && $fcb_year === 'all') {
+            $filter_full = '';
+        }
+        if ($fcb_semester === '' && $fcb_year === '') {
+            $filter_full = '___';
+        }
+        // Remove courses which are not chosen by Category / Role / Semester
+        $filter_coursefield = get_config('block_myoverview', 'filter_coursefield');
+        foreach ($courses as $key => $course) {
+
+            if (null != $filter_full && strpos($course->{$filter_coursefield}, $filter_full) === false) {
+                unset($courses[$key]);
+            }
+
+            /*
+            $course->context = context_course::instance($course->id, MUST_EXIST);
+            if ($filterbyrole > 0 && !user_has_role_assignment($USER->id, $filterbyrole, $course->context->id)){
+                //continue;
+                unset($courses[$key]);
+            }
+            */
+        }
+
         foreach ($courses as $course) {
 
             $completion = new \completion_info($course);
@@ -105,7 +158,10 @@ class main implements renderable, templatable {
                 'noevents' => $noeventsurl
             ],
             'viewingtimeline' => $viewingtimeline,
-            'viewingcourses' => $viewingcourses
+            'viewingcourses' => $viewingcourses,
+            // Used by theme/fordson myoverview templates.
+            'filteryears' => $yearoptions,
+            'filtersemesters' => $semesteroptions
         ];
     }
 }
