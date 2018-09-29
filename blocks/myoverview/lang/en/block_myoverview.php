@@ -48,6 +48,8 @@ $string['privacy:metadata:overviewlasttab'] = 'This stores the last tab selected
 
 $string['filter_years'] = 'Years list';
 $string['filter_yearshelp'] = 'Year list, each year on a separate row and years code = year name';
+$string['filter_yearsdefault'] = 'Deafult year code';
+$string['filter_yearsdefaulthelp'] = 'Deafult year code';
 $string['filter_semesters'] = 'Semester list';
 $string['filter_semestershelp'] = 'Semester list, each semester on a separate row and semester code = semester name';
 $string['filter_coursefield'] = 'Course field';

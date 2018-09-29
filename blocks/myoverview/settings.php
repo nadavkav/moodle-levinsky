@@ -45,6 +45,11 @@ if ($ADMIN->fulltree) {
     $setting->set_force_ltr(false);
     $settings->add($setting);
 
+    $settings->add(new admin_setting_configtext('block_myoverview/filter_yearsdefault',
+        get_string('filter_yearsdefault', 'block_myoverview'),
+        get_string('filter_yearsdefaulthelp', 'block_myoverview'),
+        ''));
+
     $setting = new admin_setting_configtextarea('block_myoverview/filter_semesters',
         get_string('filter_semesters', 'block_myoverview'),
         get_string('filter_semestershelp', 'block_myoverview'),

@@ -24,6 +24,8 @@
 
 $string['filter_years'] = 'רשימת שנים';
 $string['filter_yearshelp'] = 'רשימת שנים, כל שנה בשורה נפרדת כאשר קוד שנה = שם שנה';
+$string['filter_yearsdefault'] = 'קוד שנה';
+$string['filter_yearsdefaulthelp'] = 'בררת מחדל של קוד השנה';
 $string['filter_semesters'] = 'רשימת סמסטרים';
 $string['filter_semestershelp'] = 'רשימת סמסטרים, כל סמסטר בשורה נפרדת כאשר קוד סמסטר = שם סמסטר';
 $string['filter_coursefield'] = 'שדה סינון בקורס';
