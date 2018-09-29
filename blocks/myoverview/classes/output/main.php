@@ -67,7 +67,8 @@ class main implements renderable, templatable {
         $coursesprogress = [];
 
         // Filter courses by Year and Semester.
-        $fcb_year = optional_param('fcb_year', null, PARAM_RAW);
+        $filter_yearsdefault = get_config('block_myoverview', 'filter_yearsdefault');
+        $fcb_year = optional_param('fcb_year', $filter_yearsdefault, PARAM_RAW);
         $fcb_semester = optional_param('fcb_semester', null, PARAM_RAW);
 
         $filter_years = get_config('block_myoverview', 'filter_years');
