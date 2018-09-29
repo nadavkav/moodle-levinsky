@@ -554,3 +554,5 @@ $string['mycoursesfilter_settings'] = 'Filter courses';
 $string['filterbyyear'] = 'Choose a year';
 $string['filterbysemester'] = 'Semester';
 $string['filtercourses'] = 'Filter';
+$string['sortlastaccess'] = 'Sort by user lastaccess';
+$string['sortabc'] = 'Sort by course name';
