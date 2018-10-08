@@ -21,7 +21,7 @@
                 <div class="col-md-3 activities">
                     <div class="dashtitle">
                         <h3 class="card-title"><i class="fa fa-check-square-o dashicon"></i>{{{activitylinkstitle}}}</h3>
-                        <p>{{{activitylinkstitle_desc}}}</p>   
+                        <p>{{{activitylinkstitle_desc}}}</p>
                     </div>
                     <div class="list-group">
                     {{{courseactivities}}}
@@ -42,6 +42,7 @@
                         {{/dashlinks}}
                     </div>
                     {{/hasquestionpermission}}
+                    <!--
                     {{#hasbadgepermission}}
                     <div class="dashtitle">
                         <h3><i class="fa fa-trophy dashicon"></i>{{{badgestitle}}}</h3>
@@ -55,6 +56,20 @@
                         {{/dashlinks}}
                     </div>
                     {{/hasbadgepermission}}
+                    -->
+                    {{#hasreportspermission}}
+                        <div class="dashtitle">
+                            <h3><i class="fa fa-trophy dashicon"></i>{{{reportstitle}}}</h3>
+                            <p>{{{reportsdesc}}}</p>
+                        </div>
+                        <div class="list-group">
+                            {{#dashlinks}}
+                                {{#hasreportslinks}}
+                                    <a href="{{{url}}}" class="list-group-item">{{{title}}}</a>
+                                {{/hasreportslinks}}
+                            {{/dashlinks}}
+                        </div>
+                    {{/hasreportspermission}}
                 </div>
 
                 {{#hascoursepermission}}
@@ -93,8 +108,22 @@
                         {{/hasuserlinks}}
                         {{/dashlinks}}
                     </div>
+                    {{#hasuserpermission}}
+                        <div class="dashtitle">
+                            <h3><i class="fa fa-trophy dashicon"></i>{{{gradestitle}}}</h3>
+                            <p>{{{gradesdesc}}}</p>
+                        </div>
+                        <div class="list-group">
+                            {{#dashlinks}}
+                                {{#hasgradeslinks}}
+                                    <a href="{{{url}}}" class="list-group-item">{{{title}}}</a>
+                                {{/hasgradeslinks}}
+                            {{/dashlinks}}
+                        </div>
+                    {{/hasuserpermission}}
                 </div>
                 {{/hasuserpermission}}
+
             </div>
 
         </div>
@@ -123,7 +152,7 @@
 
         <div class="studentdashboard">
         <div class="container-fluid">
-        
+
             <div class="row">
                     {{#studentdashboardtextbox}}
                     <div class="col-md-6">
@@ -203,7 +232,7 @@
 
                     <div class="col-md-3 activitylinks">
                         <div class="dashtitle">
-                            <h3><i class="fa fa-check-square-o dashicon"></i>{{{activitylinkstitle}}}</h3>     
+                            <h3><i class="fa fa-check-square-o dashicon"></i>{{{activitylinkstitle}}}</h3>
                         </div>
                         <div class="list-group">
                             {{{courseactivities}}}
