@@ -556,3 +556,9 @@ $string['filterbysemester'] = 'Semester';
 $string['filtercourses'] = 'Filter';
 $string['sortlastaccess'] = 'Sort by user lastaccess';
 $string['sortabc'] = 'Sort by course name';
+
+// Extend teacher dashboard
+$string['reports'] = 'Reports';
+$string['reports_desc'] = 'Tools and reports';
+$string['grades'] = 'Grades';
+$string['grades_desc'] = 'Grades and completion';

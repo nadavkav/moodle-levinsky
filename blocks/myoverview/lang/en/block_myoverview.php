@@ -54,6 +54,8 @@ $string['filter_semesters'] = 'Semester list';
 $string['filter_semestershelp'] = 'Semester list, each semester on a separate row and semester code = semester name';
 $string['filter_coursefield'] = 'Course field';
 $string['filter_coursefieldhelp'] = 'Course field that will be used to filter year and semester (idnumber, fullname, shortname)';
+$string['filter_startdategrace'] = 'Start date grace';
+$string['filter_startdategracehelp'] = 'Set the number of days course will be seen previous to course start date in "In Progress" tab';
 $string['groupmeshotaf'] = ' shared for all groups / ';
 $string['grouplist'] = ' groups: ';
 $string['group'] = 'group';

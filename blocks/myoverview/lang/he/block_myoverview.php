@@ -30,6 +30,8 @@ $string['filter_semesters'] = 'רשימת סמסטרים';
 $string['filter_semestershelp'] = 'רשימת סמסטרים, כל סמסטר בשורה נפרדת כאשר קוד סמסטר = שם סמסטר';
 $string['filter_coursefield'] = 'שדה סינון בקורס';
 $string['filter_coursefieldhelp'] = 'שדה קורס אשר ישמש לסינון שנה וסמסטר (idnumber, fullname, shortname)';
+$string['filter_startdategrace'] = 'זמינות קורס מקדימה בימים';
+$string['filter_startdategracehelp'] = 'מספר הימים לפני מועד תחילת הקורס אשר בהם יוצג הקורס כזמין למשתמשים בלשונית "בלמידה"';
 $string['groupmeshotaf'] = ' משותף לכל הקבוצות / ';
 $string['grouplist'] = ' קבוצות: ';
 $string['group'] = 'קבוצה';

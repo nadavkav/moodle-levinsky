@@ -61,4 +61,8 @@ if ($ADMIN->fulltree) {
         get_string('filter_coursefield', 'block_myoverview'),
         get_string('filter_coursefieldhelp', 'block_myoverview'),
         'idnumber'));
+    $settings->add(new admin_setting_configtext('block_myoverview/filter_startdategrace',
+        get_string('filter_startdategrace', 'block_myoverview'),
+        get_string('filter_startdategracehelp', 'block_myoverview'),
+        '14'));
 }

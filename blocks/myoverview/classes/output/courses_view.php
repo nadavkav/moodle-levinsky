@@ -21,6 +21,7 @@
  * @copyright  2017 Ryan Wyllie <ryan@moodle.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+
 namespace block_myoverview\output;
 defined('MOODLE_INTERNAL') || die();
 
@@ -35,9 +36,10 @@ use core_course\external\course_summary_exporter;
  * @copyright  2017 Simey Lameze <simey@moodle.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class courses_view implements renderable, templatable {
+class courses_view implements renderable, templatable
+{
     /** Quantity of courses per page. */
-    const COURSES_PER_PAGE = 6;
+    const COURSES_PER_PAGE = 10;
 
     /** @var array $courses List of courses the user is enrolled in. */
     protected $courses = [];
@@ -51,7 +53,8 @@ class courses_view implements renderable, templatable {
      * @param array $courses list of courses.
      * @param array $coursesprogress list of courses progress.
      */
-    public function __construct($courses, $coursesprogress) {
+    public function __construct($courses, $coursesprogress)
+    {
         $this->courses = $courses;
         $this->coursesprogress = $coursesprogress;
     }
@@ -62,10 +65,11 @@ class courses_view implements renderable, templatable {
      * @param \renderer_base $output
      * @return array
      */
-    public function export_for_template(renderer_base $output) {
+    public function export_for_template(renderer_base $output)
+    {
         global $CFG;
-        require_once($CFG->dirroot.'/course/lib.php');
-        require_once($CFG->dirroot.'/lib/coursecatlib.php');
+        require_once($CFG->dirroot . '/course/lib.php');
+        require_once($CFG->dirroot . '/lib/coursecatlib.php');
 
         // Build courses view data structure.
         $coursesview = [
@@ -83,13 +87,16 @@ class courses_view implements renderable, templatable {
             $exportedcourse = $exporter->export($output);
             // Convert summary to plain text.
             $exportedcourse->summary = content_to_text($exportedcourse->summary, $exportedcourse->summaryformat);
+            $exportedcourse->shortname = $course->shortname;
 
             // Get course teachers (roleid = 3)
             $courseteacherslist = get_role_users(3, $context);
-            foreach ($courseteacherslist as $teacher) {
-                $exportedcourse->courseteachers .= ', '.$teacher->firstname. ' '. $teacher->lastname;
+            if (count($courseteacherslist) < 5) {
+                foreach ($courseteacherslist as $teacher) {
+                    $exportedcourse->courseteachers .= ', ' . $teacher->firstname . ' ' . $teacher->lastname;
+                }
+                $exportedcourse->courseteachers = ltrim($exportedcourse->courseteachers, ',');
             }
-            $exportedcourse->courseteachers = ltrim($exportedcourse->courseteachers, ',');
 
             // Display group(s) info. (Galit)
             $coursegroups = groups_get_all_groups($course->id);
@@ -100,18 +107,18 @@ class courses_view implements renderable, templatable {
                 $grouplist = get_string('grouplist', 'block_myoverview');
                 $strgroup = get_string('group', 'block_myoverview');
                 foreach ($coursegroups as $group) {
-                    $grouplist .= " - ". str_replace($strgroup,' ',$group->name);
+                    $grouplist .= " - " . str_replace($strgroup, ' ', $group->name);
                 }
             }
-            $exportedcourse->coursegroups = $meshotaf.$grouplist;
+            $exportedcourse->coursegroups = $meshotaf . $grouplist;
 
             $course = new \course_in_list($course);
             foreach ($course->get_course_overviewfiles() as $file) {
                 $isimage = $file->is_valid_image();
                 if ($isimage) {
                     $url = file_encode_url("$CFG->wwwroot/pluginfile.php",
-                        '/'. $file->get_contextid(). '/'. $file->get_component(). '/'.
-                        $file->get_filearea(). $file->get_filepath(). $file->get_filename(), !$isimage);
+                        '/' . $file->get_contextid() . '/' . $file->get_component() . '/' .
+                        $file->get_filearea() . $file->get_filepath() . $file->get_filename(), !$isimage);
                     $exportedcourse->courseimage = $url;
                     $exportedcourse->classes = 'courseimage';
                     break;
@@ -133,7 +140,9 @@ class courses_view implements renderable, templatable {
 
             $courseprogress = null;
 
-            $classified = course_classify_for_timeline($course);
+            //$classified = course_classify_for_timeline($course);
+            // Forked core function to customize start time. (nadavkav)
+            $classified = $this->course_classify_for_timeline($course);
 
             if (isset($this->coursesprogress[$courseid])) {
                 $courseprogress = $this->coursesprogress[$courseid]['progress'];
@@ -201,11 +210,44 @@ class courses_view implements renderable, templatable {
      * @param int $courseid
      * @return string $color, hexvalue color code.
      */
-    protected function coursecolor($courseid) {
+    protected function coursecolor($courseid)
+    {
         // The colour palette is hardcoded for now. It would make sense to combine it with theme settings.
         $basecolors = ['#81ecec', '#74b9ff', '#a29bfe', '#dfe6e9', '#00b894', '#0984e3', '#b2bec3', '#fdcb6e', '#fd79a8', '#6c5ce7'];
 
         $color = $basecolors[$courseid % 10];
         return $color;
+    }
+
+    private function course_classify_for_timeline($course, $user = null, $completioninfo = null) {
+        global $USER;
+
+        if ($user == null) {
+            $user = $USER;
+        }
+
+        $today = time();
+        // End date past.
+        if (!empty($course->enddate) && $course->enddate < $today) {
+            return COURSE_TIMELINE_PAST;
+        }
+
+        if ($completioninfo == null) {
+            $completioninfo = new \completion_info($course);
+        }
+
+        // Course was completed.
+        if ($completioninfo->is_enabled() && $completioninfo->is_course_complete($user->id)) {
+            return COURSE_TIMELINE_PAST;
+        }
+
+        // Start date not reached.
+        $gracedays = get_config('block_myoverview', 'filter_startdategrace');
+        if (!empty($course->startdate) && $course->startdate > ($today + $gracedays * 86400) ) {
+            return COURSE_TIMELINE_FUTURE;
+        }
+
+        // Everything else is in progress.
+        return COURSE_TIMELINE_INPROGRESS;
     }
 }
