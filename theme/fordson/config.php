@@ -40,7 +40,7 @@ $THEME->parents = ['boost'];
  * to generate dynamically from the scss presets and settings and is not
  * used by Moodle's default editor (Atto).
  */
-$THEME->sheets = [''];
+$THEME->sheets = ['levinsky'];
 $THEME->editor_sheets = [''];
 
 // Toggle display of blocks
