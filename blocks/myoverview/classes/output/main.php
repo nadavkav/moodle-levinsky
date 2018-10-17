@@ -69,7 +69,8 @@ class main implements renderable, templatable {
         // Filter courses by Year and Semester.
         $filter_yearsdefault = get_config('block_myoverview', 'filter_yearsdefault');
         $fcb_year = optional_param('fcb_year', $filter_yearsdefault, PARAM_RAW);
-        $fcb_semester = optional_param('fcb_semester', null, PARAM_RAW);
+        $fcb_semester = optional_param('fcb_semester', 'all', PARAM_RAW);
+        $fcb_name = optional_param('fcb_name', '', PARAM_RAW);
 
         $filter_years = get_config('block_myoverview', 'filter_years');
         //$yearoptions[] = array('yearcode' => '', 'yearname' => get_string('choose'));
@@ -93,22 +94,46 @@ class main implements renderable, templatable {
             }
         }
 
-        $filter_full = $fcb_year;
-        if ($fcb_semester !== 'all' && $fcb_semester !== null) {
-            $filter_full = $fcb_year.'_'.$fcb_semester;
-        }
-        if ($fcb_semester === 'all' && $fcb_year === 'all') {
-            $filter_full = '';
-        }
-        if ($fcb_semester === '' && $fcb_year === '') {
-            $filter_full = '___';
-        }
-        // Remove courses which are not chosen by Category / Role / Semester
+        // What type of filtering do we use... Category / Role / Year + Semester?
         $filter_coursefield = get_config('block_myoverview', 'filter_coursefield');
+
+        $filter_full = $fcb_year;
+        if ($filter_coursefield === 'category') {
+            // $fcb_year = category number
+        } else {
+            // $fcb_year = year name/id
+            if ($fcb_semester !== 'all' && $fcb_semester !== null) {
+                $filter_full = $fcb_year.'_'.$fcb_semester;
+            }
+            if ($fcb_semester === 'all' && $fcb_year === 'all') {
+                $filter_full = '';
+            }
+            if ($fcb_semester === '' && $fcb_year === '') {
+                $filter_full = '___';
+            }
+        }
+
+        // Remove courses which are not chosen by Category / Role / Semester
+
         foreach ($courses as $key => $course) {
 
-            if (null != $filter_full && strpos($course->{$filter_coursefield}, $filter_full) === false) {
+            // Filter out course shortname that do not include $fcb_name, if used.
+            if ($fcb_name !== '' && mb_strpos($course->shortname, $fcb_name) === false) {
                 unset($courses[$key]);
+            }
+            // When filtering by CATEGORY, use idnumber to filter semesters.
+            if ($filter_coursefield === 'category') {
+                if ($fcb_year !== 'all' && $fcb_year !== $course->category) {
+                    unset($courses[$key]);
+                }
+                list($course_year, $course_semester, $course_michlol_kod_a, $course_miclol_kod_b) = explode('_', $course->idnumber);
+                if ($fcb_semester !== 'all' && $course_semester !== $fcb_semester) {
+                    unset($courses[$key]);
+                }
+            } else {
+                if (null != $filter_full && strpos($course->{$filter_coursefield}, $filter_full) === false) {
+                    unset($courses[$key]);
+                }
             }
 
             /*
@@ -176,7 +201,8 @@ class main implements renderable, templatable {
             'viewingcourses' => $viewingcourses,
             // Used by theme/fordson myoverview templates.
             'filteryears' => $yearoptions,
-            'filtersemesters' => $semesteroptions
+            'filtersemesters' => $semesteroptions,
+            'searchinname' => $fcb_name
         ];
     }
 }

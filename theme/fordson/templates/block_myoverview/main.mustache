@@ -30,7 +30,7 @@
         <form id="filtercourses" action="index.php" type="post" class="mb-3">
             <div id="coc-filterlist" class="container-fluid">
                 <div class="row">
-                    <div class="span4 col-md-4 m-b-1">
+                    <div class="span4 col-md-3 m-b-1">
                         <label>{{#str}}filterbyyear, theme_fordson{{/str}}</label>
                         <select name="fcb_year" class="input-block-level form-control">
                             {{#filteryears}}
@@ -38,7 +38,7 @@
                             {{/filteryears}}
                         </select>
                     </div>
-                    <div class="span4 col-md-4 m-b-1">
+                    <div class="span4 col-md-3 m-b-1">
                         <label>{{#str}}filterbysemester, theme_fordson{{/str}}</label>
                         <select name="fcb_semester" class="input-block-level form-control">
                             {{#filtersemesters}}
@@ -46,7 +46,11 @@
                             {{/filtersemesters}}
                         </select>
                     </div>
-                    <div class="span4 col-md-4 m-b-1 d-flex align-items-end">
+                    <div class="span4 col-md-3 m-b-1">
+                        <label>{{#str}}filterbyname, theme_fordson{{/str}}</label>
+                        <input name="fcb_name" type="text" value="{{searchinname}}" size="10" class="input-block-level form-control" placeholder="{{#str}}filterbycoursename, theme_fordson{{/str}}">
+                    </div>
+                    <div class="span4 col-md-3 m-b-1 d-flex align-items-end">
                         <input type="submit" value="{{#str}}filtercourses, theme_fordson{{/str}}" class="btn btn-primary btn-md btn-block">
                     </div>
                 </div>

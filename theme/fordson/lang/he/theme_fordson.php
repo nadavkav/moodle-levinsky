@@ -65,6 +65,8 @@ $string['filterbysemester'] = 'סמסטר';
 $string['filtercourses'] = 'סינון קורסים';
 $string['sortlastaccess'] = 'גישה אחרונה';
 $string['sortabc'] = 'לפי שם קורס';
+$string['filterbyname'] = 'שם הקורס מכיל';
+$string['filterbycoursename'] = 'השם מכיל...';
 
 // Extend teacher dashboard
 $string['reports'] = 'דוחות';

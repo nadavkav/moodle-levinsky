@@ -556,6 +556,8 @@ $string['filterbysemester'] = 'Semester';
 $string['filtercourses'] = 'Filter';
 $string['sortlastaccess'] = 'Sort by user lastaccess';
 $string['sortabc'] = 'Sort by course name';
+$string['filterbyname'] = 'Course name includes...';
+$string['filterbycoursename'] = 'Name includes...';
 
 // Extend teacher dashboard
 $string['reports'] = 'Reports';
